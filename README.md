@@ -1,5 +1,8 @@
 # Freebuff Desktop 汉化包（中文汉化）
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+![GitHub last commit](https://img.shields.io/github/last-commit/Ximmmmmmm/Freebuff-Hanhua)
+
 Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.68）的中文汉化项目，**直接修改已打包产物**，无需源码、不涉及任何联网改动。
 
 > **English**: A Simplified-Chinese localization pack for Freebuff Desktop. It patches the packaged app directly — no source build required.
@@ -32,10 +35,6 @@ bash apply.sh /path/to/unpacked   # 传入产物所在目录
 ```
 
 手动安装：
-1. 把 `app.asar` 复制到 `%LOCALAPPDATA%\Programs\@codebufffreebuff-desktop\resources\`
-2. 把 `ui/` 整体替换 `resources\orchestrator\ui\`
-
-也可以手动安装：
 1. 把 `app.asar` 复制到 `%LOCALAPPDATA%\Programs\@codebufffreebuff-desktop\resources\`
 2. 把 `ui/` 整体替换 `resources\orchestrator\ui\`
 
