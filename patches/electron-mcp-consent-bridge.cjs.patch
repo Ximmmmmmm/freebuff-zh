@@ -1,0 +1,42 @@
+diff --git a/pristine/electron/mcp-consent-bridge.cjs b/localized/electron/mcp-consent-bridge.cjs
+index 3f94aaf..016e600 100644
+--- a/pristine/electron/mcp-consent-bridge.cjs
++++ b/localized/electron/mcp-consent-bridge.cjs
+@@ -89,20 +89,20 @@ const clamp = (value) => {
+ function describeLaunch(spec) {
+   const lines = []
+   if (spec && typeof spec.command === 'string') {
+-    lines.push(`Command:  ${clamp(spec.command)}`)
++    lines.push(`命令：  ${clamp(spec.command)}`)
+     const args = Array.isArray(spec.args) ? spec.args : []
+     // Quoted individually: joined by spaces, ["-c", "echo hi"] and ["-c", "echo", "hi"] render
+     // identically, so a single long argument can be made to read as a familiar flag sequence.
+     lines.push(
+-      `Arguments:  ${args.length ? args.map((a) => `"${clamp(a)}"`).join(' ') : '(none)'}`,
++      `参数：  ${args.length ? args.map((a) => `"${clamp(a)}"`).join(' ') : '（无）'}`,
+     )
+-    lines.push(`Directory:  ${spec.cwd ? clamp(spec.cwd) : '(your home folder)'}`)
++    lines.push(`目录：  ${spec.cwd ? clamp(spec.cwd) : '（你的主文件夹）'}`)
+     const names = Array.isArray(spec.envNames) ? spec.envNames : []
+-    lines.push(`Environment:  ${names.length ? clamp(names.join(', ')) : '(none)'}`)
++    lines.push(`环境变量：  ${names.length ? clamp(names.join(', ')) : '（无）'}`)
+   } else if (spec && typeof spec.url === 'string') {
+-    lines.push(`Address:  ${clamp(spec.url)}`)
++    lines.push(`地址：  ${clamp(spec.url)}`)
+   } else {
+-    lines.push('(this connector has no runnable command — refusing)')
++    lines.push('（此连接器没有可运行的命令——已拒绝）')
+   }
+   return lines.join('\n')
+ }
+@@ -251,8 +251,8 @@ function createMcpConsentBridge({ confirm, getWindow, secrets }) {
+           cancelId: 0,
+           title: local ? 'Run this connector?' : 'Connect to this server?',
+           message: local
+-            ? `Run "${clamp(name)}" on this computer?`
+-            : `Let Freebuff connect to "${clamp(name)}"?`,
++            ? `是否在这台计算机上运行“${clamp(name)}”？`
++            : `是否允许 Freebuff 连接到“${clamp(name)}”？`,
+           // `specText` and `explanation` are what our own window renders, kept apart so it never has
+           // to recover the boundary between them from a delimiter inside attacker-supplied text.
+           // `detail` is the same content joined, for the OS message box we fall back to.

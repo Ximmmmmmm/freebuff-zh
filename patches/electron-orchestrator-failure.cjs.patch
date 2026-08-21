@@ -1,0 +1,49 @@
+diff --git a/pristine/electron/orchestrator-failure.cjs b/localized/electron/orchestrator-failure.cjs
+index 597825d..fa64e68 100644
+--- a/pristine/electron/orchestrator-failure.cjs
++++ b/localized/electron/orchestrator-failure.cjs
+@@ -21,18 +21,17 @@ const PROFILE_BUSY_EXIT = 75
+ const PROCESS_MONITORS = { win32: 'Task Manager', darwin: 'Activity Monitor' }
+ 
+ function describeProfileBusy(platform) {
+-  const monitor = PROCESS_MONITORS[platform] ?? 'your system monitor'
++  const monitor = PROCESS_MONITORS[platform] ?? '你的系统监视器'
+   return {
+     // Nothing failed, so neither the title bar nor the icon may say it did. A window titled
+     // "Freebuff failed to start" over the words "Freebuff is already open" just contradicts itself.
+     title: 'Freebuff',
+     type: 'info',
+-    message: 'Freebuff is already open',
++    message: 'Freebuff 已在运行',
+     detail:
+-      'Another copy of Freebuff has your workspace open, so this one stopped instead of ' +
+-      'competing with it for your threads.\n\n' +
+-      'If you can see a Freebuff window, use that one. If you cannot, a leftover background ' +
+-      `process is still holding the workspace: quit "bun" in ${monitor}, then open Freebuff again.`,
++      '另一个 Freebuff 实例已打开你的工作区，因此本实例已停止，而不是与它争夺你的会话。\n\n' +
++      '如果你能看到 Freebuff 窗口，请使用那个窗口。如果看不到，说明有一个残留的后台 ' +
++      `进程仍在占用工作区：请在 ${monitor} 中退出 "bun"，然后重新打开 Freebuff。`,
+   }
+ }
+ 
+@@ -43,15 +42,15 @@ function describeFailure(failure) {
+ 
+   const detailParts = []
+   if (failure.errorMessage) detailParts.push(failure.errorMessage)
+-  if (failure.kind === 'timeout') detailParts.push('The orchestrator did not become ready in time.')
++  if (failure.kind === 'timeout') detailParts.push('编排器未能在规定时间内就绪。')
+   if (failure.code !== undefined || failure.signal) {
+-    detailParts.push(`Process ended (code ${failure.code ?? 'none'}, signal ${failure.signal ?? 'none'}).`)
++    detailParts.push(`进程已结束（代码 ${failure.code ?? '无'}, 信号 ${failure.signal ?? '无'}）。`)
+   }
+-  if (failure.stderrTail) detailParts.push(`\nRecent log output:\n${failure.stderrTail.trim()}`)
++  if (failure.stderrTail) detailParts.push(`\n最近的日志输出：\n${failure.stderrTail.trim()}`)
+   return {
+-    title: 'Freebuff failed to start',
++    title: 'Freebuff 启动失败',
+     type: 'error',
+-    message: 'The Freebuff orchestrator failed to start or stopped unexpectedly.',
++    message: 'Freebuff 编排器启动失败或意外停止。',
+     detail: detailParts.join('\n'),
+   }
+ }

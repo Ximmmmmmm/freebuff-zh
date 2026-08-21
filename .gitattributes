@@ -1,0 +1,10 @@
+* text=auto
+
+# scripts keep LF; Windows bash handles both, but LF keeps diffs clean
+*.sh text eol=lf
+*.js text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+
+# patches are byte-sensitive (CRLF context lines) — never convert
+*.patch -text

@@ -1,0 +1,181 @@
+diff --git a/pristine/ui/index.html b/localized/ui/index.html
+index e40e720..e7ff6f9 100644
+--- a/pristine/ui/index.html
++++ b/localized/ui/index.html
+@@ -1,11 +1,11 @@
+-<!doctype html>
+-<html lang="en">
+-  <head>
+-    <meta charset="UTF-8" />
+-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+-    <title>Freebuff Desktop</title>
+-    <!-- This must not depend on the built JS or CSS: it is the UI for an install
+-         whose entry assets are missing. React removes it when the app mounts. -->
++<!doctype html>
++<html lang="zh-CN">
++  <head>
++    <meta charset="UTF-8" />
++    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
++    <title>Freebuff 桌面版</title>
++    <!-- This must not depend on the built JS or CSS: it is the UI for an install
++         whose entry assets are missing. React removes it when the app mounts. -->
+     <style>
+       #startup-recovery {
+         position: fixed;
+@@ -61,81 +61,80 @@
+           visibility: visible;
+         }
+       }
+-    </style>
+-    <!-- All of the app's error reporting lives inside the module below, so it cannot report the one
+-         failure that matters most: the module never running. A mis-served or missing asset leaves a
+-         blank window that reaches no error boundary and logs nothing anywhere. These hooks are
+-         inline, classic rather than module, and in the head before Vite's generated asset tags. -->
+-    <script>
+-      ;(function () {
+-        var sent = {}
+-        function report(name, message, stack) {
+-          if (!message || sent[name + message]) return
+-          sent[name + message] = 1
+-          try {
+-            fetch('/api/diagnostics/renderer-error', {
+-              method: 'POST',
+-              headers: { 'content-type': 'application/json' },
+-              body: JSON.stringify({ name: name, message: message, stack: stack, boundary: 'bootstrap' }),
+-              // survives the window being closed on a dead-looking app
+-              keepalive: true,
+-            })['catch'](function () {})
+-          } catch (e) {}
+-        }
+-        // Capture phase: a failed script or stylesheet fires on the element and does not bubble.
+-        // Images are content, not renderer failures, and would only add noise here.
+-        window.addEventListener(
+-          'error',
+-          function (event) {
+-            var el = event.target
+-            if (el && el !== window && el.tagName) {
+-              if (el.tagName === 'SCRIPT' || el.tagName === 'LINK') {
+-                report(
+-                  'ResourceError',
+-                  'failed to load ' + el.tagName.toLowerCase() + ': ' + (el.src || el.href || ''),
+-                )
+-              }
+-              return
+-            }
+-            report((event.error && event.error.name) || 'Error', event.message, event.error && event.error.stack)
+-          },
+-          true,
+-        )
+-        window.addEventListener('unhandledrejection', function (event) {
+-          var reason = event.reason
+-          report(
+-            (reason && reason.name) || 'UnhandledRejection',
+-            (reason && reason.message) || String(reason),
+-            reason && reason.stack,
+-          )
+-        })
+-        setTimeout(function () {
+-          if (document.getElementById('startup-recovery')) {
+-            report('BlankWindow', 'nothing mounted 15s after the document loaded')
+-          }
+-        }, 15000)
+-      })()
+-    </script>
++    </style>
++    <!-- All of the app's error reporting lives inside the module below, so it cannot report the one
++         failure that matters most: the module never running. A mis-served or missing asset leaves a
++         blank window that reaches no error boundary and logs nothing anywhere. These hooks are
++         inline, classic rather than module, and in the head before Vite's generated asset tags. -->
++    <script>
++      ;(function () {
++        var sent = {}
++        function report(name, message, stack) {
++          if (!message || sent[name + message]) return
++          sent[name + message] = 1
++          try {
++            fetch('/api/diagnostics/renderer-error', {
++              method: 'POST',
++              headers: { 'content-type': 'application/json' },
++              body: JSON.stringify({ name: name, message: message, stack: stack, boundary: 'bootstrap' }),
++              // survives the window being closed on a dead-looking app
++              keepalive: true,
++            })['catch'](function () {})
++          } catch (e) {}
++        }
++        // Capture phase: a failed script or stylesheet fires on the element and does not bubble.
++        // Images are content, not renderer failures, and would only add noise here.
++        window.addEventListener(
++          'error',
++          function (event) {
++            var el = event.target
++            if (el && el !== window && el.tagName) {
++              if (el.tagName === 'SCRIPT' || el.tagName === 'LINK') {
++                report(
++                  'ResourceError',
++                  'failed to load ' + el.tagName.toLowerCase() + ': ' + (el.src || el.href || ''),
++                )
++              }
++              return
++            }
++            report((event.error && event.error.name) || 'Error', event.message, event.error && event.error.stack)
++          },
++          true,
++        )
++        window.addEventListener('unhandledrejection', function (event) {
++          var reason = event.reason
++          report(
++            (reason && reason.name) || 'UnhandledRejection',
++            (reason && reason.message) || String(reason),
++            reason && reason.stack,
++          )
++        })
++        setTimeout(function () {
++          if (document.getElementById('startup-recovery')) {
++            report('BlankWindow', 'nothing mounted 15s after the document loaded')
++          }
++        }, 15000)
++      })()
++    </script>
+     <script type="module" crossorigin src="./assets/index-CobqI3Sn.js"></script>
+     <link rel="stylesheet" crossorigin href="./assets/index-B-gCxm_6.css">
+-  </head>
+-  <body>
+-    <div id="root">
+-      <main id="startup-recovery" role="alert">
+-        <section>
+-          <h1>Freebuff couldn’t load</h1>
+-          <p>
+-            Part of the interface did not start. Reload once; if this screen returns, reinstall the
+-            latest version. Your projects and conversations are safe.
+-          </p>
+-          <div class="actions">
+-            <a class="primary" href="">Reload Freebuff</a>
+-            <a href="https://freebuff.com/desktop" target="_blank" rel="noreferrer">
+-              Get latest installer
+-            </a>
+-          </div>
+-        </section>
+-      </main>
+-    </div>
+-  </body>
+-</html>
++  </head>
++  <body>
++    <div id="root">
++      <main id="startup-recovery" role="alert">
++        <section>
++          <h1>Freebuff 无法加载</h1>
++          <p>
++            部分界面未能启动。请重新加载一次；如果此界面再次出现，请重新安装最新版本。你的项目和对话都是安全的。
++          </p>
++          <div class="actions">
++            <a class="primary" href="">重新加载 Freebuff</a>
++            <a href="https://freebuff.com/desktop" target="_blank" rel="noreferrer">
++              获取最新安装程序
++            </a>
++          </div>
++        </section>
++      </main>
++    </div>
++  </body>
++</html>
