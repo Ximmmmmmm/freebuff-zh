@@ -14,13 +14,26 @@ Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.68）的中文汉化项目�
 
 ## 📦 快速开始（安装）
 
-从 **Releases** 下载最新 `freebuff-hanhua-<版本>.zip`（内含 `app.asar` 与 `ui/`），解压后：
+> ⚠️ 汉化产物（修改后的 `app.asar` / `ui/`）派生自 Freebuff 的专有软件，**请仅在本机自用，勿公开传播**。详见文末免责声明。
+
+先在本机构建产物，再安装：
 
 ```bash
-bash apply.sh            # 默认使用本仓库 output/，也可传 zip 解压目录：bash apply.sh /path/to/unpacked
+bash build.sh            # 用安装目录里最近的 hanhua-backup-* 作为原版，生成 output/
+bash apply.sh            # 应用汉化（自动备份原文件）
 ```
 
 脚本会先把现有 `app.asar` 和 `ui/` 备份到 `resources/hanbuff-backup-<时间戳>/`，再替换，**重启应用生效**。
+
+如果你已经拿到一份产物目录（自行构建的），也可以：
+
+```bash
+bash apply.sh /path/to/unpacked   # 传入产物所在目录
+```
+
+手动安装：
+1. 把 `app.asar` 复制到 `%LOCALAPPDATA%\Programs\@codebufffreebuff-desktop\resources\`
+2. 把 `ui/` 整体替换 `resources\orchestrator\ui\`
 
 也可以手动安装：
 1. 把 `app.asar` 复制到 `%LOCALAPPDATA%\Programs\@codebufffreebuff-desktop\resources\`
@@ -34,7 +47,7 @@ bash restore.sh          # 从最近一次备份还原
 
 ## 🔧 从源码重建（构建）
 
-仓库**不提交**二进制产物（`output/`、`backup/` 已 gitignore，通过 Releases 分发）。需要自己构建时：
+仓库**不提交**二进制产物（`output/`、`backup/` 已 gitignore）。需要自己构建时：
 
 ```bash
 bash build.sh                       # 自动使用安装目录里最近的 hanhua-backup-* 作为原版
@@ -77,6 +90,9 @@ bash build.sh <app.asar> <ui-dir>   # 或显式指定原版文件
 
 ## 📜 许可证与声明
 
-- 本仓库的脚本、词典、补丁与文档以 **MIT License** 发布（见 `LICENSE`）。
-- 汉化产物（Releases 中的 `app.asar` / `ui/`）派生自 Freebuff 的打包文件，仅作个人学习使用，
-  请尊重原软件许可；分发产物请自行评估风险。
+- 本仓库的**脚本、词典、补丁与文档**以 **MIT License** 发布（见 `LICENSE`），属于你的原创内容。
+- **免责声明**：Freebuff Desktop（`@codebuff/freebuff-desktop`）是 Freebuff, Inc. 的专有商业软件，
+  其安装包内不含任何开源许可（仅 Electron/Chromium 组件有各自的开源许可）。
+  本项目的汉化产物（修改后的 `app.asar` / `ui/`）派生自该软件，**仅限你本人在已合法获取的
+  设备上自用**；请勿公开传播、再分发或用于商业用途，并请遵守 Freebuff 的服务条款。
+  如 Freebuff 官方提出异议，请立即停止使用并删除相关文件。购买正版是对开发者的支持。
