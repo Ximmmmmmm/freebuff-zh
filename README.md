@@ -89,6 +89,7 @@ bash build.sh <app.asar> <ui-dir>   # 或显式指定原版文件
 
 ## 📜 许可证与声明
 
+- **作者**：Ximmmmmmm（本项目为个人维护项目，仅此一位作者）
 - 本仓库的**脚本、词典、补丁与文档**以 **MIT License** 发布（见 `LICENSE`），属于你的原创内容。
 - **免责声明**：Freebuff Desktop（`@codebuff/freebuff-desktop`）是 Freebuff, Inc. 的专有商业软件，
   其安装包内不含任何开源许可（仅 Electron/Chromium 组件有各自的开源许可）。
