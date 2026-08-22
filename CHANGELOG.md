@@ -1,5 +1,17 @@
 # 更新日志
 
+## [0.0.70] · 2026-08-22
+
+- **适配 v0.0.70**：应用自动更新至 0.0.70（渲染 bundle 变化：`index-CobqI3Sn.js` → `index-CeOhCnWt.js`）
+  - 重新生成 `patches/ui-index.html.patch`（新 bundle 名 + 混合行尾），index.html 汉化**首次真正生效**
+    （旧版 build.sh 在子目录执行 `git apply` 时补丁被静默跳过，`output/ui/index.html` 一直是英文）
+  - 修复 `build.sh`：改为仓库根目录执行 `git apply --directory=output`，去掉吞错误的 `|| true` 与重定向，
+    词典未命中（MISSED）现在会正常打印
+- **补翻 0.0.70 新增/变更文案**（词典 exact 670→724、template 82→89）：
+  - 标签页上限（“That model's tab limit is reached…”）、登录第二步拆分（Claude Pro / Codex）
+  - MCP 连接器/同意窗口文案、反馈对话框、文件浏览器提示、技能删除确认、更新弹窗等约 60 处
+- 安装时自动备份原版到 `resources/hanhua-backup-<时间戳>/`
+
 ## [0.0.68] · 2026-08-21
 
 - **二次排查**：重新扫描渲染 bundle 与主进程，修复 58 处用户可见英文（词典增至 exact 607 / template 82 / code 4）

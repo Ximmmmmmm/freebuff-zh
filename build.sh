@@ -52,7 +52,7 @@ npx -y @electron/asar extract "${PRISTINE_ASAR}" "${WORK}/main"
 
 echo "== 2/4 套用翻译词典 (dict.json) =="
 for f in "${WORK}/main/electron/"*.cjs "${WORK}/main/electron/"*.html "${WORK}/main/package.json"; do
-  node "${HERE}/tools/apply.js" "$f" --write >/dev/null 2>&1 || true
+  node "${HERE}/tools/apply.js" "$f" --write
 done
 
 echo "== 3/4 套用人工补丁 (patches/) =="
@@ -66,14 +66,17 @@ if [ -n "${PRISTINE_UI}" ]; then
   rm -rf "${HERE}/output/ui"
   mkdir -p "${HERE}/output/ui/assets"
   cp "${PRISTINE_UI}/index.html" "${HERE}/output/ui/index.html"
-  (cd "${HERE}/output" && git apply -p2 "${HERE}/patches/ui-index.html.patch")
+  # 必须在仓库根目录运行 git apply：若在子目录里执行，git 会按 cwd 前缀过滤
+  # 补丁路径（use_patch），路径不匹配时静默跳过（“Skipped patch”，退出码仍为 0），
+  # 导致 index.html 汉化不生效。--directory=output 把补丁路径定位到 output/ 下。
+  (cd "${HERE}" && git apply -p2 --directory=output "${HERE}/patches/ui-index.html.patch")
   cp -r "${PRISTINE_UI}/assets/." "${HERE}/output/ui/assets/"
   # apply the dictionary ONLY to the main bundle (the one index.html loads):
   # other assets are syntax-highlighting grammars whose keys ("Command", "move", …)
   # are internal identifiers and must stay English.
   MAIN_BUNDLE="$(sed -n 's/.*src="\.\/\(assets\/[^"]*\.js\)".*/\1/p' "${HERE}/output/ui/index.html" | head -1)"
   if [ -n "${MAIN_BUNDLE}" ] && [ -f "${HERE}/output/ui/${MAIN_BUNDLE}" ]; then
-    node "${HERE}/tools/apply.js" "${HERE}/output/ui/${MAIN_BUNDLE}" --write >/dev/null 2>&1 || true
+    node "${HERE}/tools/apply.js" "${HERE}/output/ui/${MAIN_BUNDLE}" --write
   else
     echo "  ! 未在 index.html 中找到主 bundle，跳过词典应用" >&2
   fi

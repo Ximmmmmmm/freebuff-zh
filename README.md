@@ -3,15 +3,15 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![GitHub last commit](https://img.shields.io/github/last-commit/Ximmmmmmm/Freebuff-Hanhua)
 
-Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.68）的中文汉化项目，**直接修改已打包产物**，无需源码、不涉及任何联网改动。
+Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.70）的中文汉化项目，**直接修改已打包产物**，无需源码、不涉及任何联网改动。
 
 > **English**: A Simplified-Chinese localization pack for Freebuff Desktop. It patches the packaged app directly — no source build required.
 
 ## ✨ 特性
 
-- **覆盖全面**：渲染进程约 720 处文案 + 主进程菜单 / 对话框 / 同意窗口全面中文化
+- **覆盖全面**：渲染进程约 780 处文案 + 主进程菜单 / 对话框 / 同意窗口全面中文化
 - **词典驱动**：`dict.json`（exact 607 / template 82 / code 4 / pattern 3），幂等应用、可审计
-- **可复现构建**：`build.sh` 从原版 + 词典 + 补丁**逐字节重建**汉化产物（已对 v0.0.68 验证）
+- **可复现构建**：`build.sh` 从原版 + 词典 + 补丁**逐字节重建**汉化产物（已对 v0.0.70 验证）
 - **一键安装/还原**：`apply.sh` / `restore.sh`，自动备份，随时回退英文原版
 - **工具链完整**：`tools/` 提供提取、翻译、核查、残留扫描等脚本，便于随版本更新补翻
 
@@ -53,7 +53,7 @@ bash build.sh                       # 自动使用安装目录里最近的 hanhu
 bash build.sh <app.asar> <ui-dir>   # 或显式指定原版文件
 ```
 
-构建管线（已对 v0.0.68 验证，`ui` 与主进程内容与 Release 产物逐字节一致）：
+构建管线（已对 v0.0.70 验证，`ui` 与主进程内容与 Release 产物逐字节一致）：
 
 ```
 原版 app.asar ──解包──▶ tools/apply.js（dict.json 词典）──▶ patches/（人工补丁）──▶ 重打包 ──▶ output/app.asar
