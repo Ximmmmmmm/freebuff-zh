@@ -54,15 +54,6 @@ index b97185d..f6759ac 100644
      properties: ['openDirectory', 'createDirectory'],
    })
    return res.canceled || res.filePaths.length === 0 ? null : res.filePaths[0]
-@@ -1092,7 +1091,7 @@ ipcMain.handle('attachment:readImage', async (_event, filePath) => {
-   }
- })
- 
--// Recovery flows (e.g. the "Claude Code 已退出登录" card) hand the user off
-+// Recovery flows (e.g. the "Claude Code is signed out" card) hand the user off
- // to a real terminal they can type `claude /login` into. mac-only (stock
- // Terminal.app, at its modern path with the pre-Catalina one as fallback);
- // other platforms resolve false and the renderer hides the button — the
 @@ -1283,9 +1282,9 @@ ipcMain.handle('menu:tabContext', (event) => {
        resolve(action)
      }
