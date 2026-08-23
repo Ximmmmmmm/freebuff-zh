@@ -1,8 +1,6 @@
-diff --git a/pristine/electron/mcp-consent-bridge.cjs b/localized/electron/mcp-consent-bridge.cjs
-index 3f94aaf..016e600 100644
---- a/pristine/electron/mcp-consent-bridge.cjs
-+++ b/localized/electron/mcp-consent-bridge.cjs
-@@ -89,20 +89,20 @@ const clamp = (value) => {
+--- a/pristine/electron/mcp-consent-bridge.cjs	2026-08-23 23:38:19.727254600 +0800
++++ b/localized/electron/mcp-consent-bridge.cjs	2026-08-23 23:38:44.685300800 +0800
+@@ -89,20 +89,20 @@
  function describeLaunch(spec) {
    const lines = []
    if (spec && typeof spec.command === 'string') {
@@ -29,14 +27,3 @@ index 3f94aaf..016e600 100644
    }
    return lines.join('\n')
  }
-@@ -251,8 +251,8 @@ function createMcpConsentBridge({ confirm, getWindow, secrets }) {
-           cancelId: 0,
-           title: local ? 'Run this connector?' : 'Connect to this server?',
-           message: local
--            ? `Run "${clamp(name)}" on this computer?`
--            : `Let Freebuff connect to "${clamp(name)}"?`,
-+            ? `是否在这台计算机上运行“${clamp(name)}”？`
-+            : `是否允许 Freebuff 连接到“${clamp(name)}”？`,
-           // `specText` and `explanation` are what our own window renders, kept apart so it never has
-           // to recover the boundary between them from a delimiter inside attacker-supplied text.
-           // `detail` is the same content joined, for the OS message box we fall back to.

@@ -1,8 +1,6 @@
-diff --git a/pristine/electron/consent-window.html b/localized/electron/consent-window.html
-index 4502857..7b77080 100644
---- a/pristine/electron/consent-window.html
-+++ b/localized/electron/consent-window.html
-@@ -51,13 +51,13 @@
+--- a/pristine/electron/consent-window.html	2026-08-23 23:38:20.454997200 +0800
++++ b/localized/electron/consent-window.html	2026-08-23 23:38:45.502537000 +0800
+@@ -51,7 +51,7 @@
    button:focus-visible { outline: 2px solid var(--warn); outline-offset: 2px; }
  </style>
  
@@ -11,22 +9,14 @@ index 4502857..7b77080 100644
  <p id="message"></p>
  <pre id="spec"></pre>
  <p id="detail"></p>
- <div class="foot">
--  <button id="no" type="button">Cancel</button>
--  <button id="yes" type="button" class="go">Approve</button>
-+  <button id="no" type="button">取消</button>
-+  <button id="yes" type="button" class="go">批准</button>
- </div>
- 
- <script>
 @@ -66,8 +66,8 @@
    const el = (id) => document.getElementById(id)
  
    window.consent.ready((options) => {
 -    const [, go] = options.buttons || ['Cancel', 'Approve']
 -    el('title').textContent = options.title || 'Approve this connector?'
-+  const [, go] = options.buttons || ['取消', '批准']
-+  el('title').textContent = options.title || '批准此连接器？'
++    const [, go] = options.buttons || ['取消', '批准']
++    el('title').textContent = options.title || '批准此连接器？'
      el('message').textContent = options.message || ''
      // Two separate fields, never one string re-split on a delimiter: the spec contains a command
      // and arguments a human may have pasted from the internet, and text that can choose where the

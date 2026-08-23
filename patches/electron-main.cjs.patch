@@ -1,8 +1,6 @@
-diff --git a/pristine/electron/main.cjs b/localized/electron/main.cjs
-index b97185d..f6759ac 100644
---- a/pristine/electron/main.cjs
-+++ b/localized/electron/main.cjs
-@@ -685,7 +685,7 @@ function loadingPage() {
+--- a/pristine/electron/main.cjs	2026-08-23 23:38:19.650514700 +0800
++++ b/localized/electron/main.cjs	2026-08-23 23:38:44.629436000 +0800
+@@ -685,7 +685,7 @@
    @keyframes spin{to{transform:rotate(360deg)}}
  </style></head><body>
    <div class="dot"></div>
@@ -11,7 +9,7 @@ index b97185d..f6759ac 100644
  </body></html>`
    return `data:text/html;charset=utf-8,${encodeURIComponent(html)}`
  }
-@@ -955,15 +955,14 @@ function confirmQuit(parent) {
+@@ -955,15 +955,14 @@
    try {
      const response = askSync(parent, {
        type: 'question',
@@ -32,7 +30,7 @@ index b97185d..f6759ac 100644
        // a stray Return keeps the agents alive
        defaultId: 0,
        cancelId: 0,
-@@ -1019,8 +1018,8 @@ ipcMain.handle('dialog:pickAttachments', async (event) => {
+@@ -1019,8 +1018,8 @@
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return []
    const res = await dialog.showOpenDialog(win, {
@@ -43,7 +41,7 @@ index b97185d..f6759ac 100644
      properties: ['openFile', 'openDirectory', 'multiSelections', 'treatPackageAsDirectory'],
    })
    if (res.canceled) return []
-@@ -1042,8 +1041,8 @@ ipcMain.handle('dialog:pickDirectory', async (event) => {
+@@ -1042,8 +1041,8 @@
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return null
    const res = await dialog.showOpenDialog(win, {
@@ -54,20 +52,18 @@ index b97185d..f6759ac 100644
      properties: ['openDirectory', 'createDirectory'],
    })
    return res.canceled || res.filePaths.length === 0 ? null : res.filePaths[0]
-@@ -1283,9 +1282,9 @@ ipcMain.handle('menu:tabContext', (event) => {
+@@ -1283,8 +1282,8 @@
        resolve(action)
      }
      const menu = Menu.buildFromTemplate([
 -      { label: 'Rename Tab', click: () => done('rename') },
--      { label: 'Move to New Window', click: () => done('move-to-window') },
 -      { label: 'Close Tab', click: () => done('close') },
 +      { label: '重命名标签页', click: () => done('rename') },
-+      { label: '移动到新窗口', click: () => done('move-to-window') },
 +      { label: '关闭标签页', click: () => done('close') },
      ])
      menu.popup({
        window: BrowserWindow.fromWebContents(event.sender) ?? undefined,
-@@ -1308,7 +1307,7 @@ function buildMenu(reloadApp) {
+@@ -1307,7 +1306,7 @@
              label: app.name,
              submenu: [
                { role: 'about' },
@@ -76,7 +72,7 @@ index b97185d..f6759ac 100644
                { type: 'separator' },
                { role: 'services' },
                { type: 'separator' },
-@@ -1318,7 +1317,7 @@ function buildMenu(reloadApp) {
+@@ -1317,7 +1316,7 @@
                { type: 'separator' },
                {
                  // not `role: 'quit'`: that reaches app.quit() directly, with no chance to ask
@@ -85,7 +81,7 @@ index b97185d..f6759ac 100644
                  accelerator: 'Command+Q',
                  click: () => requestQuit(),
                },
-@@ -1327,31 +1326,31 @@ function buildMenu(reloadApp) {
+@@ -1326,30 +1325,30 @@
          ]
        : []),
      {
@@ -104,9 +100,7 @@ index b97185d..f6759ac 100644
            accelerator: 'CmdOrCtrl+Shift+T',
            click: () => sendMenuCommand('reopen-tab'),
          },
--        { label: 'Move Tab to New Window', click: () => sendMenuCommand('pop-out-tab') },
 -        { label: 'Close Tab', accelerator: 'CmdOrCtrl+W', click: () => sendMenuCommand('close-tab') },
-+        { label: '将标签页移动到新窗口', click: () => sendMenuCommand('pop-out-tab') },
 +        { label: '关闭标签页', accelerator: 'CmdOrCtrl+W', click: () => sendMenuCommand('close-tab') },
          { type: 'separator' },
          isMac
@@ -126,7 +120,7 @@ index b97185d..f6759ac 100644
          { role: 'toggleDevTools' },
          { type: 'separator' },
          { role: 'resetZoom' },
-@@ -1361,15 +1360,15 @@ function buildMenu(reloadApp) {
+@@ -1359,15 +1358,15 @@
          { role: 'togglefullscreen' },
        ],
      },
@@ -145,7 +139,7 @@ index b97185d..f6759ac 100644
              ],
            },
          ]),
-@@ -1614,8 +1613,8 @@ else if (!app.requestSingleInstanceLock()) {
+@@ -1612,8 +1611,8 @@
        canRelaunch: !!relaunchExecPath,
      })
      const buttons = canRetryWithoutSandbox
@@ -156,7 +150,7 @@ index b97185d..f6759ac 100644
      const body = `${detail}\n\n(${details.type} process: ${details.reason})`
      // A launch failure this early can land before `ready`, where the dialog
      // module throws — and an exception here would replace the message we came to
-@@ -1624,7 +1623,7 @@ else if (!app.requestSingleInstanceLock()) {
+@@ -1622,7 +1621,7 @@
      // buttons, so the pre-ready path explains and quits rather than offering the
      // retry. Nothing is running yet, so there is nothing to tear down.
      if (!app.isReady()) {
@@ -165,7 +159,7 @@ index b97185d..f6759ac 100644
        app.exit(1)
        return
      }
-@@ -1632,7 +1631,7 @@ else if (!app.requestSingleInstanceLock()) {
+@@ -1630,7 +1629,7 @@
      try {
        response = dialog.showMessageBoxSync({
          type: 'error',

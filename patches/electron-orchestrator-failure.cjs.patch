@@ -1,8 +1,6 @@
-diff --git a/pristine/electron/orchestrator-failure.cjs b/localized/electron/orchestrator-failure.cjs
-index 597825d..fa64e68 100644
---- a/pristine/electron/orchestrator-failure.cjs
-+++ b/localized/electron/orchestrator-failure.cjs
-@@ -21,18 +21,17 @@ const PROFILE_BUSY_EXIT = 75
+--- a/pristine/electron/orchestrator-failure.cjs	2026-08-23 23:38:19.900077200 +0800
++++ b/localized/electron/orchestrator-failure.cjs	2026-08-23 23:38:44.861635200 +0800
+@@ -21,17 +21,19 @@
  const PROCESS_MONITORS = { win32: 'Task Manager', darwin: 'Activity Monitor' }
  
  function describeProfileBusy(platform) {
@@ -17,16 +15,16 @@ index 597825d..fa64e68 100644
 +    message: 'Freebuff 已在运行',
      detail:
 -      'Another copy of Freebuff has your workspace open, so this one stopped instead of ' +
--      'competing with it for your threads.\n\n' +
++      '另一个 Freebuff 实例已打开你的工作区，因此本实例已停止，而不是与它争夺你的会话。
++
++' +
+       'competing with it for your threads.\n\n' +
 -      'If you can see a Freebuff window, use that one. If you cannot, a leftover background ' +
--      `process is still holding the workspace: quit "bun" in ${monitor}, then open Freebuff again.`,
-+      '另一个 Freebuff 实例已打开你的工作区，因此本实例已停止，而不是与它争夺你的会话。\n\n' +
-+      '如果你能看到 Freebuff 窗口，请使用那个窗口。如果看不到，说明有一个残留的后台 ' +
-+      `进程仍在占用工作区：请在 ${monitor} 中退出 "bun"，然后重新打开 Freebuff。`,
++      '进程仍在占用工作区：请在 ${monitor} 中退出 "bun"，然后重新打开 Freebuff。',
+       `process is still holding the workspace: quit "bun" in ${monitor}, then open Freebuff again.`,
    }
  }
- 
-@@ -43,15 +42,15 @@ function describeFailure(failure) {
+@@ -43,15 +45,15 @@
  
    const detailParts = []
    if (failure.errorMessage) detailParts.push(failure.errorMessage)
