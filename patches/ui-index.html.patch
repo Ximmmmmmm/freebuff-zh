@@ -1,7 +1,7 @@
-diff --git a/pristine/ui/index.html b/localized/ui/index.html
-index e2e0213..f5de764 100644
---- a/pristine/ui/index.html
-+++ b/localized/ui/index.html
+diff --git a/ui/index.html b/ui/index.html
+index 46e27ad..66050d7 100644
+--- a/ui/index.html
++++ b/ui/index.html
 @@ -1,9 +1,9 @@
  <!doctype html>
 -<html lang="en">
@@ -14,16 +14,8 @@ index e2e0213..f5de764 100644
      <!-- This must not depend on the built JS or CSS: it is the UI for an install
           whose entry assets are missing. React removes it when the app mounts. -->
      <style>
-@@ -123,15 +123,14 @@
-     <div id="root">
-       <main id="startup-recovery" role="alert">
-         <section>
--          <h1>Freebuff couldn’t load</h1>
-+          <h1>Freebuff 无法加载</h1>
-           <p>
--            Part of the interface did not start. Reload once; if this screen returns, reinstall the
--            latest version. Your projects and conversations are safe.
-+            部分界面未能启动。请重新加载一次；如果此界面再次出现，请重新安装最新版本。你的项目和对话都是安全的。
+@@ -129,9 +129,9 @@
+             latest version. Your projects and conversations are safe.
            </p>
            <div class="actions">
 -            <a class="primary" href="">Reload Freebuff</a>

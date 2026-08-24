@@ -56,7 +56,7 @@ for f in "${WORK}/main/electron/"*.cjs "${WORK}/main/electron/"*.html "${WORK}/m
 done
 
 echo "== 3/4 套用人工补丁 (patches/) =="
-(cd "${WORK}/main" && for p in "${HERE}"/patches/electron-*.patch; do git apply -p2 "$p"; done)
+(cd "${WORK}/main" && for p in "${HERE}"/patches/electron-*.patch; do git apply -p1 "$p"; done)
 
 echo "== 4/4 重打包 asar 并处理 ui =="
 mkdir -p "${HERE}/output"
@@ -66,10 +66,8 @@ if [ -n "${PRISTINE_UI}" ]; then
   rm -rf "${HERE}/output/ui"
   mkdir -p "${HERE}/output/ui/assets"
   cp "${PRISTINE_UI}/index.html" "${HERE}/output/ui/index.html"
-  # 必须在仓库根目录运行 git apply：若在子目录里执行，git 会按 cwd 前缀过滤
-  # 补丁路径（use_patch），路径不匹配时静默跳过（“Skipped patch”，退出码仍为 0），
-  # 导致 index.html 汉化不生效。--directory=output 把补丁路径定位到 output/ 下。
-  (cd "${HERE}" && git apply -p2 --directory=output "${HERE}/patches/ui-index.html.patch")
+  # Apply UI translations directly (git apply has CRLF issues on Windows with .gitattributes)
+  node "${HERE}/tools/apply_ui_patch.js" "${HERE}/output/ui/index.html"
   cp -r "${PRISTINE_UI}/assets/." "${HERE}/output/ui/assets/"
   # apply the dictionary ONLY to the main bundle (the one index.html loads):
   # other assets are syntax-highlighting grammars whose keys ("Command", "move", …)

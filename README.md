@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![GitHub last commit](https://img.shields.io/github/last-commit/Ximmmmmmm/Freebuff-Hanhua)
 
-Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.71）的中文汉化项目，**直接修改已打包产物**，无需源码、不涉及任何联网改动。
+Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.72）的中文汉化项目，**直接修改已打包产物**，无需源码、不涉及任何联网改动。
 
 > **English**: A Simplified-Chinese localization pack for Freebuff Desktop. It patches the packaged app directly — no source build required.
 
@@ -68,6 +68,8 @@ bash build.sh <app.asar> <ui-dir>   # 或显式指定原版文件
 ├── dict.json          # 翻译词典（exact / template / code / pattern 四类）
 ├── patches/           # 人工补丁：词典覆盖不到的手工修改（index.html、主进程 5 个文件）
 ├── tools/             # 提取/翻译/核查脚本（见 docs/汉化流程.md）
+│   ├── gen_patches.js # 从原版自动生成主进程补丁（Unicode 转义避免编码问题）
+│   └── apply_ui_patch.js # 直接替换 UI index.html 翻译（替代 git apply）
 ├── build.sh           # 可复现构建：原版 + 词典 + 补丁 → output/
 ├── apply.sh           # 安装汉化到应用（自动备份）
 ├── restore.sh         # 从备份还原英文原版

@@ -1,5 +1,22 @@
 # 更新日志
 
+## [0.0.72] · 2026-08-24
+
+- **适配 v0.0.72**：应用自动更新至 0.0.72（渲染 bundle 变化：`index-BcKNsVI9.js` → `index-CWvAXWf2.js`）
+  - 重新生成所有主进程补丁，适配 v0.0.72 结构变更
+  - 新增 `package.json`（`"type": "commonjs"`）解决 Desktop 目录 `package.json` 的 ESM 冲突
+  - `build.sh` 补丁级别从 `-p2` 改为 `-p1`，适配新补丁路径格式
+  - `build.sh` UI 补丁改用 `tools/apply_ui_patch.js` 直接替换，解决 `.gitattributes` CRLF 与 `git apply` 的兼容问题
+  - 新增 `tools/gen_patches.js`：用 Unicode 转义避免 heredoc 编码问题，从原版自动生成补丁
+- **补翻 v0.0.72 新增文案**：
+  - v0.0.72 新增 `Open Project…` 菜单项
+  - MCP 连接器同意窗口按钮（Cancel/Approve → 取消/批准）
+  - consent-window.html 按钮文本
+  - orchestrator-failure.cjs 进程忙碌对话框详情
+  - mcp-consent-bridge.cjs Run it/Connect 按钮
+- 所有主进程文件（main.cjs / consent-window.html / linux-launch.cjs / mcp-consent-bridge.cjs / orchestrator-failure.cjs）补丁重新生成
+- **修复启动崩溃**：orchestrator-failure.cjs 补丁的忙碌对话框替换悬空了原模板字符串，主进程抛 `SyntaxError: Unexpected template string` 无法启动；已改为完整替换四行英文、末行保留反引号使 `${monitor}` 正常插值。`tools/gen_patches.js` 同步修正（含行首空格），重新生成的补丁与手修版字节级一致
+
 ## [0.0.71] · 2026-08-23
 
 - **适配 v0.0.71**：应用自动更新至 0.0.71（渲染 bundle 变化：`index-CeOhCnWt.js` → `index-BcKNsVI9.js`）

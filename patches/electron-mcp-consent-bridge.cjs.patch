@@ -1,6 +1,8 @@
---- a/pristine/electron/mcp-consent-bridge.cjs	2026-08-23 23:38:19.727254600 +0800
-+++ b/localized/electron/mcp-consent-bridge.cjs	2026-08-23 23:38:44.685300800 +0800
-@@ -89,20 +89,20 @@
+diff --git a/electron/mcp-consent-bridge.cjs b/electron/mcp-consent-bridge.cjs
+index 3f94aaf..4598803 100644
+--- a/electron/mcp-consent-bridge.cjs
++++ b/electron/mcp-consent-bridge.cjs
+@@ -89,20 +89,20 @@ const clamp = (value) => {
  function describeLaunch(spec) {
    const lines = []
    if (spec && typeof spec.command === 'string') {
@@ -23,7 +25,7 @@
 +    lines.push(`地址：  ${clamp(spec.url)}`)
    } else {
 -    lines.push('(this connector has no runnable command — refusing)')
-+    lines.push('（此连接器没有可运行的命令——已拒绝）')
++    lines.push('(此连接器没有可运行的命令——已拒绝)')
    }
    return lines.join('\n')
  }

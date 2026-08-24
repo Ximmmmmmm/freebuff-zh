@@ -1,15 +1,17 @@
---- a/pristine/electron/main.cjs	2026-08-23 23:38:19.650514700 +0800
-+++ b/localized/electron/main.cjs	2026-08-23 23:38:44.629436000 +0800
-@@ -685,7 +685,7 @@
-   @keyframes spin{to{transform:rotate(360deg)}}
- </style></head><body>
-   <div class="dot"></div>
--  <div class="msg">Starting Freebuff orchestrator…</div>
-+  <div class="msg">正在启动 Freebuff 编排器…</div>
- </body></html>`
-   return `data:text/html;charset=utf-8,${encodeURIComponent(html)}`
- }
-@@ -955,15 +955,14 @@
+diff --git a/electron/main.cjs b/electron/main.cjs
+index a5a7493..c7a12c2 100644
+--- a/electron/main.cjs
++++ b/electron/main.cjs
+@@ -375,7 +375,7 @@ async function showOrchestratorFailure(failure, parent = mainWindow) {
+   const buttons = []
+   const actions = []
+   if (failure.logPath) {
+-    buttons.push('Show Log')
++    buttons.push('查看日志')
+     actions.push(() => shell.showItemInFolder(failure.logPath))
+   }
+   buttons.push('Quit')
+@@ -943,15 +943,13 @@ function confirmQuit(parent) {
    try {
      const response = askSync(parent, {
        type: 'question',
@@ -24,13 +26,12 @@
 -        'continue automatically from their latest saved step. Completed steps, conversation ' +
 -        'context, and changes already written to your files are kept.',
 -      buttons: ['Cancel', 'Quit anyway'],
-+        '退出将立即停止智能体。下次打开 Freebuff 时，中断的轮次将从最近保存的步骤自动继续。' +
-+        '已完成的步骤、对话上下文以及已写入你文件的更改都会保留。',
++        '退出将立即停止智能体。下次打开 Freebuff 时，中断的轮次将从最近保存的步骤自动继续。已完成的步骤、对话上下文以及已写入你文件的更改都会保留。',
 +      buttons: ['取消', '仍要退出'],
        // a stray Return keeps the agents alive
        defaultId: 0,
        cancelId: 0,
-@@ -1019,8 +1018,8 @@
+@@ -1007,8 +1005,8 @@ ipcMain.handle('dialog:pickAttachments', async (event) => {
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return []
    const res = await dialog.showOpenDialog(win, {
@@ -41,7 +42,7 @@
      properties: ['openFile', 'openDirectory', 'multiSelections', 'treatPackageAsDirectory'],
    })
    if (res.canceled) return []
-@@ -1042,8 +1041,8 @@
+@@ -1030,8 +1028,8 @@ ipcMain.handle('dialog:pickDirectory', async (event) => {
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return null
    const res = await dialog.showOpenDialog(win, {
@@ -52,18 +53,16 @@
      properties: ['openDirectory', 'createDirectory'],
    })
    return res.canceled || res.filePaths.length === 0 ? null : res.filePaths[0]
-@@ -1283,8 +1282,8 @@
-       resolve(action)
+@@ -1272,7 +1270,7 @@ ipcMain.handle('menu:tabContext', (event) => {
      }
      const menu = Menu.buildFromTemplate([
--      { label: 'Rename Tab', click: () => done('rename') },
+       { label: 'Rename Tab', click: () => done('rename') },
 -      { label: 'Close Tab', click: () => done('close') },
-+      { label: '重命名标签页', click: () => done('rename') },
 +      { label: '关闭标签页', click: () => done('close') },
      ])
      menu.popup({
        window: BrowserWindow.fromWebContents(event.sender) ?? undefined,
-@@ -1307,7 +1306,7 @@
+@@ -1295,7 +1293,7 @@ function buildMenu(reloadApp) {
              label: app.name,
              submenu: [
                { role: 'about' },
@@ -72,74 +71,34 @@
                { type: 'separator' },
                { role: 'services' },
                { type: 'separator' },
-@@ -1317,7 +1316,7 @@
-               { type: 'separator' },
-               {
-                 // not `role: 'quit'`: that reaches app.quit() directly, with no chance to ask
--                label: `Quit ${app.name}`,
-+                label: `退出 ${app.name}`,
-                 accelerator: 'Command+Q',
-                 click: () => requestQuit(),
-               },
-@@ -1326,30 +1325,30 @@
-         ]
-       : []),
-     {
--      label: 'File',
-+      label: '文件',
-       submenu: [
-         {
--          label: 'New Tab',
-+          label: '新建标签页',
-           accelerator: 'CmdOrCtrl+T',
-           click: () => sendMenuCommand('new-tab'),
+@@ -1336,7 +1334,7 @@ function buildMenu(reloadApp) {
+           click: () => sendMenuCommand('open-project'),
          },
-         {
--          label: 'Reopen Closed Tab',
-+          label: '重新打开已关闭的标签页',
-           accelerator: 'CmdOrCtrl+Shift+T',
-           click: () => sendMenuCommand('reopen-tab'),
-         },
+         { type: 'separator' },
 -        { label: 'Close Tab', accelerator: 'CmdOrCtrl+W', click: () => sendMenuCommand('close-tab') },
 +        { label: '关闭标签页', accelerator: 'CmdOrCtrl+W', click: () => sendMenuCommand('close-tab') },
          { type: 'separator' },
          isMac
--          ? { role: 'close', label: 'Close Window', accelerator: 'CmdOrCtrl+Shift+W' }
--          : { label: 'Quit', accelerator: 'CmdOrCtrl+Q', click: () => requestQuit() },
-+          ? { role: 'close', label: '关闭窗口', accelerator: 'CmdOrCtrl+Shift+W' }
-+          : { label: '退出', accelerator: 'CmdOrCtrl+Q', click: () => requestQuit() },
-       ],
-     },
-     { role: 'editMenu' },
-     {
--      label: 'View',
-+      label: '视图',
-       submenu: [
--        { label: 'Reload App', accelerator: 'CmdOrCtrl+R', click: () => reloadApp() },
-+        { label: '重新加载应用', accelerator: 'CmdOrCtrl+R', click: () => reloadApp() },
-         { role: 'toggleDevTools' },
-         { type: 'separator' },
-         { role: 'resetZoom' },
-@@ -1359,15 +1358,15 @@
-         { role: 'togglefullscreen' },
-       ],
-     },
--    { label: 'Window', submenu: [{ role: 'minimize' }, { role: 'zoom' }] },
-+    { label: '窗口', submenu: [{ role: 'minimize' }, { role: 'zoom' }] },
-     // Non-mac has no app menu, so "Check for Updates…" lives under Help.
-     ...(isMac
-       ? []
-       : [
+           ? { role: 'close', label: 'Close Window', accelerator: 'CmdOrCtrl+Shift+W' }
+@@ -1365,7 +1363,7 @@ function buildMenu(reloadApp) {
            {
--            label: 'Help',
-+            label: '帮助',
+             label: 'Help',
              submenu: [
 -              { label: 'Check for Updates…', click: () => checkForUpdatesInteractive() },
 +              { label: '检查更新…', click: () => checkForUpdatesInteractive() },
              ],
            },
          ]),
-@@ -1612,8 +1611,8 @@
+@@ -1500,7 +1498,7 @@ async function boot() {
+     if (err?.orchestratorFailure) {
+       await showOrchestratorFailure(err.orchestratorFailure, win)
+     } else {
+-      dialog.showErrorBox('Freebuff failed to start', String(err?.message ?? err))
++      dialog.showErrorBox('Freebuff 启动失败', String(err?.message ?? err))
+     }
+     app.quit()
+     return
+@@ -1614,8 +1612,8 @@ else if (!app.requestSingleInstanceLock()) {
        canRelaunch: !!relaunchExecPath,
      })
      const buttons = canRetryWithoutSandbox
@@ -150,7 +109,7 @@
      const body = `${detail}\n\n(${details.type} process: ${details.reason})`
      // A launch failure this early can land before `ready`, where the dialog
      // module throws — and an exception here would replace the message we came to
-@@ -1622,7 +1621,7 @@
+@@ -1624,7 +1622,7 @@ else if (!app.requestSingleInstanceLock()) {
      // buttons, so the pre-ready path explains and quits rather than offering the
      // retry. Nothing is running yet, so there is nothing to tear down.
      if (!app.isReady()) {
@@ -159,7 +118,7 @@
        app.exit(1)
        return
      }
-@@ -1630,7 +1629,7 @@
+@@ -1632,7 +1630,7 @@ else if (!app.requestSingleInstanceLock()) {
      try {
        response = dialog.showMessageBoxSync({
          type: 'error',

@@ -1,6 +1,8 @@
---- a/pristine/electron/linux-launch.cjs	2026-08-23 23:38:19.577140300 +0800
-+++ b/localized/electron/linux-launch.cjs	2026-08-23 23:38:44.564808600 +0800
-@@ -237,7 +237,7 @@
+diff --git a/electron/linux-launch.cjs b/electron/linux-launch.cjs
+index f7338ba..e874fad 100644
+--- a/electron/linux-launch.cjs
++++ b/electron/linux-launch.cjs
+@@ -237,7 +237,7 @@ function describeSandboxFailure(opts = {}) {
      // cause is elsewhere (graphics stack, missing system libraries). Do not send
      // them down the sandbox path a second time.
      return {
@@ -9,7 +11,25 @@
        detail:
          'Freebuff is already running without the Chromium sandbox, so this is likely a graphics ' +
          'or system library problem rather than the sandbox.\n\n' +
-@@ -276,7 +276,7 @@
+@@ -254,7 +254,7 @@ function describeSandboxFailure(opts = {}) {
+     // isolation to fix something else entirely. That is the over-firing direction
+     // this module is most careful about; it must not sneak back in via the dialog.
+     return {
+-      message: 'Freebuff could not start a required subprocess.',
++      message: 'Freebuff 无法启动所需的子进程。',
+       detail:
+         'A required Chromium subprocess failed to launch. The Chromium sandbox is available on ' +
+         'this system, so the cause is more likely the graphics stack or a missing system library.\n\n' +
+@@ -268,7 +268,7 @@ function describeSandboxFailure(opts = {}) {
+     // gone. Offering the button here would exit into nothing and the app would
+     // disappear mid-click, so explain and hand over the manual command instead.
+     return {
+-      message: 'Freebuff could not start a required subprocess.',
++      message: 'Freebuff 无法启动所需的子进程。',
+       detail:
+         `${sandbox?.detail ?? 'The Chromium sandbox could not start on this system.'}\n\n` +
+         'Freebuff would normally restart itself without the sandbox, but the application file ' +
+@@ -276,17 +276,17 @@ function describeSandboxFailure(opts = {}) {
          'may have been interrupted.\n\n' +
          'Re-download Freebuff, or start it yourself with:\n' +
          '  ./Freebuff.AppImage --no-sandbox' +
@@ -18,3 +38,15 @@
        canRetryWithoutSandbox: false,
      }
    }
+   return {
+-    message: 'Freebuff could not start a required subprocess.',
++    message: 'Freebuff 无法启动所需的子进程。',
+     detail:
+       `${sandbox?.detail ?? 'The Chromium sandbox could not start on this system.'}\n\n` +
+       'Freebuff can restart with the sandbox disabled. That weakens isolation for web content ' +
+       'shown in preview panes, so only do it on a machine you trust.' +
+-      (sandbox?.fix ? `\n\nTo fix this system-wide and keep the sandbox:\n  ${sandbox.fix}` : ''),
++      (sandbox?.fix ? `\n\n要在系统范围内修复并保留沙箱：\n  ${sandbox.fix}` : ''),
+     canRetryWithoutSandbox: true,
+   }
+ }

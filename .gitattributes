@@ -8,3 +8,6 @@
 
 # patches are byte-sensitive (CRLF context lines) — never convert
 *.patch -text
+
+# build output must preserve original line endings
+output/** -text
