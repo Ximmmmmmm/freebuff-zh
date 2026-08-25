@@ -1,5 +1,18 @@
 # 更新日志
 
+## [0.0.74] · 2026-08-25
+
+- **适配 v0.0.74**：应用更新至 0.0.74，安装目录改为 `@codebufffreebuff-desktop`
+  - **结构变更**：渲染 bundle 不再打包进 `app.asar`，改由 orchestrator 从 `resources/orchestrator/ui` 提供（`index-CjfQSmUP.js`）；`apply.sh` / `build.sh` 已适配新路径
+  - 主进程源码与 v0.0.73 仅注释差异，五个主进程补丁重新生成，内容与 v0.0.73 一致
+- **补翻 v0.0.74 新增文案**：
+  - 空间菜单 aria-label（Freebuff menu）、新建空间路径拼接（New space in）
+  - 已关闭标签页空态与搜索无结果（Threads you close land here. / No closed tabs match…）
+  - 关闭空间前未保存文件确认（Discard the unsaved file edit in this space?）
+  - 无法打开文件夹、反馈类型描述、队列自动继续、浏览器登录等待提示
+- 词典更新为 exact 748 / template 91 / code 4 / pattern 3
+- 已使用 v0.0.74 原版 `app.asar` 与 `orchestrator/ui` 资源完成构建验证
+
 ## [0.0.73] · 2026-08-25
 
 - **适配 v0.0.73**：应用自动更新至 0.0.73（渲染 bundle 变化：`index-CWvAXWf2.js` → `index-Csh6DJux.js`）

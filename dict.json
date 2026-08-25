@@ -734,12 +734,20 @@
     "Go to tab →": "转到标签页 →",
     "Loading Freebuff": "正在加载 Freebuff",
     "New space in": "在此新建空间",
+    "New space in ": "在此新建空间 ",
     "Open project…": "打开项目…",
     "Recently edited": "最近编辑",
     "Rename…": "重命名…",
     "Resize thread list": "调整会话列表大小",
     "Safe only": "仅安全工具",
-    "Use folder name": "使用文件夹名称"
+    "Use folder name": "使用文件夹名称",
+    "Freebuff menu": "Freebuff 菜单",
+    "Threads you close land here.": "你关闭的会话会显示在这里。",
+    "Discard the unsaved file edit in this space?": "要放弃此空间中未保存的文件编辑吗？",
+    "Could not open that folder.": "无法打开该文件夹。",
+    "An idea, question, or anything else": "一个想法、问题或其它内容",
+    "Keeps going on its own once the queue is empty.": "队列清空后会自动继续运行。",
+    "Waiting for your browser — this screen continues on its own.": "正在等待你的浏览器——此界面会自行继续。"
   },
   "code": {
     "t.length,\" step\",t.length===1?\"\":\"s\"": "t.length,\" 步\",t.length===1?\"\":\"\"",
@@ -753,6 +761,8 @@
     "Home": "首页"
   },
   "template": {
+    "Discard ${r.length} unsaved file edits in this space?": "要放弃此空间中 ${r.length} 个未保存的文件编辑吗？",
+    "No closed tabs match “${t.trim()}”": "没有与“${t.trim()}”匹配的已关闭标签页",
     "Earn ${nve} for more sessions": "赚取 ${nve} 以获得更多会话",
     "Step 1 of 2 · Install the ${t.label} CLI": "第 1 步，共 2 步 · 安装 ${t.label} CLI",
     "Step 2 of 2 · Sign in to ${t.label}": "第 2 步，共 2 步 · 登录 ${t.label}",

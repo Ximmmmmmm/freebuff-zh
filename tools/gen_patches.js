@@ -55,10 +55,12 @@ function patchFor(relative, edits) {
     process.stderr.write(diff.stderr || '')
     process.exit(diff.status || 1)
   }
-  fs.writeFileSync(
-    path.join(outDir, `electron-${path.basename(relative)}.patch`),
-    diff.stdout.replace(/\r\n/g, '\n'),
-  )
+  const clean = diff.stdout
+    .replace(/\r\n/g, '\n')
+    // diff renders CRLF blank context lines as " \r\n"; strip the stray spaces so
+    // the generated patches are whitespace-clean (git diff --check must pass)
+    .replace(/[ \t]+\n/g, '\n')
+  fs.writeFileSync(path.join(outDir, `electron-${path.basename(relative)}.patch`), clean)
   console.log(`  wrote ${relative}`)
 }
 
