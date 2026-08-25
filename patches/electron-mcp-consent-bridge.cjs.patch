@@ -1,8 +1,6 @@
-diff --git a/electron/mcp-consent-bridge.cjs b/electron/mcp-consent-bridge.cjs
-index 3f94aaf..4598803 100644
 --- a/electron/mcp-consent-bridge.cjs
 +++ b/electron/mcp-consent-bridge.cjs
-@@ -89,20 +89,20 @@ const clamp = (value) => {
+@@ -89,20 +89,20 @@
  function describeLaunch(spec) {
    const lines = []
    if (spec && typeof spec.command === 'string') {
@@ -29,3 +27,21 @@ index 3f94aaf..4598803 100644
    }
    return lines.join('\n')
  }
+@@ -246,13 +246,13 @@
+             'Only continue if you recognise it.'
+         const choice = await confirm(parent, {
+           type: 'warning',
+-          buttons: ['Cancel', local ? 'Run it' : 'Connect'],
++          buttons: ['取消', local ? '运行' : '连接'],
+           defaultId: 0,
+           cancelId: 0,
+-          title: local ? 'Run this connector?' : 'Connect to this server?',
++          title: local ? '运行此连接器？' : '连接到此服务器？',
+           message: local
+-            ? `Run "${clamp(name)}" on this computer?`
+-            : `Let Freebuff connect to "${clamp(name)}"?`,
++            ? `在此计算机上运行“${clamp(name)}”？`
++            : `允许 Freebuff 连接到“${clamp(name)}”？`,
+           // `specText` and `explanation` are what our own window renders, kept apart so it never has
+           // to recover the boundary between them from a delimiter inside attacker-supplied text.
+           // `detail` is the same content joined, for the OS message box we fall back to.

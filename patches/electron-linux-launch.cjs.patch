@@ -1,37 +1,87 @@
-diff --git a/electron/linux-launch.cjs b/electron/linux-launch.cjs
-index f7338ba..e874fad 100644
 --- a/electron/linux-launch.cjs
 +++ b/electron/linux-launch.cjs
-@@ -237,7 +237,7 @@ function describeSandboxFailure(opts = {}) {
+@@ -82,8 +82,8 @@
+     blocked: '1',
+     reason: 'apparmor-userns-restricted',
+     detail:
+-      'This system restricts unprivileged user namespaces for unpackaged apps ' +
+-      '(kernel.apparmor_restrict_unprivileged_userns=1), which the Chromium sandbox requires.',
++      '此系统限制了未打包应用的非特权用户命名空间 ' +
++      '（kernel.apparmor_restrict_unprivileged_userns=1），而 Chromium 沙箱需要该功能。',
+     fix: 'sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0',
+   },
+   {
+@@ -92,8 +92,8 @@
+     blocked: '0',
+     reason: 'userns-clone-disabled',
+     detail:
+-      'This system disables unprivileged user namespaces ' +
+-      '(kernel.unprivileged_userns_clone=0), which the Chromium sandbox requires.',
++      '此系统禁用了非特权用户命名空间 ' +
++      '（kernel.unprivileged_userns_clone=0），而 Chromium 沙箱需要该功能。',
+     fix: 'sudo sysctl -w kernel.unprivileged_userns_clone=1',
+   },
+   {
+@@ -102,8 +102,8 @@
+     blocked: '0',
+     reason: 'max-user-namespaces-zero',
+     detail:
+-      'This system allows no user namespaces (user.max_user_namespaces=0), ' +
+-      'which the Chromium sandbox requires.',
++      '此系统不允许创建用户命名空间（user.max_user_namespaces=0），' +
++      '而 Chromium 沙箱需要该功能。',
+     fix: 'sudo sysctl -w user.max_user_namespaces=15000',
+   },
+ ]
+@@ -237,11 +237,11 @@
      // cause is elsewhere (graphics stack, missing system libraries). Do not send
      // them down the sandbox path a second time.
      return {
 -      message: 'Freebuff could not start a required subprocess.',
 +      message: 'Freebuff 无法启动所需的子进程。',
        detail:
-         'Freebuff is already running without the Chromium sandbox, so this is likely a graphics ' +
-         'or system library problem rather than the sandbox.\n\n' +
-@@ -254,7 +254,7 @@ function describeSandboxFailure(opts = {}) {
+-        'Freebuff is already running without the Chromium sandbox, so this is likely a graphics ' +
+-        'or system library problem rather than the sandbox.\n\n' +
+-        'Launch from a terminal to see the underlying error:\n' +
++        'Freebuff 已在无 Chromium 沙箱的情况下运行，因此这更可能是图形或系统库问题，而非沙箱问题。' +
++        '\n\n' +
++        '从终端启动以查看底层错误：\n' +
+         '  ./Freebuff.AppImage --disable-gpu',
+       canRetryWithoutSandbox: false,
+     }
+@@ -254,11 +254,11 @@
      // isolation to fix something else entirely. That is the over-firing direction
      // this module is most careful about; it must not sneak back in via the dialog.
      return {
 -      message: 'Freebuff could not start a required subprocess.',
 +      message: 'Freebuff 无法启动所需的子进程。',
        detail:
-         'A required Chromium subprocess failed to launch. The Chromium sandbox is available on ' +
-         'this system, so the cause is more likely the graphics stack or a missing system library.\n\n' +
-@@ -268,7 +268,7 @@ function describeSandboxFailure(opts = {}) {
+-        'A required Chromium subprocess failed to launch. The Chromium sandbox is available on ' +
+-        'this system, so the cause is more likely the graphics stack or a missing system library.\n\n' +
+-        'Launch from a terminal to see the underlying error:\n' +
++        '所需的 Chromium 子进程启动失败。此系统上可以使用 Chromium 沙箱，因此原因更可能是图形栈或缺少系统库。' +
++        '\n\n' +
++        '从终端启动以查看底层错误：\n' +
+         '  ./Freebuff.AppImage --disable-gpu',
+       canRetryWithoutSandbox: false,
+     }
+@@ -268,25 +268,25 @@
      // gone. Offering the button here would exit into nothing and the app would
      // disappear mid-click, so explain and hand over the manual command instead.
      return {
 -      message: 'Freebuff could not start a required subprocess.',
 +      message: 'Freebuff 无法启动所需的子进程。',
        detail:
-         `${sandbox?.detail ?? 'The Chromium sandbox could not start on this system.'}\n\n` +
-         'Freebuff would normally restart itself without the sandbox, but the application file ' +
-@@ -276,17 +276,17 @@ function describeSandboxFailure(opts = {}) {
-         'may have been interrupted.\n\n' +
-         'Re-download Freebuff, or start it yourself with:\n' +
+-        `${sandbox?.detail ?? 'The Chromium sandbox could not start on this system.'}\n\n` +
+-        'Freebuff would normally restart itself without the sandbox, but the application file ' +
+-        'it needs to restart from is missing — it may have been moved or deleted, or an update ' +
+-        'may have been interrupted.\n\n' +
+-        'Re-download Freebuff, or start it yourself with:\n' +
++        `${sandbox?.detail ?? '此系统上的 Chromium 沙箱无法启动。'}\n\n` +
++        'Freebuff 通常会在无沙箱的情况下自行重启，但用来重启的应用程序文件' +
++        '已缺失——可能已被移动或删除，或者更新' +
++        '可能已被中断。\n\n' +
++        '请重新下载 Freebuff，或自行通过以下命令启动：\n' +
          '  ./Freebuff.AppImage --no-sandbox' +
 -        (sandbox?.fix ? `\n\nTo fix this system-wide and keep the sandbox:\n  ${sandbox.fix}` : ''),
 +        (sandbox?.fix ? `\n\n要在系统范围内修复并保留沙箱：\n  ${sandbox.fix}` : ''),
@@ -42,10 +92,13 @@ index f7338ba..e874fad 100644
 -    message: 'Freebuff could not start a required subprocess.',
 +    message: 'Freebuff 无法启动所需的子进程。',
      detail:
-       `${sandbox?.detail ?? 'The Chromium sandbox could not start on this system.'}\n\n` +
-       'Freebuff can restart with the sandbox disabled. That weakens isolation for web content ' +
-       'shown in preview panes, so only do it on a machine you trust.' +
+-      `${sandbox?.detail ?? 'The Chromium sandbox could not start on this system.'}\n\n` +
+-      'Freebuff can restart with the sandbox disabled. That weakens isolation for web content ' +
+-      'shown in preview panes, so only do it on a machine you trust.' +
 -      (sandbox?.fix ? `\n\nTo fix this system-wide and keep the sandbox:\n  ${sandbox.fix}` : ''),
++      `${sandbox?.detail ?? '此系统上的 Chromium 沙箱无法启动。'}\n\n` +
++      'Freebuff 可以在禁用沙箱的情况下重启。这会削弱预览面板中网页内容的隔离性，因此请仅在受信任的机器上执行此操作。' +
++      '' +
 +      (sandbox?.fix ? `\n\n要在系统范围内修复并保留沙箱：\n  ${sandbox.fix}` : ''),
      canRetryWithoutSandbox: true,
    }

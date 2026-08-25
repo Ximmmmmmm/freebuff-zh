@@ -726,7 +726,20 @@
     "That is not valid JSON.": "这不是有效的 JSON。",
     ", unsaved changes": "，有未保存的更改",
     ", then reload.": "，然后重新加载。",
-    " Usage dashboard": " 用量面板"
+    " Usage dashboard": " 用量面板",
+    "New space": "新空间",
+    "Close space": "关闭空间",
+    "Closed tabs": "已关闭的标签页",
+    "Search closed tabs": "搜索已关闭的标签页",
+    "Go to tab →": "转到标签页 →",
+    "Loading Freebuff": "正在加载 Freebuff",
+    "New space in": "在此新建空间",
+    "Open project…": "打开项目…",
+    "Recently edited": "最近编辑",
+    "Rename…": "重命名…",
+    "Resize thread list": "调整会话列表大小",
+    "Safe only": "仅安全工具",
+    "Use folder name": "使用文件夹名称"
   },
   "code": {
     "t.length,\" step\",t.length===1?\"\":\"s\"": "t.length,\" 步\",t.length===1?\"\":\"\"",

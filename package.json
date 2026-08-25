@@ -1,5 +1,8 @@
 {
-  "name": "freebuff-hanhua",
+  "name": "freebuff-zh",
+  "description": "Freebuff Desktop 简体中文汉化包 / Chinese localization pack for the free AI coding agent",
   "private": true,
-  "type": "commonjs"
+  "type": "commonjs",
+  "keywords": ["freebuff", "localization", "chinese", "hanhua", "translation", "electron", "zh-cn"],
+  "author": "Ximmmmmmm"
 }

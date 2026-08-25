@@ -1,19 +1,25 @@
-diff --git a/electron/consent-window.html b/electron/consent-window.html
-index 4502857..91fd282 100644
 --- a/electron/consent-window.html
 +++ b/electron/consent-window.html
-@@ -51,7 +51,7 @@
+@@ -51,13 +51,13 @@
    button:focus-visible { outline: 2px solid var(--warn); outline-offset: 2px; }
  </style>
- 
+
 -<h1><span class="mark">▲</span> <span id="title">Approve this connector?</span></h1>
 +<h1><span class="mark">▲</span> <span id="title">批准此连接器？</span></h1>
  <p id="message"></p>
  <pre id="spec"></pre>
  <p id="detail"></p>
+ <div class="foot">
+-  <button id="no" type="button">Cancel</button>
+-  <button id="yes" type="button" class="go">Approve</button>
++  <button id="no" type="button">取消</button>
++  <button id="yes" type="button" class="go">批准</button>
+ </div>
+
+ <script>
 @@ -66,8 +66,8 @@
    const el = (id) => document.getElementById(id)
- 
+
    window.consent.ready((options) => {
 -    const [, go] = options.buttons || ['Cancel', 'Approve']
 -    el('title').textContent = options.title || 'Approve this connector?'
