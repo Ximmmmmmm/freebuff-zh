@@ -1,5 +1,26 @@
 # 更新日志
 
+## [0.0.75] · 2026-08-26
+
+- **适配 v0.0.75**：应用自动更新至 0.0.75（渲染 bundle：`index-CjfQSmUP.js` → `index-BiJnMND3.js`）
+  - 主进程五个补丁重新验证，全部干净套用，菜单 / 对话框 / 同意窗口中文化不受影响
+- **v0.0.75 产品改动**：归档 / 置顶（archive / pin）、便签（notes）、工作摘要（work summaries）、
+  首页线程目录（thread catalog / home）、更新计划设置等一批界面被移除或重写，对应约 87 条
+exact、54 条 template 词典条目随之移除（git 历史可找回）
+- **补翻 v0.0.75 新增/改写文案**：
+  - 新更新弹窗（`Freebuff X is available`、`Install now for the quickest update…`、
+    `Checking for updates`、`Downloading Freebuff X`）、登录第二步拆分
+    （Claude Pro 套餐 / Codex + API key）、Spaces / None 标签
+  - 标签页 aria（`Go to the tab using the … slot`、`premium model`、`needs attention`）、
+    会话配额/推荐文案（`left today`、`resets in`、`/day from referrals`、GLM 5.2 promo）
+  - 技能搜索（`Search skills to add…`）、连接器搜索、评论（`My comments on specific lines…`）、
+    队列（`queued item` 复数）、代码评论复数片段
+- **词典随 minifier 重命名更新**：约 30 条 template 的变量名随新构建重排（如
+  `${Op(t)}`→`${kp(t)}`、`${je}`→`${Qt}`、`${Xi(t)}`→`${Nn(t)}`、`${no($)}`→`${ro(Q)}` 等），
+  已逐一核对 bundle 原文后更新
+- 词典更新为 exact 666 / template 77 / code 4 / pattern 3（UI bundle 替换 891 处，**全词典命中**）
+- 已使用 v0.0.75 原版 `app.asar` 与 `orchestrator/ui` 资源完成构建验证
+
 ## [0.0.74] · 2026-08-25
 
 - **适配 v0.0.74**：应用更新至 0.0.74，安装目录改为 `@codebufffreebuff-desktop`
