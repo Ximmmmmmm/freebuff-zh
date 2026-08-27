@@ -5,7 +5,8 @@
 const fs = require('fs')
 const path = require('path')
 
-const file = process.argv[2]  const candFile = process.argv[3] || path.join(__dirname, '..', 'work', 'candidates.tsv')
+const file = process.argv[2]
+const candFile = process.argv[3] || path.join(__dirname, '..', 'work', 'candidates.tsv')
 const src = fs.readFileSync(file, 'utf8')
 const lines = fs.readFileSync(candFile, 'utf8').split(/\r?\n/).filter(Boolean)
 

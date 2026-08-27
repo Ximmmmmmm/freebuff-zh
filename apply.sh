@@ -21,10 +21,16 @@ fi
 
 TS="$(date +%Y%m%d-%H%M%S)"
 BK="${INSTALL}/resources/hanhua-backup-${TS}"
-mkdir -p "${BK}"
-cp "${INSTALL}/resources/app.asar" "${BK}/app.asar"
-cp -r "${INSTALL}/resources/orchestrator/ui" "${BK}/ui"
-echo "Backed up current files to: ${BK}"
+# 备份链必须保持英文原版——build.sh / remap 的回归测试都拿最新备份当 pristine。
+# 装机已是汉化版时不再重复备份，否则汉化产物会被当成"原版"污染备份链。
+if grep -q '<html lang="zh-CN">' "${INSTALL}/resources/orchestrator/ui/index.html" 2>/dev/null; then
+  echo "当前装机已是汉化版，跳过备份（保留既有英文原版备份，避免污染备份链）。"
+else
+  mkdir -p "${BK}"
+  cp "${INSTALL}/resources/app.asar" "${BK}/app.asar"
+  cp -r "${INSTALL}/resources/orchestrator/ui" "${BK}/ui"
+  echo "Backed up current files to: ${BK}"
+fi
 
 cp "${OUT}/app.asar" "${INSTALL}/resources/app.asar"
 # 覆盖式更新，避免在应用运行中删除整目录被占用（device busy）

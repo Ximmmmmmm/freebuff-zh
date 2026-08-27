@@ -1,0 +1,26 @@
+# 词典与工具链质量门禁。
+# 只跑不依赖专有产物（app.asar / ui 资源）的检查，完整构建仍在本地进行。
+name: lint
+
+on:
+  push:
+    paths: ['dict.json', 'tools/**', '.github/workflows/**']
+  pull_request:
+    paths: ['dict.json', 'tools/**', '.github/workflows/**']
+  workflow_dispatch:
+
+jobs:
+  dict-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: 词典 lint（结构 / 重复键 / 占位符一致性）
+        run: node tools/lint_dict.js
+      - name: 工具脚本语法冒烟
+        run: |
+          for f in tools/*.js; do
+            node --check "$f"
+          done

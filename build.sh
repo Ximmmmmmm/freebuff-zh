@@ -52,11 +52,24 @@ npx -y @electron/asar extract "${PRISTINE_ASAR}" "${WORK}/main"
 
 echo "== 2/4 套用翻译词典 (dict.json) =="
 for f in "${WORK}/main/electron/"*.cjs "${WORK}/main/electron/"*.html "${WORK}/main/package.json"; do
-  node "${HERE}/tools/apply.js" "$f" --write
+  node "${HERE}/tools/apply.js" "$f" --write --quiet
 done
 
 echo "== 3/4 套用人工补丁 (patches/) =="
-(cd "${WORK}/main" && for p in "${HERE}"/patches/electron-*.patch; do git apply -p1 "$p"; done)
+(cd "${WORK}/main" && for p in "${HERE}"/patches/electron-*.patch; do
+  if ! git apply -p1 "$p"; then
+    echo "ERROR: 补丁未干净套用：$(basename "$p")（原版文件与补丁预期不符？需重新 gen_patches）" >&2
+    exit 1
+  fi
+done)
+
+echo "== 语法校验补丁后的主进程文件 =="
+for f in "${WORK}/main/electron/"*.cjs; do
+  if ! node --check "$f"; then
+    echo "ERROR: 主进程文件存在语法错误：$(basename "$f") —— 补丁悬空模板等会引发 v0.0.72 式启动崩溃，已中止构建" >&2
+    exit 1
+  fi
+done
 
 echo "== 4/4 重打包 asar 并处理 ui =="
 mkdir -p "${HERE}/output"
@@ -74,13 +87,25 @@ if [ -n "${PRISTINE_UI}" ]; then
   # are internal identifiers and must stay English.
   MAIN_BUNDLE="$(sed -n 's/.*src="\.\/\(assets\/[^"]*\.js\)".*/\1/p' "${HERE}/output/ui/index.html" | head -1)"
   if [ -n "${MAIN_BUNDLE}" ] && [ -f "${HERE}/output/ui/${MAIN_BUNDLE}" ]; then
-    node "${HERE}/tools/apply.js" "${HERE}/output/ui/${MAIN_BUNDLE}" --write
+    APPLY_LOG="$(node "${HERE}/tools/apply.js" "${HERE}/output/ui/${MAIN_BUNDLE}" --write)"
+    printf '%s\n' "${APPLY_LOG}"
+    REPLACED="$(printf '%s' "${APPLY_LOG}" | sed -n 's/^replaced \([0-9][0-9]*\) occurrences.*/\1/p')"
+    if [ -z "${REPLACED}" ] || [ "${REPLACED}" -eq 0 ]; then
+      echo "ERROR: 词典对主 bundle 的替换次数为 0 —— 词典应用未生效（v0.0.70 式静默失败），已中止构建" >&2
+      exit 1
+    fi
   else
     echo "  ! 未在 index.html 中找到主 bundle，跳过词典应用" >&2
   fi
 else
   echo "  (no ui dir given — skipping ui)"
 fi
+
+echo
+node "${HERE}/tools/postbuild.js" "${HERE}/output" --main-src "${WORK}/main" || {
+  echo "ERROR: 构建产物自检未通过，output/ 不可靠。请勿安装。" >&2
+  exit 1
+}
 
 echo
 echo "完成：output/app.asar 与 output/ui/ 已生成。"

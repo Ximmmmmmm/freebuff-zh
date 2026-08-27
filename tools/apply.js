@@ -12,6 +12,9 @@ const path = require('path')
 
 const file = process.argv[2]
 const write = process.argv.includes('--write')
+// --quiet: 只报替换计数与 MISSED 条数，不逐条列出（用于主进程小文件，避免噪音淹没
+// UI bundle 的 MISSED 详单——那才是待补翻清单）
+const quiet = process.argv.includes('--quiet')
 if (!file) {
   console.error('usage: node apply.js <file> [--write]')
   process.exit(1)
@@ -98,8 +101,12 @@ for (const [en, zh] of Object.entries(dict.template)) {
 const diffLen = src.length - before.length
 console.log(`replaced ${totalReplaced} occurrences (bundle size ${before.length} -> ${src.length}, ${diffLen >= 0 ? '+' : ''}${diffLen} bytes)`)
 if (missed.length) {
-  console.log(`MISSED (${missed.length} keys, no exact match):`)
-  for (const m of missed) console.log(`  - ${JSON.stringify(m)}`)
+  if (quiet) {
+    console.log(`missed ${missed.length} keys (详情见 UI bundle 构建日志)`)
+  } else {
+    console.log(`MISSED (${missed.length} keys, no exact match):`)
+    for (const m of missed) console.log(`  - ${JSON.stringify(m)}`)
+  }
 } else {
   console.log('all keys matched')
 }

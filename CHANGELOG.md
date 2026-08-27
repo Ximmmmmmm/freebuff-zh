@@ -1,5 +1,25 @@
 # 更新日志
 
+## 工具链 · 2026-08-27
+
+- **版本迁移自动化**：新增 `tools/update.sh` 一键流水线（重映射 → 构建 → 残留扫描 → 待办汇总）。
+  其中 `tools/remap.js` 按**英文锚文本**在新 bundle 上定位 template 词典条目，自动迁移
+  `${...}` 插值表达式的 minifier 改名，RENAMED/AMBIGUOUS/MISSING 分类报告、写回前逐条自证
+  逐字节命中。用 0.0.75 词典对 0.0.76 原版 bundle 回归验证：13 条改名全量命中，与当时手工
+  核对结果一一对应（`Mq→Dq`、`Nn→On`、`OO→vO`、`Jye→t_e`、`WQ→UQ`…）
+- **构建防呆自检**（针对 0.0.70 补丁静默跳过、0.0.72 悬空模板崩溃两类历史事故）：
+  - `build.sh` 补丁套用失败即中止；补丁后主进程 `node --check`；
+    UI bundle 词典替换次数为 0 即中止
+  - 新增 `tools/postbuild.js`：断言 `ui/index.html` 汉化标记、主 bundle 词典覆盖率、
+    主进程译文哨兵与语法，任一不过构建即失败（已做三项负向测试验证拦截有效）
+- **词典质量门禁**：新增 `tools/lint_dict.js`（结构 / 重复键 / `${...}` 占位符一致性 /
+  空译文 / pattern 纯字面量校验；表达式内字符串字面量可翻译，按骨架比较放行），
+  接入 GitHub Actions（只跑不依赖专有文件的检查 + 工具脚本语法冒烟，
+  顺带抓出并修复 `audit.js` 第 8 行两条语句挤一行的存量语法错误）
+- **小工具**：`tools/status.sh`（装机 vs output vs 备份状态一览与建议）、
+  `tools/prune_backups.sh`（清理累积备份，默认保留 3 份，`--yes` 才删）
+- `tools/apply.js` 新增 `--quiet`（主进程小文件静音 MISSED 明细，突出 UI bundle 待补翻清单）
+
 ## [0.0.76] · 2026-08-27
 
 - **适配 v0.0.76**：应用自动更新至 0.0.76（渲染 bundle：`index-BiJnMND3.js` → `index-C7M7l-Im.js`）

@@ -5,6 +5,7 @@
 ![GitHub Repo stars](https://img.shields.io/github/stars/Ximmmmmmm/freebuff-zh?style=social)
 ![GitHub forks](https://img.shields.io/github/forks/Ximmmmmmm/freebuff-zh?style=social)
 [![Target](https://img.shields.io/badge/目标-Freebuff%20Desktop%20v0.0.76-blue)](https://freebuff.com)
+[![lint](https://github.com/Ximmmmmmm/freebuff-zh/actions/workflows/ci.yml/badge.svg)](https://github.com/Ximmmmmmm/freebuff-zh/actions/workflows/ci.yml)
 
 **中文关键词 / Keywords**: Freebuff 汉化、Freebuff 中文版、Freebuff Chinese localization、AI coding agent 中文、Freebuff 翻译、Electron 汉化、localization pack
 
@@ -19,6 +20,14 @@ Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.76）的**简体中文汉�
 - **可复现构建**：`build.sh` 从原版 + 词典 + 补丁**逐字节重建**汉化产物（已对 v0.0.76 验证）
 - **一键安装/还原**：`apply.sh` / `restore.sh`，自动备份，随时回退英文原版
 - **工具链完整**：`tools/` 提供提取、翻译、核查、残留扫描等脚本，便于随版本更新补翻
+- **版本迁移自动化**：`tools/update.sh` 一键串起重映射 → 构建 → 残留扫描。其中
+  `tools/remap.js` 自动把 template 词典条目的 `${...}` 变量名迁移到新 bundle
+  （对 v0.0.75→v0.0.76 的 13 条改名全量命中验证），不再逐条手工核对
+- **构建防呆自检**：`build.sh` 会对补丁后的主进程做 `node --check`、词典替换次数为 0 即中止，
+  构建后由 `tools/postbuild.js` 断言 `ui/index.html` 汉化标记与译文哨兵——杜绝历史上出现过的
+  「补丁静默跳过」「悬空模板启动崩溃」两类事故
+- **词典质量门禁**：`tools/lint_dict.js` 校验结构与 `${...}` 占位符一致性、查重复键，
+  已接入 GitHub Actions（只跑不依赖专有文件的检查）
 
 ## 📦 快速开始（安装）
 
@@ -73,9 +82,15 @@ bash build.sh <app.asar> <ui-dir>   # 或显式指定原版文件
 ├── dict.json          # 翻译词典（exact / template / code / pattern 四类）
 ├── patches/           # 人工补丁：词典覆盖不到的手工修改（index.html、主进程 5 个文件）
 ├── tools/             # 提取/翻译/核查脚本（见 docs/汉化流程.md）
+│   ├── update.sh      # 一键版本迁移：重映射 → 构建 → 残留扫描 → 待办汇总
+│   ├── remap.js       # template 词典条目随 minifier 改名自动迁移
+│   ├── postbuild.js   # 构建产物自检（index.html 标记 / 主进程语法与译文哨兵）
+│   ├── lint_dict.js   # 词典质量门禁（结构 / 重复键 / 占位符一致性）
+│   ├── status.sh      # 装机 vs 构建 vs 备份状态一览
+│   ├── prune_backups.sh # 清理累积的 hanhua-backup-*（保留最近 N 份）
 │   ├── gen_patches.js # 从原版自动生成主进程补丁（Unicode 转义避免编码问题）
 │   └── apply_ui_patch.js # 直接替换 UI index.html 翻译（替代 git apply）
-├── build.sh           # 可复现构建：原版 + 词典 + 补丁 → output/
+├── build.sh           # 可复现构建：原版 + 词典 + 补丁 → output/（含防呆自检）
 ├── apply.sh           # 安装汉化到应用（自动备份）
 ├── restore.sh         # 从备份还原英文原版
 ├── docs/              # 汉化流程 / 更新维护说明
