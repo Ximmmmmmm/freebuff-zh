@@ -1,5 +1,21 @@
 # 更新日志
 
+## [0.0.76] · 2026-08-27
+
+- **适配 v0.0.76**：应用自动更新至 0.0.76（渲染 bundle：`index-BiJnMND3.js` → `index-C7M7l-Im.js`）
+  - 主进程五个补丁重新验证，全部干净套用，菜单 / 对话框 / 同意窗口中文化不受影响；
+    主进程扫描复核无新增残留
+- **词典随 minifier 重命名更新**：13 条 template 的变量名随新构建重排（如
+  `${Mq(t.cost,e)}`→`${Dq(t.cost,e)}`、`${Nn(…)}`→`${On(…)}`、`${OO}`→`${vO}`、`${Jye}`→`${t_e}`、
+  `${WQ(re)}`→`${UQ(re)}` 等），已逐一核对 bundle 原文后更新，译文不变
+- **补翻 v0.0.76 新增/暴露文案**（4 条 pattern）：空间菜单「定位文件夹…」（Locate folder…）、
+  空间卡片按钮「关闭此空间」（Close this space）、状态胶囊 label：disabled → 已禁用、failed → 失败
+  （均仅命中 `label:`/`children:` 属性位置，不会影响 `phase==="failed"` 等内部状态比较）
+- 有意保留英文的复查结论不变：编辑器名（Terminal/Cursor…）、模型名（Opus/Sonnet/GPT-5.6…）、
+  内部 API 报错（cdp/mcp-consent bridge message）、库内部错误与语法高亮语法名
+- 词典更新为 exact 666 / template 77 / code 4 / pattern 7（UI bundle 替换 896 处，**全词典命中**）
+- 已使用 v0.0.76 原版 `app.asar` 与 `orchestrator/ui` 资源完成构建验证
+
 ## [0.0.75] · 2026-08-26
 
 - **适配 v0.0.75**：应用自动更新至 0.0.75（渲染 bundle：`index-CjfQSmUP.js` → `index-BiJnMND3.js`）
