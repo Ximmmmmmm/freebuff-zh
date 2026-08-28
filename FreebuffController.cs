@@ -95,6 +95,8 @@ namespace FreebuffController
         private static readonly Regex EmailRegex = new Regex("\"email\"\\s*:\\s*\"([^\"]+)\"");
         private static readonly Regex FeedUrlRegex = new Regex("(?m)^\\s*url:\\s*(\\S+)");
         private static readonly Regex YamlVersionRegex = new Regex("(?m)^\\s*version:\\s*'?([^'\"\\r\\n]+)");
+        private static readonly Regex YamlPathRegex = new Regex("(?m)^\\s*path:\\s*(\\S+)");
+        private static readonly Regex YamlShaRegex = new Regex("(?m)^\\s*sha512:\\s*(\\S+)");
         private static readonly Regex LooseVersionRegex = new Regex("(\\d+)\\.(\\d+)(?:\\.(\\d+))?");
 
         // palette
@@ -115,6 +117,7 @@ namespace FreebuffController
         private DataGridView grid;
         private RadioButton rbFresh;
         private RadioButton rbCopy;
+        private ComboBox copySource;
         private NotifyIcon tray;
         private Label statusLabel;
         private System.Windows.Forms.Timer statusRevertTimer;
@@ -132,12 +135,19 @@ namespace FreebuffController
             "https://freebuff.com/api/desktop/updates/win-x64/latest.yml";
         private const string ReleasesPageUrl =
             "https://github.com/CodebuffAI/codebuff-community/releases/latest";
+        // The same endpoint the freebuff.com download button uses; always
+        // redirects to the newest installer.
+        private const string OfficialDownloadUrl =
+            "https://freebuff.com/api/desktop/download/windows";
         private static readonly Color ColNewVersion = Color.FromArgb(245, 185, 66);
 
         private Label versionLink;
         private string installedVersion;
         private string latestVersion; // null until a check succeeds; null also = failed
         private int versionCheckBusy;
+        private int updateBusy;      // 1 while an installer download is running
+        private bool updateStarted;  // installer was downloaded and launched
+        private bool updateFailed;   // last download failed; next click opens the page
 
         [DllImport("dwmapi.dll")]
         private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int value, int size);
@@ -366,7 +376,7 @@ namespace FreebuffController
 
             rbFresh = new RadioButton();
             rbFresh.Text = "全新登录（每个窗口可登录不同账号）";
-            rbFresh.Bounds = new Rectangle(16, 26, 330, 20);
+            rbFresh.Bounds = new Rectangle(16, 26, 252, 20);
             rbFresh.ForeColor = ColText;
             rbFresh.BackColor = ColPanel;
             rbFresh.AutoSize = false;
@@ -374,12 +384,27 @@ namespace FreebuffController
             panel.Controls.Add(rbFresh);
 
             rbCopy = new RadioButton();
-            rbCopy.Text = "复制主实例账号";
-            rbCopy.Bounds = new Rectangle(370, 26, 160, 20);
+            rbCopy.Text = "复制账号";
+            rbCopy.Bounds = new Rectangle(274, 26, 84, 20);
             rbCopy.ForeColor = ColText;
             rbCopy.BackColor = ColPanel;
             rbCopy.AutoSize = false;
             panel.Controls.Add(rbCopy);
+
+            // Account source for rbCopy: any initialized instance, not just
+            // the main one.
+            copySource = new ComboBox();
+            copySource.DropDownStyle = ComboBoxStyle.DropDownList;
+            copySource.Bounds = new Rectangle(362, 23, 162, 24);
+            copySource.BackColor = ColNeutral;
+            copySource.ForeColor = ColText;
+            copySource.Font = new Font("Microsoft YaHei UI", 9f);
+            copySource.Items.Add("主实例");
+            for (int i = 1; i <= MaxSlot; i++) copySource.Items.Add("实例 " + i);
+            copySource.SelectedIndex = 0;
+            copySource.Enabled = false;
+            rbCopy.CheckedChanged += delegate { copySource.Enabled = rbCopy.Checked; };
+            panel.Controls.Add(copySource);
 
             Controls.Add(panel);
         }
@@ -764,9 +789,9 @@ namespace FreebuffController
                         if (IsDisposed) return;
                         latestVersion = latest;
                         ApplyVersionUi(false);
-                        if (UpdateAvailable())
+                        if (UpdateAvailable() && !updateStarted)
                             SetStatus("Freebuff 发布了新版本 v" + latestVersion +
-                                "，点击右下角“点击更新”下载。");
+                                "，点击右下角“点击更新”直接下载安装。");
                     });
                 }
                 catch { }
@@ -776,10 +801,24 @@ namespace FreebuffController
         private void ApplyVersionUi(bool checking)
         {
             if (versionLink == null) return;
+            // While a download runs its worker owns the label.
+            if (Interlocked.CompareExchange(ref updateBusy, 0, 0) == 1) return;
             if (checking)
             {
                 versionLink.Text = "检查更新中…";
                 versionLink.ForeColor = ColSub;
+                return;
+            }
+            if (updateStarted)
+            {
+                versionLink.Text = "安装包已启动 · 按提示完成安装";
+                versionLink.ForeColor = ColSub;
+                return;
+            }
+            if (updateFailed)
+            {
+                versionLink.Text = "下载失败 · 再点打开下载页";
+                versionLink.ForeColor = ColNewVersion;
                 return;
             }
             if (UpdateAvailable())
@@ -800,16 +839,236 @@ namespace FreebuffController
             versionLink.ForeColor = ColSub;
         }
 
-        // With a newer release known the click opens the download page;
-        // otherwise it (re)runs the check.
+        private void UiSafe(MethodInvoker action)
+        {
+            if (IsDisposed || !IsHandleCreated) return;
+            try { BeginInvoke(action); } catch { }
+        }
+
+        // Click behavior by state: installing -> explain; download previously
+        // failed -> fall back to the browser download page; newer release
+        // known -> start the download; otherwise -> (re)run the check.
         private void OnVersionLinkClick()
         {
+            if (updateStarted)
+            {
+                Info("安装包已启动，请按安装程序的提示完成更新。\r\n" +
+                    "若提示 Freebuff 正在运行，请先在列表里“停止全部”。");
+                return;
+            }
+            if (updateFailed)
+            {
+                updateFailed = false;
+                try { Process.Start(ReleasesPageUrl); } catch { }
+                ApplyVersionUi(false);
+                return;
+            }
             if (UpdateAvailable())
             {
-                try { Process.Start(ReleasesPageUrl); } catch { }
+                StartUpdateDownload();
                 return;
             }
             CheckVersionAsync();
+        }
+
+        // Downloads the installer from the same feed the official updater
+        // uses, verifies its SHA512 against latest.yml, then runs it. GitHub
+        // must be reachable for the big file itself; if anything fails the
+        // link falls back to opening the release page.
+        private void StartUpdateDownload()
+        {
+            if (Interlocked.CompareExchange(ref updateBusy, 1, 0) != 0) return;
+            versionLink.Text = "准备下载…";
+            versionLink.ForeColor = ColNewVersion;
+            SetStatus("正在下载 Freebuff v" + latestVersion + " 安装包…");
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                Exception error = null;
+                try
+                {
+                    // latest.yml gives the exact file name + SHA512. If it
+                    // can't be fetched we still try the official download
+                    // link, just without hash verification.
+                    string file = "Freebuff-setup.exe";
+                    string shaB64 = null;
+                    string derivedUrl = null;
+                    string yml = FetchYamlBody(ReadUpdateFeedUrl());
+                    if (yml != null)
+                    {
+                        Match pm = YamlPathRegex.Match(yml);
+                        if (pm.Success)
+                        {
+                            file = pm.Groups[1].Value.Trim();
+                            derivedUrl = FeedBase() + "/" + file;
+                        }
+                        Match sm = YamlShaRegex.Match(yml);
+                        if (sm.Success) shaB64 = sm.Groups[1].Value.Trim();
+                    }
+                    string dest = Path.Combine(Path.GetTempPath(), file);
+                    var candidates = new List<string>();
+                    candidates.Add(OfficialDownloadUrl);
+                    if (derivedUrl != null) candidates.Add(derivedUrl);
+                    DownloadFirstAvailable(candidates, dest, shaB64,
+                        delegate(long done, long total)
+                        {
+                            long d = done, t = total;
+                            UiSafe(delegate
+                            {
+                                if (versionLink == null || IsDisposed) return;
+                                versionLink.Text = t > 0
+                                    ? ("下载中 " + (d * 100 / t) + "%")
+                                    : ("已下载 " + (d >> 20) + " MB");
+                            });
+                        });
+                    try { Process.Start(dest); }
+                    catch (Exception launchEx)
+                    {
+                        throw new ApplicationException("安装包已下载但无法启动：" + launchEx.Message);
+                    }
+                }
+                catch (Exception ex) { error = ex; }
+                Interlocked.Exchange(ref updateBusy, 0);
+
+                if (error == null)
+                {
+                    UiSafe(delegate
+                    {
+                        if (IsDisposed) return;
+                        updateStarted = true;
+                        ApplyVersionUi(false);
+                        SetStatus("Freebuff 安装包已下载并启动，按提示完成安装。" +
+                            "若提示 Freebuff 正在运行，请先“停止全部”。");
+                    });
+                }
+                else
+                {
+                    UiSafe(delegate
+                    {
+                        if (IsDisposed) return;
+                        updateFailed = true;
+                        ApplyVersionUi(false);
+                        SetStatus("下载更新失败：" + error.Message);
+                    });
+                }
+            });
+        }
+
+        // Full latest.yml body; follows the feed's redirect to GitHub, which
+        // is fine here because the installer itself lives on GitHub anyway.
+        // Machines with a half-working system proxy often fail exactly on
+        // the GitHub hop, so the second attempt bypasses the proxy.
+        private static string FetchYamlBody(string url)
+        {
+            for (int attempt = 0; attempt < 2; attempt++)
+            {
+                try
+                {
+                    ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
+                    var req = (HttpWebRequest)WebRequest.Create(url);
+                    req.Method = "GET";
+                    req.AllowAutoRedirect = true;
+                    req.Timeout = 15000;
+                    req.ReadWriteTimeout = 15000;
+                    req.UserAgent = "FreebuffMultiOpenController/1.0";
+                    if (attempt == 1) req.Proxy = null;
+                    using (var resp = (HttpWebResponse)req.GetResponse())
+                    using (var sr = new StreamReader(resp.GetResponseStream()))
+                    {
+                        return sr.ReadToEnd();
+                    }
+                }
+                catch { }
+            }
+            return null;
+        }
+
+        private static string FeedBase()
+        {
+            string feed = ReadUpdateFeedUrl();
+            return feed.EndsWith("/latest.yml")
+                ? feed.Substring(0, feed.Length - "/latest.yml".Length)
+                : feed;
+        }
+
+        // Tries every candidate URL, each first through the system proxy and
+        // then direct: whichever path the machine needs for GitHub, one of
+        // them gets through.
+        private static void DownloadFirstAvailable(IList<string> urls, string dest,
+                                                   string shaB64, Action<long, long> progress)
+        {
+            Exception last = null;
+            foreach (string url in urls)
+            {
+                for (int attempt = 0; attempt < 2; attempt++)
+                {
+                    try
+                    {
+                        DownloadOnce(url, dest, shaB64, progress, attempt == 1);
+                        return;
+                    }
+                    catch (Exception ex) { last = ex; }
+                }
+            }
+            throw last;
+        }
+
+        private static void DownloadOnce(string url, string dest, string shaB64,
+                                         Action<long, long> progress, bool direct)
+        {
+            ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
+            var req = (HttpWebRequest)WebRequest.Create(url);
+            req.Method = "GET";
+            req.AllowAutoRedirect = true;
+            req.Timeout = 30000;
+            req.ReadWriteTimeout = 30000;
+            req.UserAgent = "FreebuffMultiOpenController/1.0";
+            if (direct) req.Proxy = null;
+            using (var resp = (HttpWebResponse)req.GetResponse())
+            using (var rs = resp.GetResponseStream())
+            using (var fs = new FileStream(dest, FileMode.Create, FileAccess.Write))
+            {
+                long total = resp.ContentLength;
+                long done = 0;
+                var buf = new byte[65536];
+                var sha = System.Security.Cryptography.SHA512.Create();
+                byte[] got;
+                try
+                {
+                    DateTime lastUi = DateTime.MinValue;
+                    int n;
+                    while ((n = rs.Read(buf, 0, buf.Length)) > 0)
+                    {
+                        fs.Write(buf, 0, n);
+                        sha.TransformBlock(buf, 0, n, null, 0);
+                        done += n;
+                        if (progress != null && (DateTime.Now - lastUi).TotalMilliseconds >= 300)
+                        {
+                            lastUi = DateTime.Now;
+                            progress(done, total);
+                        }
+                    }
+                    sha.TransformFinalBlock(buf, 0, 0);
+                    got = sha.Hash;
+                }
+                finally { ((IDisposable)sha).Dispose(); }
+                if (!string.IsNullOrEmpty(shaB64))
+                {
+                    byte[] want = Convert.FromBase64String(shaB64);
+                    bool ok = want.Length == got.Length;
+                    if (ok)
+                    {
+                        for (int i = 0; i < want.Length; i++)
+                        {
+                            if (want[i] != got[i]) { ok = false; break; }
+                        }
+                    }
+                    if (!ok)
+                    {
+                        try { File.Delete(dest); } catch { }
+                        throw new ApplicationException("安装包 SHA512 校验失败");
+                    }
+                }
+            }
         }
 
         // Background refresh: WMI + file reads never block the UI thread.
@@ -896,7 +1155,7 @@ namespace FreebuffController
             try
             {
                 if (rowIndex == 0) StartMain();
-                else StartSlot(rowIndex, rbCopy.Checked);
+                else StartSlot(rowIndex, rbCopy.Checked ? Math.Max(copySource.SelectedIndex, 0) : -1);
             }
             catch (Exception ex)
             {
@@ -1056,21 +1315,24 @@ namespace FreebuffController
             Process.Start(new ProcessStartInfo(FreebuffExe) { UseShellExecute = true });
         }
 
-        private static void StartSlot(int n, bool copyAccount)
+        // copyFrom: -1 = fresh login, 0 = main instance, 1..9 = that slot.
+        // Only matters when the slot has no state yet.
+        private static void StartSlot(int n, int copyFrom)
         {
             string state = SlotStatePath(n);
             if (!File.Exists(state))
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(state));
-                if (copyAccount && File.Exists(DefaultState))
+                string source = (copyFrom <= 0) ? DefaultState : SlotStatePath(copyFrom);
+                if (copyFrom >= 0 && File.Exists(source))
                 {
                     try
                     {
-                        File.Copy(DefaultState, state);
+                        File.Copy(source, state);
                     }
                     catch
                     {
-                        // Default state was likely mid-write; fall back to a
+                        // Source state was likely mid-write; fall back to a
                         // fresh state rather than seeding a corrupt copy.
                         try { File.Delete(state); } catch { }
                     }
