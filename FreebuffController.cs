@@ -265,7 +265,7 @@ namespace FreebuffController
 
             string[] headers = { "实例", "状态", "账号", "额度" };
             int[] weights = { 14, 16, 46, 24 };
-            for (int c = 0; c < 3; c++)
+            for (int c = 0; c < headers.Length; c++)
             {
                 int index = grid.Columns.Add("c" + c, headers[c]);
                 grid.Columns[index].FillWeight = weights[c];
