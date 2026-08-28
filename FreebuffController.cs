@@ -93,6 +93,9 @@ namespace FreebuffController
 
         private static readonly Regex SlotRegex = new Regex("Freebuff-slot-(\\d)(?!\\d)");
         private static readonly Regex EmailRegex = new Regex("\"email\"\\s*:\\s*\"([^\"]+)\"");
+        private static readonly Regex FeedUrlRegex = new Regex("(?m)^\\s*url:\\s*(\\S+)");
+        private static readonly Regex YamlVersionRegex = new Regex("(?m)^\\s*version:\\s*'?([^'\"\\r\\n]+)");
+        private static readonly Regex LooseVersionRegex = new Regex("(\\d+)\\.(\\d+)(?:\\.(\\d+))?");
 
         // palette
         private static readonly Color ColBg = Color.FromArgb(24, 26, 32);
@@ -114,6 +117,7 @@ namespace FreebuffController
         private RadioButton rbCopy;
         private NotifyIcon tray;
         private Label statusLabel;
+        private System.Windows.Forms.Timer statusRevertTimer;
         private System.Windows.Forms.Timer refreshTimer;
         private int refreshBusy;
         private int quotaBusy;
@@ -121,6 +125,19 @@ namespace FreebuffController
         private readonly string[] quotaTexts = new string[MaxSlot + 1];
 
         private const string QuotaApiUrl = "https://www.codebuff.com/api/v1/freebuff/session";
+
+        // Version check: the feed URL is normally read from the installed
+        // app's resources/app-update.yml; this is only the fallback.
+        private const string FallbackUpdateFeed =
+            "https://freebuff.com/api/desktop/updates/win-x64/latest.yml";
+        private const string ReleasesPageUrl =
+            "https://github.com/CodebuffAI/codebuff-community/releases/latest";
+        private static readonly Color ColNewVersion = Color.FromArgb(245, 185, 66);
+
+        private Label versionLink;
+        private string installedVersion;
+        private string latestVersion; // null until a check succeeds; null also = failed
+        private int versionCheckBusy;
 
         [DllImport("dwmapi.dll")]
         private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int value, int size);
@@ -130,6 +147,7 @@ namespace FreebuffController
             if (!File.Exists(FreebuffExe))
                 throw new ApplicationException(
                     "未找到 Freebuff 桌面版：\n" + FreebuffExe + "\n\n请先安装 Freebuff。");
+            installedVersion = ReadInstalledVersion();
             BuildUi();
         }
 
@@ -152,6 +170,7 @@ namespace FreebuffController
 
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
+            if (statusRevertTimer != null) statusRevertTimer.Dispose();
             tray.Visible = false;
             tray.Dispose();
             base.OnFormClosed(e);
@@ -192,16 +211,28 @@ namespace FreebuffController
             btnStopAll.Click += delegate { OnStopAll(); };
 
             Button btnRefresh = MakeButton("刷新", 476, 84, ColNeutral, ColNeutralHover);
-            btnRefresh.Click += delegate { RefreshGrid(); FetchQuotasAsync(true); };
+            btnRefresh.Click += delegate { SetStatus("正在刷新…"); RefreshGrid(); FetchQuotasAsync(true); };
 
             BuildTray();
 
             statusLabel = new Label();
-            statusLabel.Text = "就绪 · 每 3 秒自动刷新";
-            statusLabel.Bounds = new Rectangle(22, 534, 540, 16);
+            statusLabel.Text = ReadyStatus();
+            statusLabel.Bounds = new Rectangle(22, 534, 330, 16);
             statusLabel.ForeColor = ColSub;
             statusLabel.Font = new Font("Microsoft YaHei UI", 8.5f);
             Controls.Add(statusLabel);
+
+            versionLink = new Label();
+            versionLink.Text = string.IsNullOrEmpty(installedVersion)
+                ? "Freebuff 版本未知 · 检查更新"
+                : "Freebuff v" + installedVersion + " · 检查更新";
+            versionLink.Bounds = new Rectangle(354, 534, 206, 16);
+            versionLink.ForeColor = ColSub;
+            versionLink.Font = new Font("Microsoft YaHei UI", 8.5f);
+            versionLink.TextAlign = ContentAlignment.MiddleRight;
+            versionLink.Cursor = Cursors.Hand;
+            versionLink.Click += delegate { OnVersionLinkClick(); };
+            Controls.Add(versionLink);
 
             refreshTimer = new System.Windows.Forms.Timer();
             refreshTimer.Interval = 3000;
@@ -213,13 +244,47 @@ namespace FreebuffController
             quotaTimer.Tick += delegate { FetchQuotasAsync(false); };
             quotaTimer.Start();
 
+            var versionTimer = new System.Windows.Forms.Timer();
+            versionTimer.Interval = 1800000; // every 30 minutes
+            versionTimer.Tick += delegate { CheckVersionAsync(); };
+            versionTimer.Start();
+
             ComputeAndApply();
             FetchQuotasAsync(true);
+            CheckVersionAsync();
         }
 
+        // The standing status line spells out the two refresh cycles so the
+        // label never leaves the user guessing what "刷新" covers.
+        private static string ReadyStatus()
+        {
+            return "每 3 秒刷新运行状态和账号 · 额度每 5 分钟刷新";
+        }
+
+        // Transient messages (启动中…、已重置 ✓ …) fall back to the standing
+        // status line after a few seconds; setting the standing text cancels.
         private void SetStatus(string text)
         {
-            if (statusLabel != null) statusLabel.Text = text;
+            if (statusLabel == null) return;
+            statusLabel.Text = text;
+            if (text == ReadyStatus())
+            {
+                if (statusRevertTimer != null) statusRevertTimer.Stop();
+                return;
+            }
+            if (statusRevertTimer == null)
+            {
+                statusRevertTimer = new System.Windows.Forms.Timer();
+                statusRevertTimer.Interval = 8000;
+                statusRevertTimer.Tick += delegate
+                {
+                    statusRevertTimer.Stop();
+                    if (!IsDisposed && statusLabel != null)
+                        statusLabel.Text = ReadyStatus();
+                };
+            }
+            statusRevertTimer.Stop();
+            statusRevertTimer.Start();
         }
 
         private void BuildGrid()
@@ -484,7 +549,11 @@ namespace FreebuffController
                 {
                     BeginInvoke((MethodInvoker)delegate
                     {
-                        if (!IsDisposed) ApplyQuotaColumn();
+                        if (!IsDisposed)
+                        {
+                            ApplyQuotaColumn();
+                            if (force) SetStatus("额度已刷新 ✓");
+                        }
                     });
                 }
                 catch { }
@@ -496,13 +565,23 @@ namespace FreebuffController
             for (int i = 0; i <= MaxSlot; i++)
             {
                 string q = quotaTexts[i] ?? "…";
-                DataGridViewRow row = grid.Rows[i];
-                row.Cells[3].Value = q;
                 bool usedUp = q.StartsWith("剩 0/");
-                row.Cells[3].Style.ForeColor = usedUp
+                Color color = usedUp
                     ? System.Drawing.Color.FromArgb(230, 90, 90)
                     : (q.StartsWith("剩") ? ColGreen : ColSub);
+                SetCell(grid.Rows[i], 3, q, color);
             }
+        }
+
+        // Writes a cell only when text or color actually changed, so the
+        // 3-second poll doesn't repaint the grid when nothing moved.
+        private static void SetCell(DataGridViewRow row, int col, string text, Color color)
+        {
+            DataGridViewCell cell = row.Cells[col];
+            if (string.Equals(cell.Value as string, text, StringComparison.Ordinal)
+                && cell.Style.ForeColor.ToArgb() == color.ToArgb()) return;
+            cell.Value = text;
+            cell.Style.ForeColor = color;
         }
 
         // The login token of instance i lives in its state file (main reads
@@ -578,6 +657,164 @@ namespace FreebuffController
             catch { return "获取失败"; }
         }
 
+        // ---------- version check ----------
+
+        private static string ReadInstalledVersion()
+        {
+            try
+            {
+                string v = FileVersionInfo.GetVersionInfo(FreebuffExe).FileVersion;
+                if (!string.IsNullOrEmpty(v)) return v.Trim();
+            }
+            catch { }
+            return null;
+        }
+
+        // electron-updater's generic provider config ships with the app and
+        // points at the same feed the official updater polls.
+        private static string ReadUpdateFeedUrl()
+        {
+            try
+            {
+                string yml = Path.Combine(
+                    Path.GetDirectoryName(FreebuffExe), "resources\\app-update.yml");
+                if (File.Exists(yml))
+                {
+                    Match m = FeedUrlRegex.Match(File.ReadAllText(yml));
+                    if (m.Success)
+                        return m.Groups[1].Value.Trim().TrimEnd('/') + "/latest.yml";
+                }
+            }
+            catch { }
+            return FallbackUpdateFeed;
+        }
+
+        // latest.yml is the file electron-updater itself reads. The feed
+        // answers with a 302 whose Location (the GitHub release asset URL)
+        // already carries the latest version, so we read just that header
+        // instead of following to GitHub, which can be slow or unreachable.
+        // A feed that ever serves the file directly still works via the
+        // body fallback below.
+        private static string FetchLatestVersion(string feedUrl)
+        {
+            try
+            {
+                ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
+                var req = (HttpWebRequest)WebRequest.Create(feedUrl);
+                req.Method = "GET";
+                req.AllowAutoRedirect = false;
+                req.Timeout = 10000;
+                req.ReadWriteTimeout = 10000;
+                req.UserAgent = "FreebuffMultiOpenController/1.0";
+                using (var resp = (HttpWebResponse)req.GetResponse())
+                {
+                    int code = (int)resp.StatusCode;
+                    if (code >= 300 && code < 400)
+                    {
+                        Match m = LooseVersionRegex.Match(resp.Headers["Location"] ?? "");
+                        return m.Success ? m.Value : null;
+                    }
+                    using (var sr = new StreamReader(resp.GetResponseStream()))
+                    {
+                        Match m = YamlVersionRegex.Match(sr.ReadToEnd());
+                        return m.Success ? m.Groups[1].Value.Trim() : null;
+                    }
+                }
+            }
+            catch { return null; }
+        }
+
+        // "0.0.76.0" (exe) and "0.0.76" (feed) must compare equal, so only
+        // major.minor.build are kept. Returns null when unparsable.
+        private static Version ParseLooseVersion(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return null;
+            Match m = LooseVersionRegex.Match(s);
+            if (!m.Success) return null;
+            int build;
+            int.TryParse(m.Groups[3].Value, out build);
+            return new Version(
+                int.Parse(m.Groups[1].Value),
+                int.Parse(m.Groups[2].Value),
+                build);
+        }
+
+        private bool UpdateAvailable()
+        {
+            var installed = ParseLooseVersion(installedVersion);
+            var latest = ParseLooseVersion(latestVersion);
+            return installed != null && latest != null
+                && latest.CompareTo(installed) > 0;
+        }
+
+        // Runs on a background thread; at most one check at a time.
+        private void CheckVersionAsync()
+        {
+            if (Interlocked.CompareExchange(ref versionCheckBusy, 1, 0) != 0) return;
+            ApplyVersionUi(true);
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                string latest = null;
+                try { latest = FetchLatestVersion(ReadUpdateFeedUrl()); }
+                catch { }
+                Interlocked.Exchange(ref versionCheckBusy, 0);
+
+                if (IsDisposed || !IsHandleCreated) return;
+                try
+                {
+                    BeginInvoke((MethodInvoker)delegate
+                    {
+                        if (IsDisposed) return;
+                        latestVersion = latest;
+                        ApplyVersionUi(false);
+                        if (UpdateAvailable())
+                            SetStatus("Freebuff 发布了新版本 v" + latestVersion +
+                                "，点击右下角“点击更新”下载。");
+                    });
+                }
+                catch { }
+            });
+        }
+
+        private void ApplyVersionUi(bool checking)
+        {
+            if (versionLink == null) return;
+            if (checking)
+            {
+                versionLink.Text = "检查更新中…";
+                versionLink.ForeColor = ColSub;
+                return;
+            }
+            if (UpdateAvailable())
+            {
+                versionLink.Text = "发现新版本 v" + latestVersion + " · 点击更新";
+                versionLink.ForeColor = ColNewVersion;
+                return;
+            }
+            if (string.IsNullOrEmpty(latestVersion))
+            {
+                versionLink.Text = "检查更新失败 · 点击重试";
+                versionLink.ForeColor = ColSub;
+                return;
+            }
+            versionLink.Text = (string.IsNullOrEmpty(installedVersion)
+                    ? "Freebuff 版本未知"
+                    : "Freebuff v" + installedVersion) + " · 已是最新";
+            versionLink.ForeColor = ColSub;
+        }
+
+        // With a newer release known the click opens the download page;
+        // otherwise it (re)runs the check.
+        private void OnVersionLinkClick()
+        {
+            if (UpdateAvailable())
+            {
+                try { Process.Start(ReleasesPageUrl); } catch { }
+                return;
+            }
+            CheckVersionAsync();
+        }
+
         // Background refresh: WMI + file reads never block the UI thread.
         private void RefreshGrid()
         {
@@ -617,10 +854,8 @@ namespace FreebuffController
                 bool run = (i == 0) ? mainRunning : slots.Contains(i);
                 string acct = accounts[i] ?? "…";
                 DataGridViewRow row = grid.Rows[i];
-                row.Cells[1].Value = run ? "● 运行中" : "○ 已停止";
-                row.Cells[1].Style.ForeColor = run ? ColGreen : ColSub;
-                row.Cells[2].Value = acct;
-                row.Cells[2].Style.ForeColor = acct.StartsWith("(") ? ColSub : ColText;
+                SetCell(row, 1, run ? "● 运行中" : "○ 已停止", run ? ColGreen : ColSub);
+                SetCell(row, 2, acct, acct.StartsWith("(") ? ColSub : ColText);
             }
         }
 
