@@ -115,9 +115,6 @@ namespace FreebuffController
         private static readonly Color ColSelect = Color.FromArgb(44, 50, 66);
 
         private DataGridView grid;
-        private RadioButton rbFresh;
-        private RadioButton rbCopy;
-        private ComboBox copySource;
         private NotifyIcon tray;
         private Label statusLabel;
         private System.Windows.Forms.Timer statusRevertTimer;
@@ -185,7 +182,7 @@ namespace FreebuffController
         private void BuildUi()
         {
             Text = "Freebuff 多开控制器";
-            ClientSize = new Size(580, 556);
+            ClientSize = new Size(580, 498);
             BackColor = ColBg;
             ForeColor = ColText;
             Font = new Font("Microsoft YaHei UI", 9.75f);
@@ -203,7 +200,6 @@ namespace FreebuffController
             Controls.Add(hint);
 
             BuildGrid();
-            BuildModePanel();
 
             Button btnLaunch = MakeButton("启动", 20, 104, ColAccent, ColAccentHover);
             btnLaunch.Click += delegate { OnLaunch(); };
@@ -224,7 +220,7 @@ namespace FreebuffController
 
             statusLabel = new Label();
             statusLabel.Text = ReadyStatus();
-            statusLabel.Bounds = new Rectangle(22, 534, 330, 16);
+            statusLabel.Bounds = new Rectangle(22, 476, 330, 16);
             statusLabel.ForeColor = ColSub;
             statusLabel.Font = new Font("Microsoft YaHei UI", 8.5f);
             Controls.Add(statusLabel);
@@ -233,7 +229,7 @@ namespace FreebuffController
             versionLink.Text = string.IsNullOrEmpty(installedVersion)
                 ? "Freebuff 版本未知 · 检查更新"
                 : "Freebuff v" + installedVersion + " · 检查更新";
-            versionLink.Bounds = new Rectangle(354, 534, 206, 16);
+            versionLink.Bounds = new Rectangle(354, 476, 206, 16);
             versionLink.ForeColor = ColSub;
             versionLink.Font = new Font("Microsoft YaHei UI", 8.5f);
             versionLink.TextAlign = ContentAlignment.MiddleRight;
@@ -360,60 +356,11 @@ namespace FreebuffController
             Controls.Add(grid);
         }
 
-        private void BuildModePanel()
-        {
-            var panel = new Panel();
-            panel.Bounds = new Rectangle(20, 428, 540, 52);
-            panel.BackColor = ColPanel;
-            RoundControl(panel, 10);
-
-            var caption = new Label();
-            caption.Text = "启动方式（对未初始化的实例生效）";
-            caption.Bounds = new Rectangle(16, 7, 400, 16);
-            caption.ForeColor = ColSub;
-            caption.Font = new Font("Microsoft YaHei UI", 8.5f);
-            panel.Controls.Add(caption);
-
-            rbFresh = new RadioButton();
-            rbFresh.Text = "全新登录（每个窗口可登录不同账号）";
-            rbFresh.Bounds = new Rectangle(16, 26, 252, 20);
-            rbFresh.ForeColor = ColText;
-            rbFresh.BackColor = ColPanel;
-            rbFresh.AutoSize = false;
-            rbFresh.Checked = true;
-            panel.Controls.Add(rbFresh);
-
-            rbCopy = new RadioButton();
-            rbCopy.Text = "复制账号";
-            rbCopy.Bounds = new Rectangle(274, 26, 84, 20);
-            rbCopy.ForeColor = ColText;
-            rbCopy.BackColor = ColPanel;
-            rbCopy.AutoSize = false;
-            panel.Controls.Add(rbCopy);
-
-            // Account source for rbCopy: any initialized instance, not just
-            // the main one.
-            copySource = new ComboBox();
-            copySource.DropDownStyle = ComboBoxStyle.DropDownList;
-            copySource.Bounds = new Rectangle(362, 23, 162, 24);
-            copySource.BackColor = ColNeutral;
-            copySource.ForeColor = ColText;
-            copySource.Font = new Font("Microsoft YaHei UI", 9f);
-            copySource.Items.Add("主实例");
-            for (int i = 1; i <= MaxSlot; i++) copySource.Items.Add("实例 " + i);
-            copySource.SelectedIndex = 0;
-            copySource.Enabled = false;
-            rbCopy.CheckedChanged += delegate { copySource.Enabled = rbCopy.Checked; };
-            panel.Controls.Add(copySource);
-
-            Controls.Add(panel);
-        }
-
         private Button MakeButton(string text, int x, int width, Color back, Color hover)
         {
             var b = new Button();
             b.Text = text;
-            b.Bounds = new Rectangle(x, 494, width, 36);
+            b.Bounds = new Rectangle(x, 436, width, 36);
             b.FlatStyle = FlatStyle.Flat;
             b.FlatAppearance.BorderSize = 0;
             b.FlatAppearance.MouseOverBackColor = hover;
@@ -1152,10 +1099,20 @@ namespace FreebuffController
         private void LaunchIndex(int rowIndex)
         {
             string what = (rowIndex == 0) ? "主实例" : ("实例 " + rowIndex);
+            // -1 = fresh login; the init dialog decides for never-used slots.
+            int copyFrom = -1;
+            if (rowIndex != 0 && !File.Exists(SlotStatePath(rowIndex)))
+            {
+                using (InitModeDialog dlg = new InitModeDialog(rowIndex))
+                {
+                    if (dlg.ShowDialog(this) != DialogResult.OK) return;
+                    copyFrom = dlg.CopyFrom;
+                }
+            }
             try
             {
                 if (rowIndex == 0) StartMain();
-                else StartSlot(rowIndex, rbCopy.Checked ? Math.Max(copySource.SelectedIndex, 0) : -1);
+                else StartSlot(rowIndex, copyFrom);
             }
             catch (Exception ex)
             {
@@ -1164,12 +1121,125 @@ namespace FreebuffController
                 return;
             }
             SetStatus(what + " 启动中…（几秒后自动确认）");
-            if (rowIndex != 0 && rbFresh.Checked && !File.Exists(SlotStatePath(rowIndex)))
-            {
-                Info(string.Format(
-                    "实例 {0} 将以全新状态启动，请在窗口内登录该窗口要用的账号。", rowIndex));
-            }
             Delay(6000, delegate { VerifyLaunched(rowIndex, what); });
+        }
+
+        // Asked when a never-initialized instance is launched: the fresh vs.
+        // copy choice only matters at that moment, so it lives here instead
+        // of a permanently visible panel that users must interpret upfront.
+        private class InitModeDialog : Form
+        {
+            private readonly RadioButton rbFresh = new RadioButton();
+            private readonly RadioButton rbCopy = new RadioButton();
+            private readonly ComboBox source = new ComboBox();
+            private readonly List<int> sourceIndex = new List<int>();
+
+            public InitModeDialog(int slot)
+            {
+                Text = "启动 实例 " + slot;
+                ClientSize = new Size(426, 246);
+                BackColor = ColPanel;
+                ForeColor = ColText;
+                Font = new Font("Microsoft YaHei UI", 9.75f);
+                FormBorderStyle = FormBorderStyle.FixedDialog;
+                MinimizeBox = false;
+                MaximizeBox = false;
+                ShowInTaskbar = false;
+                StartPosition = FormStartPosition.CenterParent;
+
+                var q = new Label();
+                q.Text = "实例 " + slot + " 还没有登录过，这次要如何启动？";
+                q.Bounds = new Rectangle(16, 14, 394, 20);
+                Controls.Add(q);
+
+                rbFresh.Text = "全新登录";
+                rbFresh.Bounds = new Rectangle(16, 48, 180, 20);
+                rbFresh.ForeColor = ColText;
+                rbFresh.BackColor = ColPanel;
+                rbFresh.Checked = true;
+                Controls.Add(rbFresh);
+
+                var subFresh = new Label();
+                subFresh.Text = "打开后在窗口里登录该实例要用的账号，每个窗口可用不同账号";
+                subFresh.Bounds = new Rectangle(38, 70, 372, 18);
+                subFresh.ForeColor = ColSub;
+                subFresh.Font = new Font("Microsoft YaHei UI", 8.5f);
+                Controls.Add(subFresh);
+
+                rbCopy.Text = "复制已有实例的账号";
+                rbCopy.Bounds = new Rectangle(16, 100, 200, 20);
+                rbCopy.ForeColor = ColText;
+                rbCopy.BackColor = ColPanel;
+                Controls.Add(rbCopy);
+
+                source.DropDownStyle = ComboBoxStyle.DropDownList;
+                source.Bounds = new Rectangle(38, 124, 150, 24);
+                source.BackColor = ColNeutral;
+                source.ForeColor = ColText;
+                source.Font = new Font("Microsoft YaHei UI", 9f);
+                source.Items.Add("主实例");
+                sourceIndex.Add(0);
+                for (int i = 1; i <= MaxSlot; i++)
+                {
+                    if (i == slot) continue; // can't copy from the target itself
+                    source.Items.Add("实例 " + i);
+                    sourceIndex.Add(i);
+                }
+                source.SelectedIndex = 0;
+                source.Enabled = false;
+                Controls.Add(source);
+
+                var subCopy = new Label();
+                subCopy.Text = "把来源实例的登录状态原样克隆到实例 " + slot +
+                    "，打开后无需再登录。\r\n注意：同一账号多开会共享每日额度。";
+                subCopy.Bounds = new Rectangle(38, 154, 372, 34);
+                subCopy.ForeColor = ColSub;
+                subCopy.Font = new Font("Microsoft YaHei UI", 8.5f);
+                Controls.Add(subCopy);
+
+                rbCopy.CheckedChanged += delegate { source.Enabled = rbCopy.Checked; };
+
+                Button cancel = MakeDialogButton("取消", 198, ColNeutral, ColNeutralHover);
+                cancel.DialogResult = DialogResult.Cancel;
+                Button ok = MakeDialogButton("启动", 310, ColAccent, ColAccentHover);
+                ok.DialogResult = DialogResult.OK;
+                AcceptButton = ok;
+                CancelButton = cancel;
+            }
+
+            // -1 fresh, otherwise the chosen source (0 = main instance).
+            public int CopyFrom
+            {
+                get { return rbCopy.Checked ? sourceIndex[source.SelectedIndex] : -1; }
+            }
+
+            private Button MakeDialogButton(string text, int x, Color back, Color hover)
+            {
+                var b = new Button();
+                b.Text = text;
+                b.Bounds = new Rectangle(x, 202, 100, 32);
+                b.FlatStyle = FlatStyle.Flat;
+                b.FlatAppearance.BorderSize = 0;
+                b.FlatAppearance.MouseOverBackColor = hover;
+                b.FlatAppearance.MouseDownBackColor = hover;
+                b.BackColor = back;
+                b.ForeColor = Color.White;
+                b.Cursor = Cursors.Hand;
+                RoundControl(b, 10);
+                Controls.Add(b);
+                return b;
+            }
+
+            protected override void OnHandleCreated(EventArgs e)
+            {
+                base.OnHandleCreated(e);
+                try
+                {
+                    int on = 1; // DWMWA_USE_IMMERSIVE_DARK_MODE
+                    DwmSetWindowAttribute(Handle, 20, ref on, 4);
+                }
+                catch { }
+            }
         }
 
         // After a launch, confirm on a background thread that the process is
