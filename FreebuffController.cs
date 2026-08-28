@@ -13,9 +13,11 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
 using System.Management;
+using System.Net;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Web.Script.Serialization;
 using System.Windows.Forms;
 
 namespace FreebuffController
@@ -114,6 +116,11 @@ namespace FreebuffController
         private Label statusLabel;
         private System.Windows.Forms.Timer refreshTimer;
         private int refreshBusy;
+        private int quotaBusy;
+        private DateTime lastQuotaFetch = DateTime.MinValue;
+        private readonly string[] quotaTexts = new string[MaxSlot + 1];
+
+        private const string QuotaApiUrl = "https://www.codebuff.com/api/v1/freebuff/session";
 
         [DllImport("dwmapi.dll")]
         private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int value, int size);
@@ -185,7 +192,7 @@ namespace FreebuffController
             btnStopAll.Click += delegate { OnStopAll(); };
 
             Button btnRefresh = MakeButton("刷新", 476, 84, ColNeutral, ColNeutralHover);
-            btnRefresh.Click += delegate { RefreshGrid(); };
+            btnRefresh.Click += delegate { RefreshGrid(); FetchQuotasAsync(true); };
 
             BuildTray();
 
@@ -201,7 +208,13 @@ namespace FreebuffController
             refreshTimer.Tick += delegate { RefreshGrid(); };
             refreshTimer.Start();
 
+            var quotaTimer = new System.Windows.Forms.Timer();
+            quotaTimer.Interval = 300000;
+            quotaTimer.Tick += delegate { FetchQuotasAsync(false); };
+            quotaTimer.Start();
+
             ComputeAndApply();
+            FetchQuotasAsync(true);
         }
 
         private void SetStatus(string text)
@@ -250,8 +263,8 @@ namespace FreebuffController
             cs.Font = new Font("Microsoft YaHei UI", 9.75f);
             grid.RowTemplate.Height = 34;
 
-            string[] headers = { "实例", "状态", "账号" };
-            int[] weights = { 16, 20, 64 };
+            string[] headers = { "实例", "状态", "账号", "额度" };
+            int[] weights = { 14, 16, 46, 24 };
             for (int c = 0; c < 3; c++)
             {
                 int index = grid.Columns.Add("c" + c, headers[c]);
@@ -263,7 +276,7 @@ namespace FreebuffController
             for (int i = 0; i <= MaxSlot; i++)
             {
                 string name = (i == 0) ? "主实例" : ("槽位 " + i);
-                grid.Rows.Add(name, "…", "…");
+                grid.Rows.Add(name, "…", "…", "…");
             }
             grid.ClearSelection();
             grid.CurrentCell = null;
@@ -438,6 +451,131 @@ namespace FreebuffController
                 accounts[i] = (i == 0) ? AccountForState(DefaultState)
                                        : AccountForState(SlotStatePath(i));
             ApplyToGrid(mainRunning, slots, accounts);
+        }
+
+        // ---------- quota ----------
+
+        // Fetch remaining daily quota for every account. Runs off the UI
+        // thread; at most one cycle at a time; at most one cycle per 5
+        // minutes unless forced (刷新 button / startup).
+        private void FetchQuotasAsync(bool force)
+        {
+            if (!force && (DateTime.Now - lastQuotaFetch).TotalMinutes < 5) return;
+            if (Interlocked.CompareExchange(ref quotaBusy, 1, 0) != 0) return;
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                try
+                {
+                    for (int i = 0; i <= MaxSlot; i++)
+                    {
+                        if (IsDisposed) return;
+                        string token = ReadTokenFor(i);
+                        quotaTexts[i] = (token == null) ? "—" : FetchQuota(token);
+                    }
+                }
+                catch { }
+                finally
+                {
+                    lastQuotaFetch = DateTime.Now;
+                    Interlocked.Exchange(ref quotaBusy, 0);
+                }
+                if (IsDisposed || !IsHandleCreated) return;
+                try
+                {
+                    BeginInvoke((MethodInvoker)delegate
+                    {
+                        if (!IsDisposed) ApplyQuotaColumn();
+                    });
+                }
+                catch { }
+            });
+        }
+
+        private void ApplyQuotaColumn()
+        {
+            for (int i = 0; i <= MaxSlot; i++)
+            {
+                string q = quotaTexts[i] ?? "…";
+                DataGridViewRow row = grid.Rows[i];
+                row.Cells[3].Value = q;
+                bool usedUp = q.StartsWith("剩 0/");
+                row.Cells[3].Style.ForeColor = usedUp
+                    ? System.Drawing.Color.FromArgb(230, 90, 90)
+                    : (q.StartsWith("剩") ? ColGreen : ColSub);
+            }
+        }
+
+        // The login token of instance i lives in its state file (main reads
+        // the default one). Returns null when there is nothing to query.
+        private static string ReadTokenFor(int i)
+        {
+            string path = (i == 0) ? DefaultState : SlotStatePath(i);
+            if (!File.Exists(path)) return null;
+            try
+            {
+                var state = new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(
+                    File.ReadAllText(path));
+                if (state == null || !state.ContainsKey("authSessions")) return null;
+                var auth = state["authSessions"] as Dictionary<string, object>;
+                if (auth == null || auth.Count == 0) return null;
+                var enumerator = auth.Values.GetEnumerator();
+                if (!enumerator.MoveNext()) return null;
+                var entry = enumerator.Current as Dictionary<string, object>;
+                if (entry == null || !entry.ContainsKey("token")) return null;
+                return entry["token"] as string;
+            }
+            catch { return null; }
+        }
+
+        // GET the session endpoint and summarize the premium-pool quota.
+        // Shows the tightest remaining allowance across models.
+        private static string FetchQuota(string token)
+        {
+            try
+            {
+                ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
+                var req = (HttpWebRequest)WebRequest.Create(QuotaApiUrl);
+                req.Method = "GET";
+                req.Timeout = 8000;
+                req.ReadWriteTimeout = 8000;
+                req.Headers["Authorization"] = "Bearer " + token;
+                req.UserAgent = "FreebuffMultiOpenController/1.0";
+                using (var resp = (HttpWebResponse)req.GetResponse())
+                using (var sr = new System.IO.StreamReader(resp.GetResponseStream()))
+                {
+                    var body = new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(sr.ReadToEnd());
+                    if (body == null || !body.ContainsKey("rateLimitsByModel")) return "—";
+                    var models = body["rateLimitsByModel"] as Dictionary<string, object>;
+                    if (models == null || models.Count == 0) return "无限制";
+
+                    double bestRemaining = double.MaxValue, bestLimit = 0;
+                    bool found = false;
+                    foreach (var m in models.Values)
+                    {
+                        var q = m as Dictionary<string, object>;
+                        if (q == null || !q.ContainsKey("limit") || !q.ContainsKey("recentCount")) continue;
+                        double limit = Convert.ToDouble(q["limit"]);
+                        double used = Convert.ToDouble(q["recentCount"]);
+                        double remaining = limit - used;
+                        if (remaining < bestRemaining)
+                        {
+                            bestRemaining = remaining;
+                            bestLimit = limit;
+                            found = true;
+                        }
+                    }
+                    if (!found) return "—";
+                    if (bestRemaining <= 0) return "剩 0/" + bestLimit + " 已用完";
+                    return "剩 " + bestRemaining + "/" + bestLimit;
+                }
+            }
+            catch (WebException wex)
+            {
+                var resp = wex.Response as HttpWebResponse;
+                if (resp != null && (int)resp.StatusCode == 401) return "登录过期";
+                return "获取失败";
+            }
+            catch { return "获取失败"; }
         }
 
         // Background refresh: WMI + file reads never block the UI thread.
