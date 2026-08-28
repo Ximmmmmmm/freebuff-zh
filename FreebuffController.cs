@@ -43,6 +43,19 @@ namespace FreebuffController
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+            Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
+            Application.ThreadException += delegate(object s, System.Threading.ThreadExceptionEventArgs e)
+            {
+                try
+                {
+                    File.AppendAllText(
+                        Path.Combine(Path.GetTempPath(), "freebuff-controller-error.log"),
+                        DateTime.Now + "  " + e.Exception + Environment.NewLine);
+                }
+                catch { }
+                MessageBox.Show("控制器出错: " + e.Exception.Message, "错误",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            };
             try
             {
                 Application.Run(new MainForm());
@@ -98,12 +111,18 @@ namespace FreebuffController
         private RadioButton rbFresh;
         private RadioButton rbCopy;
         private NotifyIcon tray;
+        private Label statusLabel;
+        private System.Windows.Forms.Timer refreshTimer;
+        private int refreshBusy;
 
         [DllImport("dwmapi.dll")]
         private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int value, int size);
 
         public MainForm()
         {
+            if (!File.Exists(FreebuffExe))
+                throw new ApplicationException(
+                    "未找到 Freebuff 桌面版：\n" + FreebuffExe + "\n\n请先安装 Freebuff。");
             BuildUi();
         }
 
@@ -170,12 +189,24 @@ namespace FreebuffController
 
             BuildTray();
 
-            var t = new System.Windows.Forms.Timer();
-            t.Interval = 3000;
-            t.Tick += delegate { RefreshGrid(); };
-            t.Start();
+            statusLabel = new Label();
+            statusLabel.Text = "就绪 · 每 3 秒自动刷新";
+            statusLabel.Bounds = new Rectangle(22, 534, 540, 16);
+            statusLabel.ForeColor = ColSub;
+            statusLabel.Font = new Font("Microsoft YaHei UI", 8.5f);
+            Controls.Add(statusLabel);
 
-            RefreshGrid();
+            refreshTimer = new System.Windows.Forms.Timer();
+            refreshTimer.Interval = 3000;
+            refreshTimer.Tick += delegate { RefreshGrid(); };
+            refreshTimer.Start();
+
+            ComputeAndApply();
+        }
+
+        private void SetStatus(string text)
+        {
+            if (statusLabel != null) statusLabel.Text = text;
         }
 
         private void BuildGrid()
@@ -397,15 +428,56 @@ namespace FreebuffController
             }
         }
 
-        private void RefreshGrid()
+        // One-time synchronous refresh while building the UI (still on the UI thread).
+        private void ComputeAndApply()
         {
             bool mainRunning;
             HashSet<int> slots = QueryRunning(out mainRunning);
+            string[] accounts = new string[MaxSlot + 1];
+            for (int i = 0; i <= MaxSlot; i++)
+                accounts[i] = (i == 0) ? AccountForState(DefaultState)
+                                       : AccountForState(SlotStatePath(i));
+            ApplyToGrid(mainRunning, slots, accounts);
+        }
+
+        // Background refresh: WMI + file reads never block the UI thread.
+        private void RefreshGrid()
+        {
+            if (Interlocked.CompareExchange(ref refreshBusy, 1, 0) != 0) return;
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                bool mainRunning = false;
+                HashSet<int> slots = new HashSet<int>();
+                string[] accounts = new string[MaxSlot + 1];
+                try
+                {
+                    slots = QueryRunning(out mainRunning);
+                    for (int i = 0; i <= MaxSlot; i++)
+                        accounts[i] = (i == 0) ? AccountForState(DefaultState)
+                                               : AccountForState(SlotStatePath(i));
+                }
+                catch { }
+                finally { Interlocked.Exchange(ref refreshBusy, 0); }
+
+                if (IsDisposed || !IsHandleCreated) return;
+                try
+                {
+                    BeginInvoke((MethodInvoker)delegate
+                    {
+                        if (IsDisposed) return;
+                        ApplyToGrid(mainRunning, slots, accounts);
+                    });
+                }
+                catch { }
+            });
+        }
+
+        private void ApplyToGrid(bool mainRunning, HashSet<int> slots, string[] accounts)
+        {
             for (int i = 0; i <= MaxSlot; i++)
             {
                 bool run = (i == 0) ? mainRunning : slots.Contains(i);
-                string acct = (i == 0) ? AccountForState(DefaultState)
-                                       : AccountForState(SlotStatePath(i));
+                string acct = accounts[i] ?? "…";
                 DataGridViewRow row = grid.Rows[i];
                 row.Cells[1].Value = run ? "● 运行中" : "○ 已停止";
                 row.Cells[1].Style.ForeColor = run ? ColGreen : ColSub;
@@ -421,15 +493,15 @@ namespace FreebuffController
             return grid.CurrentCell.RowIndex;
         }
 
-        private static void Info(string text)
+        private void Info(string text)
         {
-            MessageBox.Show(text, "Freebuff 多开控制器",
+            MessageBox.Show(this, text, "Freebuff 多开控制器",
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
-        private static bool Confirm(string text)
+        private bool Confirm(string text)
         {
-            return MessageBox.Show(text, "确认操作",
+            return MessageBox.Show(this, text, "确认操作",
                 MessageBoxButtons.YesNo, MessageBoxIcon.Warning)
                 == DialogResult.Yes;
         }
@@ -442,6 +514,7 @@ namespace FreebuffController
             {
                 t.Stop();
                 t.Dispose();
+                if (IsDisposed) return;
                 action();
             };
             t.Start();
@@ -449,20 +522,65 @@ namespace FreebuffController
 
         private void LaunchIndex(int rowIndex)
         {
-            if (rowIndex == 0)
+            string what = (rowIndex == 0) ? "主实例" : ("槽位 " + rowIndex);
+            try
             {
-                StartMain();
+                if (rowIndex == 0) StartMain();
+                else StartSlot(rowIndex, rbCopy.Checked);
             }
-            else
+            catch (Exception ex)
             {
-                StartSlot(rowIndex, rbCopy.Checked);
-                if (!File.Exists(SlotStatePath(rowIndex)) && rbFresh.Checked)
+                MessageBox.Show(this, what + " 启动失败：\n" + ex.Message,
+                    "启动失败", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            SetStatus(what + " 启动中…（几秒后自动确认）");
+            if (rowIndex != 0 && rbFresh.Checked && !File.Exists(SlotStatePath(rowIndex)))
+            {
+                Info(string.Format(
+                    "槽位 {0} 将以全新状态启动，请在窗口内登录该窗口要用的账号。", rowIndex));
+            }
+            Delay(6000, delegate { VerifyLaunched(rowIndex, what); });
+        }
+
+        // After a launch, confirm on a background thread that the process is
+        // still alive, so "nothing happened" always comes with an explanation.
+        private void VerifyLaunched(int rowIndex, string what)
+        {
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                bool ok;
+                try
                 {
-                    Info(string.Format(
-                        "槽位 {0} 将以全新状态启动，请在窗口内登录该窗口要用的账号。", rowIndex));
+                    bool mainRunning;
+                    HashSet<int> slots = QueryRunning(out mainRunning);
+                    ok = (rowIndex == 0) ? mainRunning : slots.Contains(rowIndex);
                 }
-            }
-            Delay(800, RefreshGrid);
+                catch { ok = true; }
+
+                if (IsDisposed || !IsHandleCreated) return;
+                try
+                {
+                    BeginInvoke((MethodInvoker)delegate
+                    {
+                        if (IsDisposed) return;
+                        RefreshGrid();
+                        if (ok) SetStatus(what + " 已运行 ✓");
+                        else
+                        {
+                            SetStatus(what + " 启动异常");
+                            MessageBox.Show(this,
+                                what + " 的进程发出启动命令后没有保持运行。\n\n" +
+                                "常见原因：\n" +
+                                "· Freebuff 正在退出中（等几秒再试）\n" +
+                                "· 该槽位数据目录被占用\n" +
+                                "· 杀毒软件拦截了 Freebuff 启动",
+                                "启动结果", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        }
+                    });
+                }
+                catch { }
+            });
         }
 
         private void OnLaunch()
@@ -484,14 +602,33 @@ namespace FreebuffController
                 Info("请先点击选中一行。");
                 return;
             }
-            KillInstance(idx == 0 ? "main" : idx.ToString());
+            try { KillInstances(idx == 0 ? "main" : idx.ToString()); }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, "停止失败：\n" + ex.Message,
+                    "停止失败", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            SetStatus("已发出停止命令…");
             Delay(900, RefreshGrid);
         }
 
         private void OnStopAll()
         {
-            KillInstance("main");
-            for (int i = 1; i <= MaxSlot; i++) KillInstance(i.ToString());
+            try
+            {
+                string[] all = new string[MaxSlot + 1];
+                all[0] = "main";
+                for (int i = 1; i <= MaxSlot; i++) all[i] = i.ToString();
+                KillInstances(all);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, "停止失败：\n" + ex.Message,
+                    "停止失败", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            SetStatus("已发出全部停止命令…");
             Delay(900, RefreshGrid);
         }
 
@@ -511,13 +648,9 @@ namespace FreebuffController
             bool yes = Confirm(string.Format(
                 "确定清空槽位 {0} 吗？\r\n该槽位的登录和浏览数据会被删除，下次启动需要重新登录。", idx));
             if (!yes) return;
-            KillInstance(idx.ToString());
-            Delay(1200, delegate
-            {
-                TryDeleteDir(SlotStateDir(idx));
-                TryDeleteDir(SlotUserData(idx));
-                RefreshGrid();
-            });
+            KillInstances(idx.ToString());
+            SetStatus("正在重置槽位 " + idx + "…");
+            Delay(1200, delegate { TryDeleteWithRetry(idx, 3); });
         }
 
         private static void TryDeleteDir(string dir)
@@ -527,6 +660,25 @@ namespace FreebuffController
                 if (Directory.Exists(dir)) Directory.Delete(dir, true);
             }
             catch { }
+        }
+
+        // Chromium can hold profile files open for a moment after the browser
+        // process dies, so give deletion a few tries before giving up.
+        private void TryDeleteWithRetry(int idx, int attemptsLeft)
+        {
+            TryDeleteDir(SlotStateDir(idx));
+            TryDeleteDir(SlotUserData(idx));
+            bool clean = !Directory.Exists(SlotStateDir(idx))
+                      && !Directory.Exists(SlotUserData(idx));
+            if (clean || attemptsLeft <= 1)
+            {
+                SetStatus(clean
+                    ? ("槽位 " + idx + " 已重置 ✓")
+                    : ("槽位 " + idx + " 有文件被占用，稍后再点一次重置即可"));
+                RefreshGrid();
+                return;
+            }
+            Delay(1500, delegate { TryDeleteWithRetry(idx, attemptsLeft - 1); });
         }
 
         private static void StartMain()
@@ -540,16 +692,31 @@ namespace FreebuffController
             if (!File.Exists(state))
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(state));
-                if (copyAccount && File.Exists(DefaultState)) File.Copy(DefaultState, state);
+                if (copyAccount && File.Exists(DefaultState))
+                {
+                    try
+                    {
+                        File.Copy(DefaultState, state);
+                    }
+                    catch
+                    {
+                        // Default state was likely mid-write; fall back to a
+                        // fresh state rather than seeding a corrupt copy.
+                        try { File.Delete(state); } catch { }
+                    }
+                }
             }
             var psi = new ProcessStartInfo();
             psi.FileName = FreebuffExe;
             psi.UseShellExecute = false;
+            psi.Arguments = "--user-data-dir=\"" + SlotUserData(n) + "\"";
             psi.EnvironmentVariables["FREEBUFF_DESKTOP_STATE_PATH"] = state;
             Process.Start(psi);
         }
 
-        private static void KillInstance(string target)
+        // One WMI pass for however many targets we are stopping, so
+        // "stop all" never blocks the UI thread on ten sequential queries.
+        private static void KillInstances(params string[] targets)
         {
             var pids = new List<int>();
             try
@@ -562,10 +729,15 @@ namespace FreebuffController
                         string cl = o["CommandLine"] as string;
                         if (string.IsNullOrEmpty(cl)) continue;
                         Match m = SlotRegex.Match(cl);
-                        bool match = (target == "main")
-                            ? !m.Success
-                            : (m.Success && m.Groups[1].Value == target);
-                        if (match) pids.Add((int)(uint)o["ProcessId"]);
+                        string id = m.Success ? m.Groups[1].Value : "main";
+                        foreach (string t in targets)
+                        {
+                            if (t == id)
+                            {
+                                pids.Add((int)(uint)o["ProcessId"]);
+                                break;
+                            }
+                        }
                     }
                 }
             }
