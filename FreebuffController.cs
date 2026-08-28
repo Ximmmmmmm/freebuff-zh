@@ -162,12 +162,6 @@ namespace FreebuffController
             catch { }
         }
 
-        protected override void OnResize(EventArgs e)
-        {
-            base.OnResize(e);
-            if (WindowState == FormWindowState.Minimized) Hide();
-        }
-
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
             if (statusRevertTimer != null) statusRevertTimer.Dispose();
@@ -188,6 +182,9 @@ namespace FreebuffController
             FormBorderStyle = FormBorderStyle.FixedSingle;
             MaximizeBox = false;
             StartPosition = FormStartPosition.CenterScreen;
+            // The exe already embeds app.ico as its Win32 icon; surface it in
+            // the title bar / taskbar too, which need this explicit assignment.
+            Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
 
             var hint = new Label();
             hint.Text = "管理多开的 Freebuff 实例 · 每个槽位可以用不同账号登录 · 双击行直接启动";
