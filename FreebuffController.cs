@@ -187,7 +187,7 @@ namespace FreebuffController
             Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
 
             var hint = new Label();
-            hint.Text = "管理多开的 Freebuff 实例 · 每个槽位可以用不同账号登录 · 双击行直接启动";
+            hint.Text = "管理多开的 Freebuff 实例 · 每个实例可以用不同账号登录 · 双击行直接启动";
             hint.Bounds = new Rectangle(22, 14, 540, 20);
             hint.ForeColor = ColSub;
             Controls.Add(hint);
@@ -337,7 +337,7 @@ namespace FreebuffController
 
             for (int i = 0; i <= MaxSlot; i++)
             {
-                string name = (i == 0) ? "主实例" : ("槽位 " + i);
+                string name = (i == 0) ? "主实例" : ("实例 " + i);
                 grid.Rows.Add(name, "…", "…", "…");
             }
             grid.ClearSelection();
@@ -358,7 +358,7 @@ namespace FreebuffController
             RoundControl(panel, 10);
 
             var caption = new Label();
-            caption.Text = "启动方式（对未初始化的槽位生效）";
+            caption.Text = "启动方式（对未初始化的实例生效）";
             caption.Bounds = new Rectangle(16, 7, 400, 16);
             caption.ForeColor = ColSub;
             caption.Font = new Font("Microsoft YaHei UI", 8.5f);
@@ -892,7 +892,7 @@ namespace FreebuffController
 
         private void LaunchIndex(int rowIndex)
         {
-            string what = (rowIndex == 0) ? "主实例" : ("槽位 " + rowIndex);
+            string what = (rowIndex == 0) ? "主实例" : ("实例 " + rowIndex);
             try
             {
                 if (rowIndex == 0) StartMain();
@@ -908,7 +908,7 @@ namespace FreebuffController
             if (rowIndex != 0 && rbFresh.Checked && !File.Exists(SlotStatePath(rowIndex)))
             {
                 Info(string.Format(
-                    "槽位 {0} 将以全新状态启动，请在窗口内登录该窗口要用的账号。", rowIndex));
+                    "实例 {0} 将以全新状态启动，请在窗口内登录该窗口要用的账号。", rowIndex));
             }
             Delay(6000, delegate { VerifyLaunched(rowIndex, what); });
         }
@@ -943,7 +943,7 @@ namespace FreebuffController
                                 what + " 的进程发出启动命令后没有保持运行。\n\n" +
                                 "常见原因：\n" +
                                 "· Freebuff 正在退出中（等几秒再试）\n" +
-                                "· 该槽位数据目录被占用\n" +
+                                "· 该实例数据目录被占用\n" +
                                 "· 杀毒软件拦截了 Freebuff 启动",
                                 "启动结果", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         }
@@ -1016,10 +1016,10 @@ namespace FreebuffController
                 return;
             }
             bool yes = Confirm(string.Format(
-                "确定清空槽位 {0} 吗？\r\n该槽位的登录和浏览数据会被删除，下次启动需要重新登录。", idx));
+                "确定清空实例 {0} 吗？\r\n该实例的登录和浏览数据会被删除，下次启动需要重新登录。", idx));
             if (!yes) return;
             KillInstances(idx.ToString());
-            SetStatus("正在重置槽位 " + idx + "…");
+            SetStatus("正在重置实例 " + idx + "…");
             Delay(1200, delegate { TryDeleteWithRetry(idx, 3); });
         }
 
@@ -1043,8 +1043,8 @@ namespace FreebuffController
             if (clean || attemptsLeft <= 1)
             {
                 SetStatus(clean
-                    ? ("槽位 " + idx + " 已重置 ✓")
-                    : ("槽位 " + idx + " 有文件被占用，稍后再点一次重置即可"));
+                    ? ("实例 " + idx + " 已重置 ✓")
+                    : ("实例 " + idx + " 有文件被占用，稍后再点一次重置即可"));
                 RefreshGrid();
                 return;
             }
