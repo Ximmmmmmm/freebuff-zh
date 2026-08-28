@@ -1172,20 +1172,25 @@ namespace FreebuffController
                 rbCopy.BackColor = ColPanel;
                 Controls.Add(rbCopy);
 
+                // Only instances that are actually logged in can be cloned —
+                // anything else would silently fall back to a fresh login.
+                // The account email is shown so it's obvious who is cloned.
                 source.DropDownStyle = ComboBoxStyle.DropDownList;
-                source.Bounds = new Rectangle(38, 124, 150, 24);
+                source.Bounds = new Rectangle(38, 124, 300, 24);
                 source.BackColor = ColNeutral;
                 source.ForeColor = ColText;
                 source.Font = new Font("Microsoft YaHei UI", 9f);
-                source.Items.Add("主实例");
-                sourceIndex.Add(0);
-                for (int i = 1; i <= MaxSlot; i++)
+                for (int i = 0; i <= MaxSlot; i++)
                 {
                     if (i == slot) continue; // can't copy from the target itself
-                    source.Items.Add("实例 " + i);
+                    if (ReadTokenFor(i) == null) continue; // not logged in
+                    string label = (i == 0) ? "主实例" : ("实例 " + i);
+                    string acct = AccountForState((i == 0) ? DefaultState : SlotStatePath(i));
+                    if (!acct.StartsWith("(")) label += "（" + acct + "）";
+                    source.Items.Add(label);
                     sourceIndex.Add(i);
                 }
-                source.SelectedIndex = 0;
+                if (source.Items.Count > 0) source.SelectedIndex = 0;
                 source.Enabled = false;
                 Controls.Add(source);
 
@@ -1199,9 +1204,22 @@ namespace FreebuffController
 
                 rbCopy.CheckedChanged += delegate { source.Enabled = rbCopy.Checked; };
 
-                Button cancel = MakeDialogButton("取消", 198, ColNeutral, ColNeutralHover);
+                // No logged-in instance to copy from: offer fresh login only.
+                int buttonY = 202;
+                int height = 246;
+                if (source.Items.Count == 0)
+                {
+                    rbCopy.Visible = false;
+                    source.Visible = false;
+                    subCopy.Visible = false;
+                    buttonY = 96;
+                    height = 140;
+                }
+                ClientSize = new Size(426, height);
+
+                Button cancel = MakeDialogButton("取消", 198, ColNeutral, ColNeutralHover, buttonY);
                 cancel.DialogResult = DialogResult.Cancel;
-                Button ok = MakeDialogButton("启动", 310, ColAccent, ColAccentHover);
+                Button ok = MakeDialogButton("启动", 310, ColAccent, ColAccentHover, buttonY);
                 ok.DialogResult = DialogResult.OK;
                 AcceptButton = ok;
                 CancelButton = cancel;
@@ -1210,14 +1228,19 @@ namespace FreebuffController
             // -1 fresh, otherwise the chosen source (0 = main instance).
             public int CopyFrom
             {
-                get { return rbCopy.Checked ? sourceIndex[source.SelectedIndex] : -1; }
+                get
+                {
+                    return rbCopy.Checked && source.SelectedIndex >= 0
+                        ? sourceIndex[source.SelectedIndex]
+                        : -1;
+                }
             }
 
-            private Button MakeDialogButton(string text, int x, Color back, Color hover)
+            private Button MakeDialogButton(string text, int x, Color back, Color hover, int y)
             {
                 var b = new Button();
                 b.Text = text;
-                b.Bounds = new Rectangle(x, 202, 100, 32);
+                b.Bounds = new Rectangle(x, y, 100, 32);
                 b.FlatStyle = FlatStyle.Flat;
                 b.FlatAppearance.BorderSize = 0;
                 b.FlatAppearance.MouseOverBackColor = hover;
