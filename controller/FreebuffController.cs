@@ -786,34 +786,44 @@ namespace FreebuffController
         // already carries the latest version, so we read just that header
         // instead of following to GitHub, which can be slow or unreachable.
         // A feed that ever serves the file directly still works via the
-        // body fallback below.
+        // body fallback below. Each attempt falls back from the system
+        // proxy to a direct connection — the same pattern as FetchYamlBody,
+        // so the check never dies on a half-broken proxy.
         private static string FetchLatestVersion(string feedUrl)
         {
-            try
+            for (int attempt = 0; attempt < 2; attempt++)
             {
-                ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
-                var req = (HttpWebRequest)WebRequest.Create(feedUrl);
-                req.Method = "GET";
-                req.AllowAutoRedirect = false;
-                req.Timeout = 10000;
-                req.ReadWriteTimeout = 10000;
-                req.UserAgent = "FreebuffMultiOpenController/1.0";
-                using (var resp = (HttpWebResponse)req.GetResponse())
+                try
                 {
-                    int code = (int)resp.StatusCode;
-                    if (code >= 300 && code < 400)
+                    ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
+                    var req = (HttpWebRequest)WebRequest.Create(feedUrl);
+                    req.Method = "GET";
+                    req.AllowAutoRedirect = false;
+                    req.Timeout = 10000;
+                    req.ReadWriteTimeout = 10000;
+                    req.UserAgent = "FreebuffMultiOpenController/1.0";
+                    if (attempt == 1) req.Proxy = null;
+                    using (var resp = (HttpWebResponse)req.GetResponse())
                     {
-                        Match m = LooseVersionRegex.Match(resp.Headers["Location"] ?? "");
-                        return m.Success ? m.Value : null;
-                    }
-                    using (var sr = new StreamReader(resp.GetResponseStream()))
-                    {
-                        Match m = YamlVersionRegex.Match(sr.ReadToEnd());
-                        return m.Success ? m.Groups[1].Value.Trim() : null;
+                        int code = (int)resp.StatusCode;
+                        if (code >= 300 && code < 400)
+                        {
+                            Match m = LooseVersionRegex.Match(resp.Headers["Location"] ?? "");
+                            if (m.Success) return m.Value;
+                        }
+                        else
+                        {
+                            using (var sr = new StreamReader(resp.GetResponseStream()))
+                            {
+                                Match m = YamlVersionRegex.Match(sr.ReadToEnd());
+                                if (m.Success) return m.Groups[1].Value.Trim();
+                            }
+                        }
                     }
                 }
+                catch { }
             }
-            catch { return null; }
+            return null;
         }
 
         // "0.0.76.0" (exe) and "0.0.76" (feed) must compare equal, so only
@@ -857,7 +867,19 @@ namespace FreebuffController
                     BeginInvoke((MethodInvoker)delegate
                     {
                         if (IsDisposed) return;
+                        RefreshInstalledVersion();
                         latestVersion = latest;
+                        // The installer this controller launched may have
+                        // finished meanwhile: once the installed version
+                        // catches up with the feed, the "安装包已启动" banner
+                        // and the failed-download fallback are stale.
+                        var inst = ParseLooseVersion(installedVersion);
+                        var lat = ParseLooseVersion(latest);
+                        if (inst != null && lat != null && inst.CompareTo(lat) >= 0)
+                        {
+                            updateStarted = false;
+                            updateFailed = false;
+                        }
                         ApplyVersionUi(false);
                         if (UpdateAvailable() && !updateStarted)
                         {
