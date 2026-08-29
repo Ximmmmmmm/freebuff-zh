@@ -20,6 +20,27 @@
   `tools/prune_backups.sh`（清理累积备份，默认保留 3 份，`--yes` 才删）
 - `tools/apply.js` 新增 `--quiet`（主进程小文件静音 MISSED 明细，突出 UI bundle 待补翻清单）
 
+## [0.0.77] · 2026-08-29
+
+- **适配 v0.0.77**：应用自动更新至 0.0.77（渲染 bundle：`index-C7M7l-Im.js` → `index-DOLT0u31.js`）
+  - 主进程补丁全部干净套用，语法校验通过；菜单 / 对话框 / 同意窗口中文化不受影响
+- **词典随 minifier 重命名更新**：`tools/remap.js` 自动迁移 29 条 template 词条的变量名
+  （如 `${u} session…`→`${f} session…`、`${m} left today`→`${g} left today`、
+  `resets in ${f}/${o}`→`resets in ${m}/${a}` 等）；7 条锚文本在新版被改写的词条人工重建
+- **补翻 v0.0.77 新增/改写文案**（约 20 条）：
+  - 用量窗口体系重做：5 天 / 月度窗口的状态说明（"5-day limit reached"、
+    "today's premium sessions are used" 等 5 条）与用量汇总行 `${e.label} … of ${e.limit}`
+  - 会话额度句式改写：`${TE(t)} ${cb(t,e)} today. ${n} Resets ${Dq(t)}.`，
+    小时说明拆为条件句 "Each start opens up to 1 hour; …" / "Each lasts up to 1 hour."
+  - 闲置会话回收提示（context-idle-release）："Nothing has run here for a while…" 长文案
+    与 "frees in X"（含模型下拉框里的模板变体）
+  - GLM 推广卡标题改为条件模板 `${r?"Promo":"GLM 5.2 promo"} — bounties pay up to …`，
+    补翻 "Earned sessions" → 赚取的会话
+- 有意保留英文：用量窗口极简 label（"5-day"/"month"，避免子串误伤 `monthly` 等代码标识符）、
+  模型名（Opus/Sonnet/GPT-5.6…）、编辑器与技术标识
+- 词典更新为 exact 676 / template 78 / code 4 / pattern 7（UI bundle 替换 910 处，**全词典命中**）
+- 已使用 v0.0.77 原版 `app.asar` 与 `orchestrator/ui` 资源完成构建验证
+
 ## [0.0.76] · 2026-08-27
 
 - **适配 v0.0.76**：应用自动更新至 0.0.76（渲染 bundle：`index-BiJnMND3.js` → `index-C7M7l-Im.js`）

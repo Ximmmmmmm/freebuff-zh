@@ -4,20 +4,20 @@
 ![GitHub last commit](https://img.shields.io/github/last-commit/Ximmmmmmm/freebuff-zh)
 ![GitHub Repo stars](https://img.shields.io/github/stars/Ximmmmmmm/freebuff-zh?style=social)
 ![GitHub forks](https://img.shields.io/github/forks/Ximmmmmmm/freebuff-zh?style=social)
-[![Target](https://img.shields.io/badge/目标-Freebuff%20Desktop%20v0.0.76-blue)](https://freebuff.com)
+[![Target](https://img.shields.io/badge/目标-Freebuff%20Desktop%20v0.0.77-blue)](https://freebuff.com)
 [![lint](https://github.com/Ximmmmmmm/freebuff-zh/actions/workflows/ci.yml/badge.svg)](https://github.com/Ximmmmmmm/freebuff-zh/actions/workflows/ci.yml)
 
 **中文关键词 / Keywords**: Freebuff 汉化、Freebuff 中文版、Freebuff Chinese localization、AI coding agent 中文、Freebuff 翻译、Electron 汉化、localization pack
 
-Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.76）的**简体中文汉化包**，直接修改已打包产物，无需源码、不涉及任何联网改动。
+Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.77）的**简体中文汉化包**，直接修改已打包产物，无需源码、不涉及任何联网改动。
 
 > **English**: A Simplified-Chinese localization pack for Freebuff Desktop — the free AI coding agent. Patches the packaged app directly, no source build required. If you're a Chinese-speaking Freebuff user, this is for you.
 
 ## ✨ 特性
 
-- **覆盖全面**：渲染进程约 900 处文案 + 主进程菜单 / 对话框 / 同意窗口全面中文化
-- **词典驱动**：`dict.json`（exact 666 / template 77 / code 4 / pattern 7），幂等应用、可审计
-- **可复现构建**：`build.sh` 从原版 + 词典 + 补丁**逐字节重建**汉化产物（已对 v0.0.76 验证）
+- **覆盖全面**：渲染进程约 920 处文案 + 主进程菜单 / 对话框 / 同意窗口全面中文化
+- **词典驱动**：`dict.json`（exact 676 / template 78 / code 4 / pattern 7），幂等应用、可审计
+- **可复现构建**：`build.sh` 从原版 + 词典 + 补丁**逐字节重建**汉化产物（已对 v0.0.77 验证）
 - **一键安装/还原**：`apply.sh` / `restore.sh`，自动备份，随时回退英文原版
 - **工具链完整**：`tools/` 提供提取、翻译、核查、残留扫描等脚本，便于随版本更新补翻
 - **版本迁移自动化**：`tools/update.sh` 一键串起重映射 → 构建 → 残留扫描。其中
@@ -69,7 +69,7 @@ bash hanhua/build.sh                       # 自动使用安装目录里最近�
 bash hanhua/build.sh <app.asar> <ui-dir>   # 或显式指定原版文件
 ```
 
-构建管线（已对 v0.0.76 验证，`ui` 与主进程内容与 Release 产物逐字节一致）：
+构建管线（已对 v0.0.77 验证，`ui` 与主进程内容与 Release 产物逐字节一致）：
 
 ```
 原版 app.asar ──解包──▶ tools/apply.js（dict.json 词典）──▶ patches/（人工补丁）──▶ 重打包 ──▶ output/app.asar
