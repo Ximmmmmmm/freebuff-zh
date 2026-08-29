@@ -17,6 +17,7 @@ A small Windows utility that lets the Freebuff desktop app run multiple instance
 - **一键操作**：启动 / 停止 / 重置账号 / 停止全部；双击表格行直接启动
 - **两种初始化方式**：启动未初始化的实例时弹窗选择——全新登录（每个窗口用不同账号），或复制其他已登录实例的账号（下拉框只列出真正登录过的实例，并显示其邮箱），免重复登录
 - **重置换号**：清空某个实例即可换登录另一个账号
+- **汉化集成**：自动检测 Freebuff 是否已应用[汉化包](../hanhua/)（同仓库子项目），可一键应用 / 还原——Freebuff 更新覆盖汉化后，点一下即恢复中文界面
 - 暗色主题 UI，单文件 exe（约 22 KB，无运行时依赖）；最小化进任务栏，关闭即完全退出
 
 ## 使用 / Usage
@@ -36,6 +37,25 @@ Freebuff 是 Electron 应用，用 `requestSingleInstanceLock()` 限制单开。
 因此 Freebuff 应用升级不会使本工具失效。
 
 The app is an Electron app that enforces a single-instance lock. This tool gives each instance its own `--user-data-dir` and its own orchestrator state file via an environment variable, so instances don't share locks — no app files are touched, and app updates don't break it.
+
+## 汉化集成 / Localization
+
+Freebuff 的自动更新会用原版文件覆盖[汉化包](../hanhua/)的产物。控制器在窗口底部显示汉化状态，
+并提供「应用汉化 / 还原英文」一键操作（首次应用自动备份英文原版，与 `apply.sh` 的备份/还原机制完全兼容）。
+
+汉化仓库的查找顺序：
+
+1. exe 同级的 `hanhua/` 目录（monorepo 内自动生效）
+2. exe 上一级目录的 `hanhua/`
+3. 上次在对话框里选择并记住的路径（`%APPDATA%\FreebuffController\hanhua-path.txt`）
+
+控制器还会对比本机 Freebuff 版本与 `hanhua/manifest.json` 的 `targetVersion`：
+本机版本更新时提醒先更新词典并重新构建，避免把过时的汉化产物打上去。
+
+Freebuff 的 automatic updates overwrite the localization pack's patched files.
+The controller shows the localization status at the bottom of its window and offers
+one-click **apply / restore** (the first apply backs up the pristine English files,
+compatible with `apply.sh`'s backup mechanism).
 
 ## 编译 / Build
 

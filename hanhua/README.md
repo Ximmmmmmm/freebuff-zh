@@ -36,16 +36,18 @@ Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.76）的**简体中文汉�
 先在本机构建产物，再安装：
 
 ```bash
-bash build.sh            # 用安装目录里最近的 hanhua-backup-* 作为原版，生成 output/
-bash apply.sh            # 应用汉化（自动备份原文件）
+bash hanhua/build.sh     # 在仓库根目录运行；用安装目录里最近的 hanhua-backup-* 作为原版，生成 hanhua/output/
+bash hanhua/apply.sh     # 应用汉化（自动备份原文件）
 ```
+
+> 也可以在多开控制器（`../controller/`）里一键应用，无需命令行。
 
 脚本会先把现有 `app.asar` 和 `ui/` 备份到 `resources/hanhua-backup-<时间戳>/`，再替换，**重启应用生效**。
 
 如果你已经拿到一份产物目录（自行构建的），也可以：
 
 ```bash
-bash apply.sh /path/to/unpacked   # 传入产物所在目录
+bash hanhua/apply.sh /path/to/unpacked   # 传入产物所在目录（仓库根目录运行）
 ```
 
 手动安装：
@@ -55,7 +57,7 @@ bash apply.sh /path/to/unpacked   # 传入产物所在目录
 ### 还原英文原版
 
 ```bash
-bash restore.sh          # 从最近一次备份还原
+bash hanhua/restore.sh   # 从最近一次备份还原（仓库根目录运行）
 ```
 
 ## 🔧 从源码重建（构建）
@@ -63,8 +65,8 @@ bash restore.sh          # 从最近一次备份还原
 仓库**不提交**二进制产物（`output/`、`backup/` 已 gitignore）。需要自己构建时：
 
 ```bash
-bash build.sh                       # 自动使用安装目录里最近的 hanhua-backup-* 作为原版
-bash build.sh <app.asar> <ui-dir>   # 或显式指定原版文件
+bash hanhua/build.sh                       # 自动使用安装目录里最近的 hanhua-backup-* 作为原版
+bash hanhua/build.sh <app.asar> <ui-dir>   # 或显式指定原版文件
 ```
 
 构建管线（已对 v0.0.76 验证，`ui` 与主进程内容与 Release 产物逐字节一致）：
@@ -76,10 +78,13 @@ bash build.sh <app.asar> <ui-dir>   # 或显式指定原版文件
 
 > 注意：asar 容器头部可能因 `@electron/asar` 版本不同存在细微差异（内容一致），不影响运行。首次运行 `build.sh` 需要联网（`npx` 拉取 `@electron/asar`）。
 
-## 🗂️ 仓库结构
+## 🗂️ 目录结构
+
+本目录是 [freebuff-toolkit](../README.md) monorepo 的汉化子项目，与多开控制器（`../controller/`）同级：
 
 ```
 ├── dict.json          # 翻译词典（exact / template / code / pattern 四类）
+├── manifest.json      # 词典适配的 Freebuff 版本（多开控制器读取做兼容检查）
 ├── patches/           # 人工补丁：词典覆盖不到的手工修改（index.html、主进程 5 个文件）
 ├── tools/             # 提取/翻译/核查脚本（见 docs/汉化流程.md）
 │   ├── update.sh      # 一键版本迁移：重映射 → 构建 → 残留扫描 → 待办汇总
@@ -100,14 +105,17 @@ bash build.sh <app.asar> <ui-dir>   # 或显式指定原版文件
 ## ⚠️ 注意事项
 
 - **自动更新会覆盖汉化**：应用自带 electron-updater，更新后汉化文件会被替换。更新后重新执行
-  `apply.sh`（或用 `build.sh` 对新版本重新构建）。详见 `docs/更新维护.md`。
+  `apply.sh`（或用 `build.sh` 对新版本重新构建；也可直接在多开控制器里点「应用汉化」）。
+  详见 `docs/更新维护.md`。
 - **有意保留英文的部分**：编程语言名（Python、TypeScript…）、主题名（Ayu Dark…）、键盘键名
   （Enter、Delete…）、内部枚举/类型名、库内部错误信息——改动会破坏逻辑，故不翻译。
 - 汉化不涉及任何联网、上传或凭据改动。
 
 ## 🗺️ 路线图
 
-- [ ] **启动时自检自动恢复汉化**：主进程注入逻辑，检测 `ui/index.html` 缺失汉化标记时自动从内置副本恢复，更新后首次启动即回到中文（受自动更新整体替换 `app.asar` 的限制，需结合外部触发机制）
+- [x] **更新后恢复汉化的外部触发机制**：已由同仓库的多开控制器实现——状态检测 + 一键应用/还原，
+  Freebuff 更新覆盖汉化后打开控制器点一下即可恢复（见 `../controller/`）
+- [ ] **启动时自检自动恢复汉化**：主进程注入逻辑，检测 `ui/index.html` 缺失汉化标记时自动从内置副本恢复，更新后首次启动即回到中文
 
 ## 📜 许可证与声明
 
