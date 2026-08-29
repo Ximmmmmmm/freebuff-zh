@@ -146,6 +146,28 @@ namespace FreebuffController
         private bool updateStarted;  // installer was downloaded and launched
         private bool updateFailed;   // last download failed; next click opens the page
 
+        // ---------- 汉化 (hanhua) integration ----------
+        // The sibling hanhua/ repo builds a localized app.asar + ui/ into its
+        // output/. Freebuff's auto-update overwrites those patched files, so
+        // the controller surfaces the status and can apply / restore them —
+        // same files and backup scheme as hanhua's apply.sh / restore.sh.
+        private static readonly string FreebuffResources =
+            Path.Combine(Path.GetDirectoryName(FreebuffExe), "resources");
+        private static readonly string InstalledUiIndex =
+            Path.Combine(FreebuffResources, "orchestrator\\ui\\index.html");
+        private const string HanhuaMarker = "<html lang=\"zh-CN\">";
+        private static readonly Regex ManifestVersionRegex =
+            new Regex("\"targetVersion\"\\s*:\\s*\"([^\"]+)\"");
+        private static readonly string HanhuaConfigFile = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "FreebuffController\\hanhua-path.txt");
+
+        private Label hanhuaLabel;
+        private Button btnHanhuaApply;
+        private Button btnHanhuaRestore;
+        private string hanhuaDir; // located hanhua/ repo; null = not found yet
+        private int hanhuaBusy;
+
         [DllImport("dwmapi.dll")]
         private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int value, int size);
 
@@ -182,7 +204,7 @@ namespace FreebuffController
         private void BuildUi()
         {
             Text = "Freebuff 多开控制器";
-            ClientSize = new Size(580, 498);
+            ClientSize = new Size(580, 546);
             BackColor = ColBg;
             ForeColor = ColText;
             Font = new Font("Microsoft YaHei UI", 9.75f);
@@ -201,26 +223,38 @@ namespace FreebuffController
 
             BuildGrid();
 
-            Button btnLaunch = MakeButton("启动", 20, 104, ColAccent, ColAccentHover);
+            Button btnLaunch = MakeButton("启动", 20, 436, 104, ColAccent, ColAccentHover);
             btnLaunch.Click += delegate { OnLaunch(); };
 
-            Button btnStop = MakeButton("停止", 134, 104, ColNeutral, ColNeutralHover);
+            Button btnStop = MakeButton("停止", 134, 436, 104, ColNeutral, ColNeutralHover);
             btnStop.Click += delegate { OnStop(); };
 
-            Button btnReset = MakeButton("重置账号", 248, 104, ColNeutral, ColNeutralHover);
+            Button btnReset = MakeButton("重置账号", 248, 436, 104, ColNeutral, ColNeutralHover);
             btnReset.Click += delegate { OnReset(); };
 
-            Button btnStopAll = MakeButton("停止全部", 362, 104, ColNeutral, ColNeutralHover);
+            Button btnStopAll = MakeButton("停止全部", 362, 436, 104, ColNeutral, ColNeutralHover);
             btnStopAll.Click += delegate { OnStopAll(); };
 
-            Button btnRefresh = MakeButton("刷新", 476, 84, ColNeutral, ColNeutralHover);
+            Button btnRefresh = MakeButton("刷新", 476, 436, 84, ColNeutral, ColNeutralHover);
             btnRefresh.Click += delegate { SetStatus("正在刷新…"); RefreshGrid(); FetchQuotasAsync(true); };
+
+            hanhuaLabel = new Label();
+            hanhuaLabel.Bounds = new Rectangle(22, 494, 324, 16);
+            hanhuaLabel.ForeColor = ColSub;
+            hanhuaLabel.Font = new Font("Microsoft YaHei UI", 8.5f);
+            Controls.Add(hanhuaLabel);
+
+            btnHanhuaApply = MakeButton("应用汉化", 354, 484, 100, ColNeutral, ColNeutralHover);
+            btnHanhuaApply.Click += delegate { OnHanhuaApply(); };
+
+            btnHanhuaRestore = MakeButton("还原英文", 460, 484, 100, ColNeutral, ColNeutralHover);
+            btnHanhuaRestore.Click += delegate { OnHanhuaRestore(); };
 
             BuildTray();
 
             statusLabel = new Label();
             statusLabel.Text = ReadyStatus();
-            statusLabel.Bounds = new Rectangle(22, 476, 330, 16);
+            statusLabel.Bounds = new Rectangle(22, 524, 330, 16);
             statusLabel.ForeColor = ColSub;
             statusLabel.Font = new Font("Microsoft YaHei UI", 8.5f);
             Controls.Add(statusLabel);
@@ -229,13 +263,16 @@ namespace FreebuffController
             versionLink.Text = string.IsNullOrEmpty(installedVersion)
                 ? "Freebuff 版本未知 · 检查更新"
                 : "Freebuff v" + installedVersion + " · 检查更新";
-            versionLink.Bounds = new Rectangle(354, 476, 206, 16);
+            versionLink.Bounds = new Rectangle(354, 524, 206, 16);
             versionLink.ForeColor = ColSub;
             versionLink.Font = new Font("Microsoft YaHei UI", 8.5f);
             versionLink.TextAlign = ContentAlignment.MiddleRight;
             versionLink.Cursor = Cursors.Hand;
             versionLink.Click += delegate { OnVersionLinkClick(); };
             Controls.Add(versionLink);
+
+            hanhuaDir = FindHanhuaDir();
+            RefreshHanhuaUi();
 
             refreshTimer = new System.Windows.Forms.Timer();
             refreshTimer.Interval = 3000;
@@ -249,7 +286,7 @@ namespace FreebuffController
 
             var versionTimer = new System.Windows.Forms.Timer();
             versionTimer.Interval = 1800000; // every 30 minutes
-            versionTimer.Tick += delegate { CheckVersionAsync(); };
+            versionTimer.Tick += delegate { CheckVersionAsync(); RefreshHanhuaUi(); };
             versionTimer.Start();
 
             ComputeAndApply();
@@ -356,11 +393,11 @@ namespace FreebuffController
             Controls.Add(grid);
         }
 
-        private Button MakeButton(string text, int x, int width, Color back, Color hover)
+        private Button MakeButton(string text, int x, int y, int width, Color back, Color hover)
         {
             var b = new Button();
             b.Text = text;
-            b.Bounds = new Rectangle(x, 436, width, 36);
+            b.Bounds = new Rectangle(x, y, width, 36);
             b.FlatStyle = FlatStyle.Flat;
             b.FlatAppearance.BorderSize = 0;
             b.FlatAppearance.MouseOverBackColor = hover;
@@ -737,8 +774,13 @@ namespace FreebuffController
                         latestVersion = latest;
                         ApplyVersionUi(false);
                         if (UpdateAvailable() && !updateStarted)
+                        {
+                            string after = (HanhuaApplied() && HanhuaBuildDir(hanhuaDir) != null)
+                                ? " 更新会覆盖汉化，装完点“应用汉化”恢复中文。"
+                                : "";
                             SetStatus("Freebuff 发布了新版本 v" + latestVersion +
-                                "，点击右下角“点击更新”直接下载安装。");
+                                "，点击右下角“点击更新”直接下载安装。" + after);
+                        }
                     });
                 }
                 catch { }
@@ -758,7 +800,9 @@ namespace FreebuffController
             }
             if (updateStarted)
             {
-                versionLink.Text = "安装包已启动 · 按提示完成安装";
+                versionLink.Text = (HanhuaBuildDir(hanhuaDir) != null)
+                    ? "安装包已启动 · 装完点“应用汉化”"
+                    : "安装包已启动 · 按提示完成安装";
                 versionLink.ForeColor = ColSub;
                 return;
             }
@@ -1479,6 +1523,306 @@ namespace FreebuffController
                 }
                 catch { }
             }
+        }
+
+        // ---------- 汉化 (hanhua) ----------
+
+        // Status text mirrors the state machine of hanhua's apply.sh: applied
+        // (zh-CN marker present), not applied, and whether output/ is usable.
+        private void RefreshHanhuaUi()
+        {
+            if (hanhuaLabel == null) return;
+            if (Interlocked.CompareExchange(ref hanhuaBusy, 0, 0) == 1)
+            {
+                btnHanhuaApply.Enabled = false;
+                btnHanhuaRestore.Enabled = false;
+                return;
+            }
+            bool applied = HanhuaApplied();
+            string build = HanhuaBuildDir(hanhuaDir);
+            string tv = HanhuaTargetVersion(hanhuaDir);
+            var inst = ParseLooseVersion(installedVersion);
+            var target = ParseLooseVersion(tv);
+            bool outdated = inst != null && target != null && inst.CompareTo(target) > 0;
+            string tag = (tv == null) ? "" : "（词典 v" + tv + (outdated ? "，已过时" : "") + "）";
+
+            if (applied)
+                hanhuaLabel.Text = (build != null) ? ("汉化：已应用" + tag) : "汉化：已应用";
+            else if (build != null)
+                hanhuaLabel.Text = "汉化：未应用 · 可一键应用" + tag;
+            else if (hanhuaDir != null)
+                hanhuaLabel.Text = "汉化：未应用 · 缺少构建（先运行 build.sh）";
+            else
+                hanhuaLabel.Text = "汉化：未应用 · 未找到汉化仓库";
+            hanhuaLabel.ForeColor = (applied || build == null) ? ColSub : ColGreen;
+            btnHanhuaApply.Enabled = build != null;
+            btnHanhuaRestore.Enabled = LatestHanhuaBackup() != null;
+        }
+
+        // Config → exe-adjacent probes. The stored path wins so a toolkit
+        // moved elsewhere keeps working until it goes stale.
+        private string FindHanhuaDir()
+        {
+            string fromConfig = ReadHanhuaConfig();
+            if (IsValidHanhuaDir(fromConfig)) return fromConfig;
+            try
+            {
+                string exeDir = Path.GetDirectoryName(Application.ExecutablePath);
+                string[] probes = new string[]
+                {
+                    Path.Combine(exeDir, "hanhua"),
+                    Path.GetFullPath(Path.Combine(exeDir, "..\\hanhua"))
+                };
+                foreach (string p in probes)
+                    if (IsValidHanhuaDir(p)) return p;
+            }
+            catch { }
+            return null;
+        }
+
+        // Ask once and remember; apply/restore are useless without the repo.
+        private bool TryResolveHanhuaDir()
+        {
+            if (IsValidHanhuaDir(hanhuaDir)) return true;
+            using (var dlg = new FolderBrowserDialog())
+            {
+                dlg.Description = "选择工具包里的 hanhua 目录（含 dict.json 与 output/）";
+                dlg.ShowNewFolderButton = false;
+                if (dlg.ShowDialog(this) != DialogResult.OK) return false;
+                if (!IsValidHanhuaDir(dlg.SelectedPath))
+                {
+                    Info("所选目录不是汉化仓库（缺少 dict.json）。");
+                    return false;
+                }
+                hanhuaDir = dlg.SelectedPath;
+                SaveHanhuaConfig(hanhuaDir);
+                return true;
+            }
+        }
+
+        private static string ReadHanhuaConfig()
+        {
+            try
+            {
+                if (!File.Exists(HanhuaConfigFile)) return null;
+                string p = File.ReadAllText(HanhuaConfigFile).Trim();
+                return (p.Length > 0) ? p : null;
+            }
+            catch { return null; }
+        }
+
+        private static void SaveHanhuaConfig(string dir)
+        {
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(HanhuaConfigFile));
+                File.WriteAllText(HanhuaConfigFile, dir);
+            }
+            catch { }
+        }
+
+        private static bool IsValidHanhuaDir(string dir)
+        {
+            if (string.IsNullOrEmpty(dir)) return false;
+            return File.Exists(Path.Combine(dir, "dict.json"))
+                && Directory.Exists(Path.Combine(dir, "tools"));
+        }
+
+        // output/app.asar + output/ui/index.html exist → usable build.
+        private static string HanhuaBuildDir(string dir)
+        {
+            if (string.IsNullOrEmpty(dir)) return null;
+            string outDir = Path.Combine(dir, "output");
+            if (File.Exists(Path.Combine(outDir, "app.asar"))
+                && File.Exists(Path.Combine(outDir, "ui\\index.html"))) return outDir;
+            return null;
+        }
+
+        private static string HanhuaTargetVersion(string dir)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(dir)) return null;
+                string manifest = Path.Combine(dir, "manifest.json");
+                if (!File.Exists(manifest)) return null;
+                Match m = ManifestVersionRegex.Match(File.ReadAllText(manifest));
+                return m.Success ? m.Groups[1].Value : null;
+            }
+            catch { return null; }
+        }
+
+        // Same sentinel hanhua's apply.sh / postbuild.js check.
+        private static bool HanhuaApplied()
+        {
+            try
+            {
+                return File.Exists(InstalledUiIndex)
+                    && File.ReadAllText(InstalledUiIndex).Contains(HanhuaMarker);
+            }
+            catch { return false; }
+        }
+
+        // Timestamped names sort lexicographically; newest backup wins.
+        private static string LatestHanhuaBackup()
+        {
+            try
+            {
+                if (!Directory.Exists(FreebuffResources)) return null;
+                string best = null;
+                foreach (string d in Directory.GetDirectories(FreebuffResources, "hanhua-backup-*"))
+                    if (File.Exists(Path.Combine(d, "app.asar"))
+                        && (best == null || string.CompareOrdinal(d, best) > 0)) best = d;
+                return best;
+            }
+            catch { return null; }
+        }
+
+        private static string HanhuaErrorText(Exception ex)
+        {
+            if (ex is IOException || ex is UnauthorizedAccessException)
+                return "文件被占用或无权限，请先关闭所有 Freebuff 窗口再试（" + ex.Message + "）";
+            return ex.Message;
+        }
+
+        private static void CopyDir(string src, string dst)
+        {
+            Directory.CreateDirectory(dst);
+            foreach (string file in Directory.GetFiles(src))
+                File.Copy(file, Path.Combine(dst, Path.GetFileName(file)), true);
+            foreach (string sub in Directory.GetDirectories(src))
+                CopyDir(sub, Path.Combine(dst, Path.GetFileName(sub)));
+        }
+
+        // Common preflight for apply/restore: Freebuff must not hold the
+        // files open. Offers to stop everything first; false = user canceled.
+        private bool ConfirmStopAllThenRun(Action action)
+        {
+            bool mainRunning;
+            HashSet<int> slots = QueryRunning(out mainRunning);
+            if (!mainRunning && slots.Count == 0)
+            {
+                action();
+                return true;
+            }
+            if (!Confirm("检测到 Freebuff 正在运行，替换文件可能失败。\r\n先停止全部实例再继续吗？"))
+                return false;
+            string[] all = new string[MaxSlot + 1];
+            all[0] = "main";
+            for (int i = 1; i <= MaxSlot; i++) all[i] = i.ToString();
+            KillInstances(all);
+            SetStatus("已停止全部实例，稍候继续…");
+            Delay(2000, action);
+            return true;
+        }
+
+        private void OnHanhuaApply()
+        {
+            if (Interlocked.CompareExchange(ref hanhuaBusy, 1, 0) != 0) return;
+            if (!TryResolveHanhuaDir()) { Interlocked.Exchange(ref hanhuaBusy, 0); return; }
+            string build = HanhuaBuildDir(hanhuaDir);
+            if (build == null)
+            {
+                Interlocked.Exchange(ref hanhuaBusy, 0);
+                Info("汉化仓库里缺少构建产物 output\\app.asar。\r\n请先在仓库目录运行：bash hanhua/build.sh");
+                RefreshHanhuaUi();
+                return;
+            }
+            // Dict older than the installed app → the build likely misses new
+            // strings; let the user back out instead of half-localizing.
+            string tv = HanhuaTargetVersion(hanhuaDir);
+            var inst = ParseLooseVersion(installedVersion);
+            var target = ParseLooseVersion(tv);
+            if (inst != null && target != null && inst.CompareTo(target) > 0
+                && !Confirm("当前 Freebuff v" + installedVersion + " 比词典适配的 v" + tv +
+                    " 新，现有构建可能缺少新版本的新增文案。\r\n建议先更新词典并重新构建。仍要继续应用吗？"))
+            {
+                Interlocked.Exchange(ref hanhuaBusy, 0);
+                return;
+            }
+            if (!ConfirmStopAllThenRun(delegate { ApplyHanhuaBuild(build); }))
+                Interlocked.Exchange(ref hanhuaBusy, 0);
+        }
+
+        // Runs on the UI thread (possibly via Delay), does the file work on
+        // a worker: back up the pristine English files once, then copy over —
+        // the same flow as hanhua's apply.sh.
+        private void ApplyHanhuaBuild(string build)
+        {
+            SetStatus("正在应用汉化…");
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                Exception error = null;
+                try
+                {
+                    BackupPristineIfNeeded();
+                    File.Copy(Path.Combine(build, "app.asar"),
+                        Path.Combine(FreebuffResources, "app.asar"), true);
+                    Directory.CreateDirectory(Path.GetDirectoryName(InstalledUiIndex));
+                    File.Copy(Path.Combine(build, "ui\\index.html"), InstalledUiIndex, true);
+                    CopyDir(Path.Combine(build, "ui\\assets"),
+                        Path.Combine(FreebuffResources, "orchestrator\\ui\\assets"));
+                }
+                catch (Exception ex) { error = ex; }
+                Interlocked.Exchange(ref hanhuaBusy, 0);
+                UiSafe(delegate
+                {
+                    if (IsDisposed) return;
+                    SetStatus(error == null
+                        ? "汉化已应用 ✓ 重启 Freebuff 生效。"
+                        : "应用汉化失败：" + HanhuaErrorText(error));
+                    RefreshHanhuaUi();
+                });
+            });
+        }
+
+        private static void BackupPristineIfNeeded()
+        {
+            if (HanhuaApplied()) return; // keep the existing pristine backup
+            string bk = Path.Combine(FreebuffResources,
+                "hanhua-backup-" + DateTime.Now.ToString("yyyyMMdd-HHmmss"));
+            Directory.CreateDirectory(bk);
+            File.Copy(Path.Combine(FreebuffResources, "app.asar"), Path.Combine(bk, "app.asar"), true);
+            CopyDir(Path.Combine(FreebuffResources, "orchestrator\\ui"), Path.Combine(bk, "ui"));
+        }
+
+        private void OnHanhuaRestore()
+        {
+            if (Interlocked.CompareExchange(ref hanhuaBusy, 1, 0) != 0) return;
+            string bk = LatestHanhuaBackup();
+            if (bk == null)
+            {
+                Interlocked.Exchange(ref hanhuaBusy, 0);
+                Info("没有找到英文原版备份（resources\\hanhua-backup-*）。\r\n应用汉化时会自动创建。");
+                return;
+            }
+            if (!ConfirmStopAllThenRun(delegate { RestoreHanhuaBackup(bk); }))
+                Interlocked.Exchange(ref hanhuaBusy, 0);
+        }
+
+        private void RestoreHanhuaBackup(string bk)
+        {
+            SetStatus("正在还原英文原版…");
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                Exception error = null;
+                try
+                {
+                    File.Copy(Path.Combine(bk, "app.asar"),
+                        Path.Combine(FreebuffResources, "app.asar"), true);
+                    CopyDir(Path.Combine(bk, "ui"),
+                        Path.Combine(FreebuffResources, "orchestrator\\ui"));
+                }
+                catch (Exception ex) { error = ex; }
+                Interlocked.Exchange(ref hanhuaBusy, 0);
+                UiSafe(delegate
+                {
+                    if (IsDisposed) return;
+                    SetStatus(error == null
+                        ? "已还原英文原版 ✓ 重启 Freebuff 生效。"
+                        : "还原失败：" + HanhuaErrorText(error));
+                    RefreshHanhuaUi();
+                });
+            });
         }
     }
 }
