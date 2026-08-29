@@ -36,7 +36,7 @@ Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.77）的**简体中文汉�
 先在本机构建产物，再安装：
 
 ```bash
-bash hanhua/build.sh     # 在仓库根目录运行；用安装目录里最近的 hanhua-backup-* 作为原版，生成 hanhua/output/
+bash hanhua/build.sh     # 在仓库根目录运行；自动选原版：优先安装目录里最近的 hanhua-backup-*，没有备份（首次构建）则直接用安装目录的英文原版，生成 hanhua/output/
 bash hanhua/apply.sh     # 应用汉化（自动备份原文件）
 ```
 
@@ -65,7 +65,7 @@ bash hanhua/restore.sh   # 从最近一次备份还原（仓库根目录运行�
 仓库**不提交**二进制产物（`output/`、`backup/` 已 gitignore）。需要自己构建时：
 
 ```bash
-bash hanhua/build.sh                       # 自动使用安装目录里最近的 hanhua-backup-* 作为原版
+bash hanhua/build.sh                       # 自动选原版：优先最近的 hanhua-backup-*，没有备份则用安装目录的英文原版
 bash hanhua/build.sh <app.asar> <ui-dir>   # 或显式指定原版文件
 ```
 

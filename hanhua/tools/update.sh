@@ -26,12 +26,22 @@ if [ -n "${1:-}" ]; then
   PRISTINE_UI="${2:-}"
 else
   BK="$(ls -1dt "${INSTALL}/resources"/hanhua-backup-* 2>/dev/null | head -1 || true)"
-  if [ -z "${BK}" ] || [ ! -f "${BK}/app.asar" ]; then
-    echo "ERROR: 找不到原版。先更新应用并跑一次 apply.sh 生成备份，或显式传入路径。" >&2
+  if [ -n "${BK}" ] && [ -f "${BK}/app.asar" ]; then
+    PRISTINE_ASAR="${BK}/app.asar"
+    PRISTINE_UI="${BK}/ui"
+  elif [ -f "${INSTALL}/resources/app.asar" ]; then
+    if grep -q '<html lang="zh-CN">' "${INSTALL}/resources/orchestrator/ui/index.html" 2>/dev/null; then
+      echo "ERROR: 安装目录已是汉化版且没有 hanhua-backup-* 备份，无法确定英文原版。" >&2
+      echo "  先 bash restore.sh 还原英文；或显式传入路径：bash tools/update.sh <app.asar> <ui-dir>" >&2
+      exit 1
+    fi
+    PRISTINE_ASAR="${INSTALL}/resources/app.asar"
+    PRISTINE_UI="${INSTALL}/resources/orchestrator/ui"
+    echo "未找到 hanhua-backup-*，改用安装目录当前的英文原版作 pristine。"
+  else
+    echo "ERROR: 找不到原版。本机未安装 Freebuff 且没有备份，请显式传入路径：bash tools/update.sh <app.asar> <ui-dir>" >&2
     exit 1
   fi
-  PRISTINE_ASAR="${BK}/app.asar"
-  PRISTINE_UI="${BK}/ui"
 fi
 [ -f "${PRISTINE_ASAR}" ] || { echo "ERROR: ${PRISTINE_ASAR} 不存在" >&2; exit 1; }
 if [ -n "${PRISTINE_UI}" ]; then

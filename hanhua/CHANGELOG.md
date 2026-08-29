@@ -1,5 +1,18 @@
 # 更新日志
 
+## 工具链 · 2026-08-29（之二）
+
+- **修复 `tools/remap.js` 内嵌的原始 NUL 字节**：`c.join('\u0000')` 的分隔符此前是
+  字面 0x00 字节，导致 GitHub / 文本工具把该文件识别为二进制（不显示内容与 diff、
+  无法正常审阅）。改为等价的 `\u0000` 转义序列，语义不变
+- **首次构建不再依赖备份**：`build.sh` / `tools/update.sh` 在找不到 `hanhua-backup-*`
+  时自动改用安装目录当前的英文原版（`resources/app.asar` + `orchestrator/ui`）作
+  pristine，解决「先有 backup 还是先有 output」的鸡生蛋问题；安装目录已是汉化版
+  且无备份（备份链已断）时明确报错，避免拿汉化产物当原版
+- **`tools/apply_ui_patch.js` 补齐 MISSED 报告**：index.html 直改的每条替换不命中时
+  逐条列出（已翻译则不误报），与 `apply.js` 行为对齐；漏翻不再静默，报告随
+  build / update 日志留档
+
 ## 工具链 · 2026-08-27
 
 - **版本迁移自动化**：新增 `tools/update.sh` 一键流水线（重映射 → 构建 → 残留扫描 → 待办汇总）。

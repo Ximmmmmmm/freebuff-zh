@@ -961,11 +961,13 @@ namespace FreebuffController
             ThreadPool.QueueUserWorkItem(delegate
             {
                 Exception error = null;
+                bool shaVerified = false;
                 try
                 {
                     // latest.yml gives the exact file name + SHA512. If it
                     // can't be fetched we still try the official download
-                    // link, just without hash verification.
+                    // link, just without hash verification — and say so in
+                    // the status line once the installer is launched.
                     string file = "Freebuff-setup.exe";
                     string shaB64 = null;
                     string derivedUrl = null;
@@ -979,7 +981,11 @@ namespace FreebuffController
                             derivedUrl = FeedBase() + "/" + file;
                         }
                         Match sm = YamlShaRegex.Match(yml);
-                        if (sm.Success) shaB64 = sm.Groups[1].Value.Trim();
+                        if (sm.Success)
+                        {
+                            shaB64 = sm.Groups[1].Value.Trim();
+                            shaVerified = true;
+                        }
                     }
                     string dest = Path.Combine(Path.GetTempPath(), file);
                     var candidates = new List<string>();
@@ -1014,6 +1020,7 @@ namespace FreebuffController
                         updateStarted = true;
                         ApplyVersionUi(false);
                         SetStatus("Freebuff 安装包已下载并启动，按提示完成安装。" +
+                            (shaVerified ? "" : "（本次未取得 latest.yml，跳过了 SHA512 校验）") +
                             "若提示 Freebuff 正在运行，请先“停止全部”。");
                     });
                 }
@@ -1759,6 +1766,8 @@ namespace FreebuffController
         }
 
         // Timestamped names sort lexicographically; newest backup wins.
+        // Only complete backups (app.asar + ui/index.html) qualify — restoring
+        // from a half-written one would leave asar and ui out of sync.
         private static string LatestHanhuaBackup()
         {
             try
@@ -1767,6 +1776,7 @@ namespace FreebuffController
                 string best = null;
                 foreach (string d in Directory.GetDirectories(FreebuffResources, "hanhua-backup-*"))
                     if (File.Exists(Path.Combine(d, "app.asar"))
+                        && File.Exists(Path.Combine(d, "ui\\index.html"))
                         && (best == null || string.CompareOrdinal(d, best) > 0)) best = d;
                 return best;
             }
@@ -1787,6 +1797,20 @@ namespace FreebuffController
                 File.Copy(file, Path.Combine(dst, Path.GetFileName(file)), true);
             foreach (string sub in Directory.GetDirectories(src))
                 CopyDir(sub, Path.Combine(dst, Path.GetFileName(sub)));
+        }
+
+        // Clean-replace orchestrator/ui with srcUi — the same end state as
+        // restore.sh's "rm -rf + cp -r". Freebuff is stopped by the preflight,
+        // so removing the old directory first is safe, and a merge-copy would
+        // let stale hashed assets pile up across versions. srcUi is validated
+        // before anything is touched so a broken source can't half-apply.
+        private static void ReplaceUiDir(string srcUi)
+        {
+            if (!Directory.Exists(srcUi))
+                throw new ApplicationException("缺少 ui 目录：" + srcUi);
+            string dst = Path.Combine(FreebuffResources, "orchestrator\\ui");
+            if (Directory.Exists(dst)) Directory.Delete(dst, true);
+            CopyDir(srcUi, dst);
         }
 
         // Common preflight for apply/restore: Freebuff must not hold the
@@ -1856,10 +1880,7 @@ namespace FreebuffController
                     BackupPristineIfNeeded();
                     File.Copy(Path.Combine(build, "app.asar"),
                         Path.Combine(FreebuffResources, "app.asar"), true);
-                    Directory.CreateDirectory(Path.GetDirectoryName(InstalledUiIndex));
-                    File.Copy(Path.Combine(build, "ui\\index.html"), InstalledUiIndex, true);
-                    CopyDir(Path.Combine(build, "ui\\assets"),
-                        Path.Combine(FreebuffResources, "orchestrator\\ui\\assets"));
+                    ReplaceUiDir(Path.Combine(build, "ui"));
                 }
                 catch (Exception ex) { error = ex; }
                 Interlocked.Exchange(ref hanhuaBusy, 0);
@@ -1908,8 +1929,7 @@ namespace FreebuffController
                 {
                     File.Copy(Path.Combine(bk, "app.asar"),
                         Path.Combine(FreebuffResources, "app.asar"), true);
-                    CopyDir(Path.Combine(bk, "ui"),
-                        Path.Combine(FreebuffResources, "orchestrator\\ui"));
+                    ReplaceUiDir(Path.Combine(bk, "ui"));
                 }
                 catch (Exception ex) { error = ex; }
                 Interlocked.Exchange(ref hanhuaBusy, 0);

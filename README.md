@@ -38,7 +38,7 @@
 
 ```bash
 # 命令行方式：先构建，再应用
-bash hanhua/build.sh
+bash hanhua/build.sh     # 自动选原版：优先最近的 hanhua-backup-*，没有备份（首次构建）则直接用安装目录的英文原版
 bash hanhua/apply.sh
 ```
 

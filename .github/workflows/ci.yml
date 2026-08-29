@@ -4,9 +4,9 @@ name: lint
 
 on:
   push:
-    paths: ['hanhua/dict.json', 'hanhua/tools/**', 'hanhua/*.sh', '.github/workflows/**']
+    paths: ['hanhua/dict.json', 'hanhua/tools/**', 'hanhua/*.sh', 'controller/**', '.github/workflows/**']
   pull_request:
-    paths: ['hanhua/dict.json', 'hanhua/tools/**', 'hanhua/*.sh', '.github/workflows/**']
+    paths: ['hanhua/dict.json', 'hanhua/tools/**', 'hanhua/*.sh', 'controller/**', '.github/workflows/**']
   workflow_dispatch:
 
 jobs:
@@ -29,3 +29,11 @@ jobs:
           for f in hanhua/*.sh hanhua/tools/*.sh; do
             bash -n "$f"
           done
+
+  controller-build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 控制器编译冒烟（系统自带 csc，C# 5）
+        shell: cmd
+        run: call controller\build.bat

@@ -8,7 +8,8 @@
 #   4. repack app.asar; for ui/: patch index.html + apply the dictionary to the bundles
 #
 # Usage:
-#   bash build.sh                          # auto-pick the newest resources/hanhua-backup-* in the install dir
+#   bash build.sh                          # auto-pick pristine: newest hanhua-backup-*,
+#                                          # or the installed English files when no backup exists
 #   bash build.sh <app.asar> <ui-dir>      # use explicit pristine sources
 #
 # Output goes to output/ (app.asar + ui/). Install with: bash apply.sh
@@ -18,19 +19,32 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INSTALL="${LOCALAPPDATA}/Programs/@codebufffreebuff-desktop"
 
 # --- resolve pristine sources ------------------------------------------------
+# Priority: explicit args > newest hanhua-backup-* > installed English files.
+# The last case is what makes a first-ever build work (no backup exists before
+# the first apply). It is refused when the installed ui is already localized:
+# without a backup there is no proof the installed files are pristine English.
 if [ -n "${1:-}" ]; then
   PRISTINE_ASAR="$1"
   PRISTINE_UI="${2:-}"
 else
   BK="$(ls -1dt "${INSTALL}/resources"/hanhua-backup-* 2>/dev/null | head -1 || true)"
-  if [ -z "${BK}" ] || [ ! -f "${BK}/app.asar" ]; then
+  if [ -n "${BK}" ] && [ -f "${BK}/app.asar" ]; then
+    PRISTINE_ASAR="${BK}/app.asar"
+    PRISTINE_UI="${BK}/ui"
+  elif [ -f "${INSTALL}/resources/app.asar" ]; then
+    if grep -q '<html lang="zh-CN">' "${INSTALL}/resources/orchestrator/ui/index.html" 2>/dev/null; then
+      echo "ERROR: 安装目录已是汉化版且没有 hanhua-backup-* 备份，无法确定英文原版。" >&2
+      echo "  先 bash restore.sh 还原英文再构建；或显式指定原版：bash build.sh <app.asar> <ui-dir>" >&2
+      exit 1
+    fi
+    PRISTINE_ASAR="${INSTALL}/resources/app.asar"
+    PRISTINE_UI="${INSTALL}/resources/orchestrator/ui"
+    echo "未找到 hanhua-backup-*，改用安装目录当前的英文原版作 pristine。"
+  else
     echo "ERROR: no pristine source found." >&2
-    echo "  Pass them explicitly:  bash build.sh <app.asar> <ui-dir>" >&2
-    echo "  Or apply the localization once so a backup exists under resources/hanhua-backup-*/." >&2
+    echo "  本机未安装 Freebuff 且没有备份。请显式指定原版：bash build.sh <app.asar> <ui-dir>" >&2
     exit 1
   fi
-  PRISTINE_ASAR="${BK}/app.asar"
-  PRISTINE_UI="${BK}/ui"
 fi
 if [ ! -f "${PRISTINE_ASAR}" ]; then
   echo "ERROR: ${PRISTINE_ASAR} not found." >&2
