@@ -4,9 +4,9 @@ name: lint
 
 on:
   push:
-    paths: ['dict.json', 'tools/**', '.github/workflows/**']
+    paths: ['hanhua/dict.json', 'hanhua/tools/**', '.github/workflows/**']
   pull_request:
-    paths: ['dict.json', 'tools/**', '.github/workflows/**']
+    paths: ['hanhua/dict.json', 'hanhua/tools/**', '.github/workflows/**']
   workflow_dispatch:
 
 jobs:
@@ -18,9 +18,9 @@ jobs:
         with:
           node-version: 20
       - name: 词典 lint（结构 / 重复键 / 占位符一致性）
-        run: node tools/lint_dict.js
+        run: node hanhua/tools/lint_dict.js
       - name: 工具脚本语法冒烟
         run: |
-          for f in tools/*.js; do
+          for f in hanhua/tools/*.js; do
             node --check "$f"
           done
