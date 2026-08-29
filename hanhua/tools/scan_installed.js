@@ -48,7 +48,7 @@ const skipWords = new Set([
   'Enter', 'Delete', 'Escape', 'Tab', 'Home', 'End',
   'ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight',
   'Backspace', 'Shift', 'Control', 'Alt', 'Meta',
-  'Python', 'TypeScript', 'JavaScript', 'JavaScript',
+  'Python', 'TypeScript', 'JavaScript',
   'Markdown', 'Celsius', 'Unicode',
   'Ayu Dark', 'Ayu Light', 'Ayu Mirage',
 ])

@@ -119,6 +119,8 @@ namespace FreebuffController
         private Label statusLabel;
         private System.Windows.Forms.Timer statusRevertTimer;
         private System.Windows.Forms.Timer refreshTimer;
+        private System.Windows.Forms.Timer quotaTimer;
+        private System.Windows.Forms.Timer versionTimer;
         private int refreshBusy;
         private int quotaBusy;
         private DateTime lastQuotaFetch = DateTime.MinValue;
@@ -194,6 +196,9 @@ namespace FreebuffController
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
             if (statusRevertTimer != null) statusRevertTimer.Dispose();
+            if (refreshTimer != null) refreshTimer.Dispose();
+            if (quotaTimer != null) quotaTimer.Dispose();
+            if (versionTimer != null) versionTimer.Dispose();
             tray.Visible = false;
             tray.Dispose();
             base.OnFormClosed(e);
@@ -271,6 +276,18 @@ namespace FreebuffController
             versionLink.Click += delegate { OnVersionLinkClick(); };
             Controls.Add(versionLink);
 
+            // High-DPI displays: this layout is authored at 96 DPI and the
+            // process is DPI-aware (no OS bitmap scaling), so every fixed
+            // bound must be scaled up or the text clips on 125%/150% screens.
+            float uiScale = DpiScale();
+            ScaleUi(this, uiScale);
+            try
+            {
+                Font mf = tray.ContextMenuStrip.Font;
+                tray.ContextMenuStrip.Font = new Font(mf.FontFamily, mf.Size * uiScale, mf.Style);
+            }
+            catch { }
+
             hanhuaDir = FindHanhuaDir();
             RefreshHanhuaUi();
 
@@ -279,14 +296,19 @@ namespace FreebuffController
             refreshTimer.Tick += delegate { RefreshGrid(); };
             refreshTimer.Start();
 
-            var quotaTimer = new System.Windows.Forms.Timer();
+            quotaTimer = new System.Windows.Forms.Timer();
             quotaTimer.Interval = 300000;
             quotaTimer.Tick += delegate { FetchQuotasAsync(false); };
             quotaTimer.Start();
 
-            var versionTimer = new System.Windows.Forms.Timer();
+            versionTimer = new System.Windows.Forms.Timer();
             versionTimer.Interval = 1800000; // every 30 minutes
-            versionTimer.Tick += delegate { CheckVersionAsync(); RefreshHanhuaUi(); };
+            versionTimer.Tick += delegate
+            {
+                RefreshInstalledVersion(); // app may have updated meanwhile
+                CheckVersionAsync();
+                RefreshHanhuaUi();
+            };
             versionTimer.Start();
 
             ComputeAndApply();
@@ -443,6 +465,60 @@ namespace FreebuffController
             path.CloseFigure();
             c.Region = new Region(path);
             path.Dispose();
+        }
+
+        // Real system DPI relative to the 96 DPI the layout is authored at.
+        // The process is DPI-aware, so this reads the true value.
+        private static float DpiScale()
+        {
+            try
+            {
+                using (var g = Graphics.FromHwnd(IntPtr.Zero))
+                    return g.DpiX / 96f;
+            }
+            catch { return 1f; }
+        }
+
+        // Multiply the fixed 96-DPI layout by the scale factor: every bound,
+        // every font, the grid's fixed metrics. No-op at 100% scaling.
+        private static void ScaleUi(Form f, float s)
+        {
+            if (s < 1.01f) return;
+            f.ClientSize = new Size(
+                (int)Math.Round(f.ClientSize.Width * s),
+                (int)Math.Round(f.ClientSize.Height * s));
+            foreach (Control c in f.Controls) ScaleControlTree(c, s);
+        }
+
+        private static void ScaleControlTree(Control c, float s)
+        {
+            c.Bounds = new Rectangle(
+                (int)Math.Round(c.Left * s), (int)Math.Round(c.Top * s),
+                (int)Math.Round(c.Width * s), (int)Math.Round(c.Height * s));
+            if (c.Font != null)
+                c.Font = new Font(c.Font.FontFamily, c.Font.Size * s, c.Font.Style);
+            if (c is Button) RoundControl(c, (int)Math.Max(2, (int)Math.Round(10 * s)));
+            DataGridView dgv = c as DataGridView;
+            if (dgv != null)
+            {
+                int header = (int)Math.Round(38 * s);
+                int row = (int)Math.Round(34 * s);
+                dgv.ColumnHeadersHeight = header;
+                dgv.RowTemplate.Height = row;
+                foreach (DataGridViewRow r in dgv.Rows) r.Height = row;
+                DataGridViewCellStyle hs2 = dgv.ColumnHeadersDefaultCellStyle;
+                if (hs2.Font != null)
+                    hs2.Font = new Font(hs2.Font.FontFamily, hs2.Font.Size * s, hs2.Font.Style);
+                hs2.Padding = new Padding((int)Math.Round(10 * s), 0, 0, 0);
+                DataGridViewCellStyle cs2 = dgv.DefaultCellStyle;
+                if (cs2.Font != null)
+                    cs2.Font = new Font(cs2.Font.FontFamily, cs2.Font.Size * s, cs2.Font.Style);
+                foreach (DataGridViewColumn col in dgv.Columns)
+                    col.DefaultCellStyle.Padding = new Padding((int)Math.Round(12 * s), 0, 0, 0);
+                // keep the exact fit (header + 10 rows, scrollbars disabled)
+                dgv.Height = header + row * dgv.Rows.Count;
+            }
+            foreach (Control child in c.Controls) ScaleControlTree(child, s);
         }
 
         // ---------- logic ----------
@@ -674,6 +750,16 @@ namespace FreebuffController
             }
             catch { }
             return null;
+        }
+
+        // The app can update underneath us — possibly via the installer this
+        // controller itself launched — so every version comparison (update
+        // banner, hanhua dict-age guard) must re-read this instead of trusting
+        // the value from startup.
+        private void RefreshInstalledVersion()
+        {
+            string v = ReadInstalledVersion();
+            if (!string.IsNullOrEmpty(v)) installedVersion = v;
         }
 
         // electron-updater's generic provider config ships with the app and
@@ -1267,6 +1353,9 @@ namespace FreebuffController
                 ok.DialogResult = DialogResult.OK;
                 AcceptButton = ok;
                 CancelButton = cancel;
+
+                // Same 96-DPI-authored layout as the main window.
+                ScaleUi(this, DpiScale());
             }
 
             // -1 fresh, otherwise the chosen source (0 = main instance).
@@ -1553,18 +1642,23 @@ namespace FreebuffController
             else if (hanhuaDir != null)
                 hanhuaLabel.Text = "汉化：未应用 · 缺少构建（先运行 build.sh）";
             else
-                hanhuaLabel.Text = "汉化：未应用 · 未找到汉化仓库";
+                hanhuaLabel.Text = "汉化：未应用 · 未找到仓库（点「应用汉化」定位）";
             hanhuaLabel.ForeColor = (applied || build == null) ? ColSub : ColGreen;
-            btnHanhuaApply.Enabled = build != null;
-            btnHanhuaRestore.Enabled = LatestHanhuaBackup() != null;
+            // "应用汉化" is only meaningful while the app is still English
+            // (either never applied, or Freebuff's auto-update reverted it).
+            // Once applied there is nothing to do — leave it disabled, exactly
+            // like 还原英文 before any backup exists. Repo-not-found keeps it
+            // clickable so OnHanhuaApply can pop the folder picker.
+            btnHanhuaApply.Enabled = !applied && (build != null || hanhuaDir == null);
+            btnHanhuaRestore.Enabled = applied && LatestHanhuaBackup() != null;
         }
 
-        // Config → exe-adjacent probes. The stored path wins so a toolkit
-        // moved elsewhere keeps working until it goes stale.
+        // exe-adjacent probes → config (the order the README documents). A
+        // hanhua/ sitting next to the exe is almost certainly the one to use;
+        // the remembered path only rescues a controller exe that lives
+        // somewhere else, so it must not override a real sibling directory.
         private string FindHanhuaDir()
         {
-            string fromConfig = ReadHanhuaConfig();
-            if (IsValidHanhuaDir(fromConfig)) return fromConfig;
             try
             {
                 string exeDir = Path.GetDirectoryName(Application.ExecutablePath);
@@ -1577,6 +1671,8 @@ namespace FreebuffController
                     if (IsValidHanhuaDir(p)) return p;
             }
             catch { }
+            string fromConfig = ReadHanhuaConfig();
+            if (IsValidHanhuaDir(fromConfig)) return fromConfig;
             return null;
         }
 
@@ -1729,6 +1825,9 @@ namespace FreebuffController
             }
             // Dict older than the installed app → the build likely misses new
             // strings; let the user back out instead of half-localizing.
+            // Re-read first: the classic flow is "controller downloads the
+            // update → user installs → clicks 应用汉化 without restarting us".
+            RefreshInstalledVersion();
             string tv = HanhuaTargetVersion(hanhuaDir);
             var inst = ParseLooseVersion(installedVersion);
             var target = ParseLooseVersion(tv);

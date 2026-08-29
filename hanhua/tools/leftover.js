@@ -96,16 +96,8 @@ const skipBad = (s, type) => {
 }
 
 const toks = tokenize(src)
-const counts = new Map()
-for (const tok of toks) {
-  const text = toText(tok)
-  if (skipBad(text, tok.type)) continue
-  const key = text
-  counts.set(key, counts.get(key) || 0 + 1)
-  // store sample
-}
 
-// Rebuild with sample + type counts
+// Aggregate with sample + type counts.
 const agg = new Map()
 for (const tok of toks) {
   const text = toText(tok)

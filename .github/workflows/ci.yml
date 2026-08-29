@@ -4,9 +4,9 @@ name: lint
 
 on:
   push:
-    paths: ['hanhua/dict.json', 'hanhua/tools/**', '.github/workflows/**']
+    paths: ['hanhua/dict.json', 'hanhua/tools/**', 'hanhua/*.sh', '.github/workflows/**']
   pull_request:
-    paths: ['hanhua/dict.json', 'hanhua/tools/**', '.github/workflows/**']
+    paths: ['hanhua/dict.json', 'hanhua/tools/**', 'hanhua/*.sh', '.github/workflows/**']
   workflow_dispatch:
 
 jobs:
@@ -23,4 +23,9 @@ jobs:
         run: |
           for f in hanhua/tools/*.js; do
             node --check "$f"
+          done
+      - name: Shell 脚本语法冒烟
+        run: |
+          for f in hanhua/*.sh hanhua/tools/*.sh; do
+            bash -n "$f"
           done

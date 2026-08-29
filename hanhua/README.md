@@ -73,7 +73,7 @@ bash hanhua/build.sh <app.asar> <ui-dir>   # 或显式指定原版文件
 
 ```
 原版 app.asar ──解包──▶ tools/apply.js（dict.json 词典）──▶ patches/（人工补丁）──▶ 重打包 ──▶ output/app.asar
-原版 ui/      ──apply.js──▶ patches/ui-index.html.patch ──────────────────────────▶ output/ui/
+原版 ui/      ──apply_ui_patch.js（index.html 直改）──▶ output/ui/（主 bundle 再套 apply.js 词典）
 ```
 
 > 注意：asar 容器头部可能因 `@electron/asar` 版本不同存在细微差异（内容一致），不影响运行。首次运行 `build.sh` 需要联网（`npx` 拉取 `@electron/asar`）。
@@ -85,7 +85,7 @@ bash hanhua/build.sh <app.asar> <ui-dir>   # 或显式指定原版文件
 ```
 ├── dict.json          # 翻译词典（exact / template / code / pattern 四类）
 ├── manifest.json      # 词典适配的 Freebuff 版本（多开控制器读取做兼容检查）
-├── patches/           # 人工补丁：词典覆盖不到的手工修改（index.html、主进程 5 个文件）
+├── patches/           # 人工补丁：词典覆盖不到的手工修改（主进程 5 个文件；index.html 由 tools/apply_ui_patch.js 直改）
 ├── tools/             # 提取/翻译/核查脚本（见 docs/汉化流程.md）
 │   ├── update.sh      # 一键版本迁移：重映射 → 构建 → 残留扫描 → 待办汇总
 │   ├── remap.js       # template 词典条目随 minifier 改名自动迁移
