@@ -1,0 +1,8 @@
+# build output
+FreebuffController.exe
+*.exe
+!app.ico
+
+# local artifacts
+ui-check.png
+*.log
