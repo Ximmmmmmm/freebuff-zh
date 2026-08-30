@@ -1,5 +1,20 @@
 # 更新日志
 
+## [0.0.78] · 2026-08-30
+
+- **适配 v0.0.78**：应用自动更新至 0.0.78（渲染 bundle：`index-DOLT0u31.js` →
+  `index-B-G-js1m.js`）。装机目录无 `hanhua-backup-*`（备份链已断），本轮首次实战
+  「无备份时回退用安装目录英文原版」的构建回退（见「工具链 · 2026-08-29（之二）」）；
+  应用后英文原版已重新入库 `hanhua-backup-20260830-130408`。主进程补丁全部干净套用，
+  语法校验通过
+- **词典迁移**：`tools/remap.js` 自动迁移 6 条 template 词条的 minifier 改名
+  （`c_e→u_e`、`gn(M)→gn(D)`、`so(L)→oo(L)`、`Mq(t,e)→Dq(t,e)`、`Dq(t)→Mq(t)`×2）；
+  1 条被 remap 判 AMBIGUOUS 拒绝自动迁移（用量汇总行 `${e.label} … of ${e.limit}`，
+  锚文本在新 bundle 多义命中），人工核对确认仅为格式化函数改名 `Gye→Yye`，
+  同步更新 key 与译文后全命中
+- **验证**：词典对主 bundle 替换 911 处、`all keys matched`；postbuild 纯字面量
+  覆盖率 663/663（100%）；装机 index.html 带 `lang="zh-CN"` 标记，装机与 output 一致
+
 ## 工具链 · 2026-08-29（之二）
 
 - **修复 `tools/remap.js` 内嵌的原始 NUL 字节**：`c.join('\u0000')` 的分隔符此前是

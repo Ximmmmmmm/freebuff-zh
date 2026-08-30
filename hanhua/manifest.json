@@ -1,4 +1,4 @@
 {
-  "targetVersion": "0.0.77",
+  "targetVersion": "0.0.78",
   "comment": "词典适配的 Freebuff Desktop 版本。多开控制器读取该字段，在本机版本高于词典版本时提醒先更新词典并重新构建。"
 }
