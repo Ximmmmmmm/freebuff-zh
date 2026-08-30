@@ -600,6 +600,100 @@ namespace FreebuffController
             ApplyToGrid(mainRunning, slots, accounts);
         }
 
+        // ---------- proxy ----------
+
+        // Network attempts, most preferred first. Many machines reach GitHub
+        // only through a local proxy client that is NOT the system proxy (a
+        // loopback port), so it is probed before the system default — a dead
+        // loopback port is refused instantly, so the extra attempt is free,
+        // while a live one is the only route through. null = system default,
+        // "" = force direct. proxy.txt overrides the loopback address or
+        // ("off") disables it.
+        private static readonly string LocalProxyConfigFile = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "FreebuffController\\proxy.txt");
+        // The local proxy URL, or null when disabled ("off") / misconfigured.
+        private static readonly string LocalProxyUrl = BuildLocalProxyUrl();
+        private static readonly string[] ProxyCandidates = BuildProxyCandidates();
+
+        private static string BuildLocalProxyUrl()
+        {
+            try
+            {
+                if (File.Exists(LocalProxyConfigFile))
+                {
+                    string t = File.ReadAllText(LocalProxyConfigFile).Trim();
+                    if (t.Length > 0 && !t.Equals("off", StringComparison.OrdinalIgnoreCase))
+                        return t;
+                    return null;
+                }
+                // Common loopback entry of local proxy clients.
+                return "http://127.0.0.1:10808";
+            }
+            catch { return null; }
+        }
+
+        private static string[] BuildProxyCandidates()
+        {
+            var list = new List<string>();
+            Uri u;
+            if (LocalProxyUrl != null && Uri.TryCreate(LocalProxyUrl, UriKind.Absolute, out u))
+                list.Add(LocalProxyUrl);
+            list.Add(null); // system default proxy
+            list.Add("");   // explicit direct
+            return list.ToArray();
+        }
+
+        private static void ApplyProxy(HttpWebRequest req, string candidate)
+        {
+            if (candidate == null) return; // leave the system default in place
+            req.Proxy = (candidate.Length == 0) ? null : new WebProxy(candidate);
+        }
+
+        // True when the local proxy is actually listening. Loopback connects
+        // resolve instantly (refused or accepted), so probing at launch time
+        // is free; the 500 ms cap only matters for a remote proxy address.
+        private static bool ProxyAlive(string url)
+        {
+            try
+            {
+                var u = new Uri(url);
+                using (var c = new System.Net.Sockets.TcpClient())
+                {
+                    IAsyncResult ar = c.BeginConnect(u.Host, u.Port, null, null);
+                    if (!ar.AsyncWaitHandle.WaitOne(500)) return false;
+                    c.EndConnect(ar);
+                    return true;
+                }
+            }
+            catch { return false; }
+        }
+
+        // The proxy handed to launched Freebuff instances: the same local
+        // proxy the controller's own requests prefer — but only when it is
+        // actually listening, because with --proxy-server set a dead proxy
+        // would leave the instance without any working route. null = launch
+        // exactly as before; the app falls back to the system proxy itself.
+        private static string LaunchProxyUrl()
+        {
+            string url = LocalProxyUrl;
+            if (url == null || !ProxyAlive(url)) return null;
+            return url;
+        }
+
+        // --proxy-server covers the Chromium side (UI, electron-updater);
+        // the HTTP(S)_PROXY env vars are inherited by child processes (the
+        // orchestrator) that consult them. Loopback stays direct: Chromium
+        // bypasses it implicitly and NO_PROXY says so for the children.
+        private static void ApplyLaunchProxy(ProcessStartInfo psi, string url)
+        {
+            psi.Arguments = (psi.Arguments.Length > 0 ? psi.Arguments + " " : "")
+                + "--proxy-server=" + url;
+            psi.EnvironmentVariables["HTTP_PROXY"] = url;
+            psi.EnvironmentVariables["HTTPS_PROXY"] = url;
+            psi.EnvironmentVariables["NO_PROXY"] = "localhost,127.0.0.1";
+        }
+
         // ---------- quota ----------
 
         // Fetch remaining daily quota for every account. Runs off the UI
@@ -689,13 +783,27 @@ namespace FreebuffController
         }
 
         // GET the session endpoint and summarize the premium-pool quota.
-        // Shows the tightest remaining allowance across models.
+        // Shows the tightest remaining allowance across models. Routes are
+        // tried in ProxyCandidates order; only a route-level failure moves
+        // on to the next one.
         private static string FetchQuota(string token)
+        {
+            foreach (string candidate in ProxyCandidates)
+            {
+                string result = TryFetchQuota(token, candidate);
+                if (result != null) return result;
+            }
+            return "获取失败";
+        }
+
+        // One network attempt; null = the route itself failed.
+        private static string TryFetchQuota(string token, string proxyCandidate)
         {
             try
             {
                 ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
                 var req = (HttpWebRequest)WebRequest.Create(QuotaApiUrl);
+                ApplyProxy(req, proxyCandidate);
                 req.Method = "GET";
                 req.Timeout = 8000;
                 req.ReadWriteTimeout = 8000;
@@ -734,9 +842,9 @@ namespace FreebuffController
             {
                 var resp = wex.Response as HttpWebResponse;
                 if (resp != null && (int)resp.StatusCode == 401) return "登录过期";
-                return "获取失败";
+                return null; // network-level failure — try the next route
             }
-            catch { return "获取失败"; }
+            catch { return null; }
         }
 
         // ---------- version check ----------
@@ -786,12 +894,10 @@ namespace FreebuffController
         // already carries the latest version, so we read just that header
         // instead of following to GitHub, which can be slow or unreachable.
         // A feed that ever serves the file directly still works via the
-        // body fallback below. Each attempt falls back from the system
-        // proxy to a direct connection — the same pattern as FetchYamlBody,
-        // so the check never dies on a half-broken proxy.
+        // body fallback below. Routes are tried in ProxyCandidates order.
         private static string FetchLatestVersion(string feedUrl)
         {
-            for (int attempt = 0; attempt < 2; attempt++)
+            foreach (string candidate in ProxyCandidates)
             {
                 try
                 {
@@ -802,7 +908,7 @@ namespace FreebuffController
                     req.Timeout = 10000;
                     req.ReadWriteTimeout = 10000;
                     req.UserAgent = "FreebuffMultiOpenController/1.0";
-                    if (attempt == 1) req.Proxy = null;
+                    ApplyProxy(req, candidate);
                     using (var resp = (HttpWebResponse)req.GetResponse())
                     {
                         int code = (int)resp.StatusCode;
@@ -1061,11 +1167,12 @@ namespace FreebuffController
 
         // Full latest.yml body; follows the feed's redirect to GitHub, which
         // is fine here because the installer itself lives on GitHub anyway.
-        // Machines with a half-working system proxy often fail exactly on
-        // the GitHub hop, so the second attempt bypasses the proxy.
+        // Routes are tried in ProxyCandidates order — machines with a
+        // half-working system proxy often fail exactly on the GitHub hop,
+        // and machines without a system proxy need the loopback one first.
         private static string FetchYamlBody(string url)
         {
-            for (int attempt = 0; attempt < 2; attempt++)
+            foreach (string candidate in ProxyCandidates)
             {
                 try
                 {
@@ -1076,7 +1183,7 @@ namespace FreebuffController
                     req.Timeout = 15000;
                     req.ReadWriteTimeout = 15000;
                     req.UserAgent = "FreebuffMultiOpenController/1.0";
-                    if (attempt == 1) req.Proxy = null;
+                    ApplyProxy(req, candidate);
                     using (var resp = (HttpWebResponse)req.GetResponse())
                     using (var sr = new StreamReader(resp.GetResponseStream()))
                     {
@@ -1096,20 +1203,20 @@ namespace FreebuffController
                 : feed;
         }
 
-        // Tries every candidate URL, each first through the system proxy and
-        // then direct: whichever path the machine needs for GitHub, one of
-        // them gets through.
+        // Tries every candidate URL over every route in ProxyCandidates
+        // order (local proxy, system proxy, direct): whichever path the
+        // machine needs for GitHub, one of them gets through.
         private static void DownloadFirstAvailable(IList<string> urls, string dest,
                                                    string shaB64, Action<long, long> progress)
         {
             Exception last = null;
             foreach (string url in urls)
             {
-                for (int attempt = 0; attempt < 2; attempt++)
+                foreach (string candidate in ProxyCandidates)
                 {
                     try
                     {
-                        DownloadOnce(url, dest, shaB64, progress, attempt == 1);
+                        DownloadOnce(url, dest, shaB64, progress, candidate);
                         return;
                     }
                     catch (Exception ex) { last = ex; }
@@ -1119,7 +1226,7 @@ namespace FreebuffController
         }
 
         private static void DownloadOnce(string url, string dest, string shaB64,
-                                         Action<long, long> progress, bool direct)
+                                         Action<long, long> progress, string proxyCandidate)
         {
             ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
             var req = (HttpWebRequest)WebRequest.Create(url);
@@ -1128,7 +1235,7 @@ namespace FreebuffController
             req.Timeout = 30000;
             req.ReadWriteTimeout = 30000;
             req.UserAgent = "FreebuffMultiOpenController/1.0";
-            if (direct) req.Proxy = null;
+            ApplyProxy(req, proxyCandidate);
             using (var resp = (HttpWebResponse)req.GetResponse())
             using (var rs = resp.GetResponseStream())
             using (var fs = new FileStream(dest, FileMode.Create, FileAccess.Write))
@@ -1567,7 +1674,15 @@ namespace FreebuffController
 
         private static void StartMain()
         {
-            Process.Start(new ProcessStartInfo(FreebuffExe) { UseShellExecute = true });
+            string url = LaunchProxyUrl();
+            if (url == null)
+            {
+                Process.Start(new ProcessStartInfo(FreebuffExe) { UseShellExecute = true });
+                return;
+            }
+            var psi = new ProcessStartInfo(FreebuffExe) { UseShellExecute = false };
+            ApplyLaunchProxy(psi, url);
+            Process.Start(psi);
         }
 
         // copyFrom: -1 = fresh login, 0 = main instance, 1..9 = that slot.
@@ -1598,6 +1713,7 @@ namespace FreebuffController
             psi.UseShellExecute = false;
             psi.Arguments = "--user-data-dir=\"" + SlotUserData(n) + "\"";
             psi.EnvironmentVariables["FREEBUFF_DESKTOP_STATE_PATH"] = state;
+            ApplyLaunchProxy(psi, LaunchProxyUrl());
             Process.Start(psi);
         }
 
