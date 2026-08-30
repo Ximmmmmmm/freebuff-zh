@@ -36,8 +36,8 @@ Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.78）的**简体中文汉�
 先在本机构建产物，再安装：
 
 ```bash
-bash hanhua/build.sh     # 在仓库根目录运行；自动选原版：优先安装目录里最近的 hanhua-backup-*，没有备份（首次构建）则直接用安装目录的英文原版，生成 hanhua/output/
-bash hanhua/apply.sh     # 应用汉化（自动备份原文件）
+bash build.sh     # 在仓库根目录运行；自动选原版：优先安装目录里最近的 hanhua-backup-*，没有备份（首次构建）则直接用安装目录的英文原版，生成 hanhua/output/
+bash apply.sh     # 应用汉化（自动备份原文件）
 ```
 
 > 也可以在[多开控制器](https://github.com/Ximmmmmmm/freebuff-controller)里一键应用，无需命令行。
@@ -47,7 +47,7 @@ bash hanhua/apply.sh     # 应用汉化（自动备份原文件）
 如果你已经拿到一份产物目录（自行构建的），也可以：
 
 ```bash
-bash hanhua/apply.sh /path/to/unpacked   # 传入产物所在目录（仓库根目录运行）
+bash apply.sh /path/to/unpacked   # 传入产物所在目录（仓库根目录运行）
 ```
 
 手动安装：
@@ -59,20 +59,20 @@ bash hanhua/apply.sh /path/to/unpacked   # 传入产物所在目录（仓库根�
 汉化包可以作为 GitHub Release 分发，多开控制器会像检查 Freebuff 更新一样检查并拉取新包：
 
 ```bash
-bash hanhua/build.sh                       # 构建最新产物（自动打入 packVersion 版本戳）
-bash hanhua/tools/release.sh               # 打包 + 生成 pack-manifest.json + 发布 Release（需 gh CLI 已登录）
-bash hanhua/tools/release.sh --no-upload   # 只打包到 dist/，打印手工上传步骤
+bash build.sh                       # 构建最新产物（自动打入 packVersion 版本戳）
+bash tools/release.sh               # 打包 + 生成 pack-manifest.json + 发布 Release（需 gh CLI 已登录）
+bash tools/release.sh --no-upload   # 只打包到 dist/，打印手工上传步骤
 ```
 
 - **发布端**：Release tag `pack-v<packVersion>`，附件为 `hanhua-pack-<版本>.zip`（= `output/` 打包）和 `pack-manifest.json`（packVersion / targetVersion / asset / sha512）
-- **客户端**：控制器每 30 分钟检查一次（与 Freebuff 更新检查共用同一条代理链）。仅当 manifest 的 targetVersion 与本机 Freebuff 版本**完全一致**且 packVersion 更新时才下载，SHA512 校验、解包后落到 `hanhua/output/`，点「应用汉化」生效
+- **客户端**：控制器每 30 分钟检查一次（与 Freebuff 更新检查共用同一条代理链）。仅当 manifest 的 targetVersion 与本机 Freebuff 版本**完全一致**且 packVersion 更新时才下载，SHA512 校验、解包后落到 `output/`，点「应用汉化」生效
 - **packVersion**：适配新 Freebuff 版本时与 targetVersion 一起升；同版本只改词典的修复版可只递增 packVersion
 - ⚠️ 汉化产物派生自 Freebuff 专有软件，发布 Release 即公开传播，与文末免责声明的「仅限本机自用」条款冲突——是否发布由你决定，发布前请确认接受并相应调整声明
 
 ### 还原英文原版
 
 ```bash
-bash hanhua/restore.sh   # 从最近一次备份还原（仓库根目录运行）
+bash restore.sh   # 从最近一次备份还原（仓库根目录运行）
 ```
 
 ## 🔧 从源码重建（构建）
@@ -80,8 +80,8 @@ bash hanhua/restore.sh   # 从最近一次备份还原（仓库根目录运行�
 仓库**不提交**二进制产物（`output/`、`backup/` 已 gitignore）。需要自己构建时：
 
 ```bash
-bash hanhua/build.sh                       # 自动选原版：优先最近的 hanhua-backup-*，没有备份则用安装目录的英文原版
-bash hanhua/build.sh <app.asar> <ui-dir>   # 或显式指定原版文件
+bash build.sh                       # 自动选原版：优先最近的 hanhua-backup-*，没有备份则用安装目录的英文原版
+bash build.sh <app.asar> <ui-dir>   # 或显式指定原版文件
 ```
 
 构建管线（v0.0.77 曾对照 Release 产物逐字节验证；v0.0.78 起由构建防呆自检兜底）：

@@ -12,7 +12,7 @@
   `packVersion` 字段（同 targetVersion 的词典修复版可独立递增）
 - **多开控制器客户端**：每 30 分钟检查 pack Release（与 Freebuff 更新检查共用
   代理链）；targetVersion 与本机 Freebuff 版本一致且 packVersion 更新时自动下载、
-  SHA512 校验、解包（含 zip-slip 防护）到 `hanhua/output/`，点「应用汉化」生效；
+  SHA512 校验、解包（含 zip-slip 防护）到 `output/`，点「应用汉化」生效；
   「应用汉化」按钮在有新包待应用时保持可用，底栏提示「有新包 vX 可应用」
 
 ## [0.0.78] · 2026-08-30
