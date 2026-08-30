@@ -2,6 +2,8 @@
 
 ## 工具链 · 2026-08-30（之二）
 
+- **release.sh packVersion 防呆**：发布前对比远端最新 pack-manifest 的 packVersion，
+  未升版本即拒绝（`--force` 才允许覆盖同版本），避免客户端静默跳过修复版
 - **发布渠道启用 + 声明调整**：首个汉化包 Release `pack-v0.0.78` 已发布；免责声明
   从「仅限本机自用、勿公开传播」调整为「面向已合法获取 Freebuff Desktop 的用户
   供个人自用，可经本项目 Release 渠道获取与分发（勿商用、勿移除声明）」，
