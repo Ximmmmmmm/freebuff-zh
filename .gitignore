@@ -1,5 +1,15 @@
+# Build artifacts — publish these via GitHub Releases instead of committing them
+output/
+backup/
+work/
+
+# Node / misc
+node_modules/
+*.log
+.DS_Store
+Thumbs.db
+dist/
+
 # editor / os cruft
 .vs/
 *.user
-Thumbs.db
-.DS_Store

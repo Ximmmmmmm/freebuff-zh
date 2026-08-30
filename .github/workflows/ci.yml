@@ -4,9 +4,9 @@ name: lint
 
 on:
   push:
-    paths: ['hanhua/dict.json', 'hanhua/tools/**', 'hanhua/*.sh', 'controller/**', '.github/workflows/**']
+    paths: ['dict.json', 'tools/**', '*.sh', '.github/workflows/**']
   pull_request:
-    paths: ['hanhua/dict.json', 'hanhua/tools/**', 'hanhua/*.sh', 'controller/**', '.github/workflows/**']
+    paths: ['dict.json', 'tools/**', '*.sh', '.github/workflows/**']
   workflow_dispatch:
 
 jobs:
@@ -18,22 +18,14 @@ jobs:
         with:
           node-version: 20
       - name: 词典 lint（结构 / 重复键 / 占位符一致性）
-        run: node hanhua/tools/lint_dict.js
+        run: node tools/lint_dict.js
       - name: 工具脚本语法冒烟
         run: |
-          for f in hanhua/tools/*.js; do
+          for f in tools/*.js; do
             node --check "$f"
           done
       - name: Shell 脚本语法冒烟
         run: |
-          for f in hanhua/*.sh hanhua/tools/*.sh; do
+          for f in *.sh tools/*.sh; do
             bash -n "$f"
           done
-
-  controller-build:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: 控制器编译冒烟（系统自带 csc，C# 5）
-        shell: cmd
-        run: call controller\build.bat
