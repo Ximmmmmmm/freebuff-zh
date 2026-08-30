@@ -54,6 +54,21 @@ bash hanhua/apply.sh /path/to/unpacked   # 传入产物所在目录（仓库根�
 1. 把 `app.asar` 复制到 `%LOCALAPPDATA%\Programs\@codebufffreebuff-desktop\resources\`
 2. 把 `ui/` 整体替换 `resources\orchestrator\ui\`
 
+### 更新汉化包（发布 → 客户端自动拉取）
+
+汉化包可以作为 GitHub Release 分发，多开控制器会像检查 Freebuff 更新一样检查并拉取新包：
+
+```bash
+bash hanhua/build.sh                       # 构建最新产物（自动打入 packVersion 版本戳）
+bash hanhua/tools/release.sh               # 打包 + 生成 pack-manifest.json + 发布 Release（需 gh CLI 已登录）
+bash hanhua/tools/release.sh --no-upload   # 只打包到 dist/，打印手工上传步骤
+```
+
+- **发布端**：Release tag `pack-v<packVersion>`，附件为 `hanhua-pack-<版本>.zip`（= `output/` 打包）和 `pack-manifest.json`（packVersion / targetVersion / asset / sha512）
+- **客户端**：控制器每 30 分钟检查一次（与 Freebuff 更新检查共用同一条代理链）。仅当 manifest 的 targetVersion 与本机 Freebuff 版本**完全一致**且 packVersion 更新时才下载，SHA512 校验、解包后落到 `hanhua/output/`，点「应用汉化」生效
+- **packVersion**：适配新 Freebuff 版本时与 targetVersion 一起升；同版本只改词典的修复版可只递增 packVersion
+- ⚠️ 汉化产物派生自 Freebuff 专有软件，发布 Release 即公开传播，与文末免责声明的「仅限本机自用」条款冲突——是否发布由你决定，发布前请确认接受并相应调整声明
+
 ### 还原英文原版
 
 ```bash

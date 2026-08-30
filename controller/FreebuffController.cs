@@ -307,6 +307,7 @@ namespace FreebuffController
             {
                 RefreshInstalledVersion(); // app may have updated meanwhile
                 CheckVersionAsync();
+                CheckPackUpdateAsync();
                 RefreshHanhuaUi();
             };
             versionTimer.Start();
@@ -314,6 +315,7 @@ namespace FreebuffController
             ComputeAndApply();
             FetchQuotasAsync(true);
             CheckVersionAsync();
+            CheckPackUpdateAsync();
         }
 
         // The standing status line spells out the two refresh cycles so the
@@ -1099,7 +1101,7 @@ namespace FreebuffController
                     string file = "Freebuff-setup.exe";
                     string shaB64 = null;
                     string derivedUrl = null;
-                    string yml = FetchYamlBody(ReadUpdateFeedUrl());
+                    string yml = FetchUrlBody(ReadUpdateFeedUrl());
                     if (yml != null)
                     {
                         Match pm = YamlPathRegex.Match(yml);
@@ -1165,12 +1167,12 @@ namespace FreebuffController
             });
         }
 
-        // Full latest.yml body; follows the feed's redirect to GitHub, which
-        // is fine here because the installer itself lives on GitHub anyway.
-        // Routes are tried in ProxyCandidates order — machines with a
-        // half-working system proxy often fail exactly on the GitHub hop,
-        // and machines without a system proxy need the loopback one first.
-        private static string FetchYamlBody(string url)
+        // GET a URL and return the body, following redirects (the installer
+        // feed hops to GitHub, and so do the pack release assets). Routes
+        // are tried in ProxyCandidates order — machines with a half-working
+        // system proxy often fail exactly on the GitHub hop, and machines
+        // without a system proxy need the loopback one first.
+        private static string FetchUrlBody(string url)
         {
             foreach (string candidate in ProxyCandidates)
             {
@@ -1759,6 +1761,195 @@ namespace FreebuffController
             }
         }
 
+        // ---------- 汉化包更新 (pack update) ----------
+        // The pack is distributed as a GitHub Release: a zip of output/ plus
+        // a pack-manifest.json asset (packVersion / targetVersion / asset /
+        // sha512). The check mirrors the Freebuff update flow — fetch, verify
+        // SHA512, stage into hanhua/output/ — and the existing「应用汉化」
+        // button installs it; nothing is applied while Freebuff may be
+        // running, and publishing a release stays a manual decision.
+
+        private const string PackReleasesApiUrl =
+            "https://api.github.com/repos/Ximmmmmmm/freebuff-zh/releases/latest";
+        private static readonly Regex PackMarkerRegex =
+            new Regex("<meta name=\"hanhua-pack\" content=\"([^\"]+)\"");
+        private int packBusy;
+
+        // Pack version stamped into a built ui/index.html by build.sh; null
+        // when the file is missing or unstamped (packs built before this
+        // marker existed count as 0.0.0).
+        private static string PackVersionAt(string indexHtml)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(indexHtml) || !File.Exists(indexHtml)) return null;
+                Match m = PackMarkerRegex.Match(File.ReadAllText(indexHtml));
+                return m.Success ? m.Groups[1].Value : null;
+            }
+            catch { return null; }
+        }
+
+        private static string InstalledPackVersion()
+        {
+            return PackVersionAt(InstalledUiIndex);
+        }
+
+        private static string OutputPackVersion(string hanhuaDir)
+        {
+            if (string.IsNullOrEmpty(hanhuaDir)) return null;
+            return PackVersionAt(Path.Combine(hanhuaDir, "output\\ui\\index.html"));
+        }
+
+        private static object[] AsArray(object o)
+        {
+            if (o is object[]) return (object[])o;
+            var al = o as System.Collections.ArrayList;
+            return al != null ? al.ToArray() : null;
+        }
+
+        // A pack is only applicable when it was built for exactly the
+        // installed Freebuff version: its renderer bundle must match the
+        // installed assets, otherwise index.html would reference bundles
+        // that do not exist.
+        private static bool PackTargetsInstalled(string targetVersion, string installedVersion)
+        {
+            var inst = ParseLooseVersion(installedVersion);
+            var target = ParseLooseVersion(targetVersion);
+            return inst != null && target != null && inst.CompareTo(target) == 0;
+        }
+
+        // Checks for a newer pack release and stages it into hanhua/output/.
+        // Runs on a background thread; at most one check at a time. Stays
+        // silent when there is nothing to do (no release published, wrong
+        // target Freebuff version, already staged locally).
+        private void CheckPackUpdateAsync()
+        {
+            if (Interlocked.CompareExchange(ref packBusy, 1, 0) != 0) return;
+            if (string.IsNullOrEmpty(hanhuaDir))
+            {
+                Interlocked.Exchange(ref packBusy, 0);
+                return;
+            }
+            RefreshInstalledVersion();
+            string dir = hanhuaDir, instVer = installedVersion;
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                Exception error = null;
+                string packVer = null;
+                try { packVer = FetchAndStageLatestPack(dir, instVer); }
+                catch (Exception ex) { error = ex; }
+                Interlocked.Exchange(ref packBusy, 0);
+
+                string ver = packVer, err = error == null ? null : error.Message;
+                UiSafe(delegate
+                {
+                    if (IsDisposed) return;
+                    if (err != null)
+                        SetStatus("汉化包更新失败：" + err);
+                    else if (ver != null)
+                        SetStatus("汉化包 v" + ver + " 已就绪 · 点「应用汉化」生效。");
+                    RefreshHanhuaUi();
+                });
+            });
+        }
+
+        // Returns the fetched pack version, or null when there is nothing
+        // newer to stage.
+        private static string FetchAndStageLatestPack(string hanhuaDir, string installedVersion)
+        {
+            string releaseJson = FetchUrlBody(PackReleasesApiUrl);
+            if (releaseJson == null) return null;
+            var rel = new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(releaseJson);
+            object[] assets = rel == null ? null : AsArray(rel["assets"]);
+            if (assets == null) return null;
+
+            string manifestUrl = null;
+            foreach (object o in assets)
+            {
+                var a = o as Dictionary<string, object>;
+                if (a != null && (a["name"] as string) == "pack-manifest.json")
+                {
+                    manifestUrl = a["browser_download_url"] as string;
+                    break;
+                }
+            }
+            if (manifestUrl == null) return null; // no pack release published
+            string manifestJson = FetchUrlBody(manifestUrl);
+            if (manifestJson == null) return null;
+            var man = new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(manifestJson);
+            if (man == null) return null;
+            string packVersion = man["packVersion"] as string;
+            string targetVersion = man["targetVersion"] as string;
+            string asset = man["asset"] as string;
+            string sha512 = man["sha512"] as string;
+            if (packVersion == null || targetVersion == null || asset == null) return null;
+            if (!PackTargetsInstalled(targetVersion, installedVersion)) return null;
+
+            // staged >= installed always (applying moves the stamp over), so
+            // comparing against the staged stamp covers both "already newest"
+            // and "already downloaded, waiting to be applied".
+            var staged = ParseLooseVersion(OutputPackVersion(hanhuaDir)) ?? new Version(0, 0, 0);
+            var newest = ParseLooseVersion(packVersion);
+            if (newest == null || newest.CompareTo(staged) <= 0) return null;
+
+            string zipUrl = null;
+            foreach (object o in assets)
+            {
+                var a = o as Dictionary<string, object>;
+                if (a != null && (a["name"] as string) == asset)
+                {
+                    zipUrl = a["browser_download_url"] as string;
+                    break;
+                }
+            }
+            if (zipUrl == null) return null;
+
+            string dest = Path.Combine(Path.GetTempPath(), asset);
+            DownloadFirstAvailable(new List<string> { zipUrl }, dest, sha512, null);
+
+            string extractDir = Path.Combine(Path.GetTempPath(), "hanhua-pack-" + packVersion);
+            if (Directory.Exists(extractDir)) Directory.Delete(extractDir, true);
+            ExtractZip(dest, extractDir);
+            string stagedApp = Path.Combine(extractDir, "app.asar");
+            string stagedUi = Path.Combine(extractDir, "ui");
+            if (!File.Exists(stagedApp) || !Directory.Exists(stagedUi))
+                throw new ApplicationException("汉化包内容不完整（缺 app.asar 或 ui/）");
+
+            // Stage exactly where 应用汉化 already looks — output/ stays the
+            // single install source, local builds and fetched packs alike.
+            string output = Path.Combine(hanhuaDir, "output");
+            Directory.CreateDirectory(output);
+            File.Copy(stagedApp, Path.Combine(output, "app.asar"), true);
+            string outUi = Path.Combine(output, "ui");
+            if (Directory.Exists(outUi)) Directory.Delete(outUi, true);
+            CopyDir(stagedUi, outUi);
+            return packVersion;
+        }
+
+        // Extracts the pack zip, refusing entries that would escape the
+        // destination directory (zip-slip).
+        private static void ExtractZip(string zipPath, string destDir)
+        {
+            Directory.CreateDirectory(destDir);
+            string root = Path.GetFullPath(destDir).TrimEnd('\\', '/') + Path.DirectorySeparatorChar;
+            using (var zip = System.IO.Compression.ZipFile.OpenRead(zipPath))
+            {
+                foreach (System.IO.Compression.ZipArchiveEntry e in zip.Entries)
+                {
+                    string dest = Path.GetFullPath(Path.Combine(destDir, e.FullName));
+                    if (!dest.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+                        throw new ApplicationException("汉化包内有非法路径：" + e.FullName);
+                    if (e.FullName.EndsWith("/") || e.FullName.EndsWith("\\"))
+                    {
+                        Directory.CreateDirectory(dest);
+                        continue;
+                    }
+                    Directory.CreateDirectory(Path.GetDirectoryName(dest));
+                    System.IO.Compression.ZipFileExtensions.ExtractToFile(e, dest, true);
+                }
+            }
+        }
+
         // ---------- 汉化 (hanhua) ----------
 
         // Status text mirrors the state machine of hanhua's apply.sh: applied
@@ -1780,21 +1971,33 @@ namespace FreebuffController
             bool outdated = inst != null && target != null && inst.CompareTo(target) > 0;
             string tag = (tv == null) ? "" : "（词典 v" + tv + (outdated ? "，已过时" : "") + "）";
 
+            // A staged pack newer than the installed stamp means「应用汉化」
+            // has something to install even though hanhua is already applied
+            // (built locally, or fetched by CheckPackUpdateAsync).
+            string outPack = OutputPackVersion(hanhuaDir);
+            var outV = ParseLooseVersion(outPack);
+            var insV = ParseLooseVersion(InstalledPackVersion());
+            bool newerPack = build != null && outV != null
+                && outV.CompareTo(insV ?? new Version(0, 0, 0)) > 0;
+
             if (applied)
-                hanhuaLabel.Text = (build != null) ? ("汉化：已应用" + tag) : "汉化：已应用";
+                hanhuaLabel.Text = newerPack
+                    ? ("汉化：已应用 · 有新包 v" + outPack + " 可应用")
+                    : ((build != null) ? ("汉化：已应用" + tag) : "汉化：已应用");
             else if (build != null)
                 hanhuaLabel.Text = "汉化：未应用 · 可一键应用" + tag;
             else if (hanhuaDir != null)
                 hanhuaLabel.Text = "汉化：未应用 · 缺少构建（先运行 build.sh）";
             else
                 hanhuaLabel.Text = "汉化：未应用 · 未找到仓库（点「应用汉化」定位）";
-            hanhuaLabel.ForeColor = (applied || build == null) ? ColSub : ColGreen;
-            // "应用汉化" is only meaningful while the app is still English
-            // (either never applied, or Freebuff's auto-update reverted it).
-            // Once applied there is nothing to do — leave it disabled, exactly
-            // like 还原英文 before any backup exists. Repo-not-found keeps it
-            // clickable so OnHanhuaApply can pop the folder picker.
-            btnHanhuaApply.Enabled = !applied && (build != null || hanhuaDir == null);
+            hanhuaLabel.ForeColor = ((!applied && build != null) || newerPack) ? ColGreen : ColSub;
+            // "应用汉化" applies while the app is English (never applied, or
+            // Freebuff's auto-update reverted it) and when a newer pack is
+            // staged in output/ than what is installed. Otherwise there is
+            // nothing to do — leave it disabled, exactly like 还原英文 before
+            // any backup exists. Repo-not-found keeps it clickable so
+            // OnHanhuaApply can pop the folder picker.
+            btnHanhuaApply.Enabled = (!applied || newerPack) && (build != null || hanhuaDir == null);
             btnHanhuaRestore.Enabled = applied && LatestHanhuaBackup() != null;
         }
 

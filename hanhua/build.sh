@@ -95,6 +95,9 @@ if [ -n "${PRISTINE_UI}" ]; then
   cp "${PRISTINE_UI}/index.html" "${HERE}/output/ui/index.html"
   # Apply UI translations directly (git apply has CRLF issues on Windows with .gitattributes)
   node "${HERE}/tools/apply_ui_patch.js" "${HERE}/output/ui/index.html"
+  # 汉化包版本戳：控制器用 instaled/output 产物里的这个 meta 比对是否需要更新
+  PACK_VERSION="$(node -e 'const m = require(process.argv[1]); console.log(m.packVersion || m.targetVersion)' "${HERE}/manifest.json")"
+  PACK_VERSION="${PACK_VERSION}" node -e 'const fs = require("fs"); const f = process.argv[1]; let s = fs.readFileSync(f, "utf8"); if (!s.includes("hanhua-pack")) { s = s.replace(/<head>/i, "<head>\n<meta name=\"hanhua-pack\" content=\"" + process.env.PACK_VERSION + "\">"); fs.writeFileSync(f, s); }' "${HERE}/output/ui/index.html"
   cp -r "${PRISTINE_UI}/assets/." "${HERE}/output/ui/assets/"
   # apply the dictionary ONLY to the main bundle (the one index.html loads):
   # other assets are syntax-highlighting grammars whose keys ("Command", "move", …)

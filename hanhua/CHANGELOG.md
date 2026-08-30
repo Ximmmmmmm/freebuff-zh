@@ -1,5 +1,16 @@
 # 更新日志
 
+## 工具链 · 2026-08-30（之二）
+
+- **汉化包发布/更新通道**：新增 `tools/release.sh`（打包 `output/` 为 zip + 生成
+  pack-manifest.json + 发布 GitHub Release，`--no-upload` 仅打包并打印手工步骤）；
+  `build.sh` 给产物注入 `<meta name="hanhua-pack">` 版本戳；`manifest.json` 新增
+  `packVersion` 字段（同 targetVersion 的词典修复版可独立递增）
+- **多开控制器客户端**：每 30 分钟检查 pack Release（与 Freebuff 更新检查共用
+  代理链）；targetVersion 与本机 Freebuff 版本一致且 packVersion 更新时自动下载、
+  SHA512 校验、解包（含 zip-slip 防护）到 `hanhua/output/`，点「应用汉化」生效；
+  「应用汉化」按钮在有新包待应用时保持可用，底栏提示「有新包 vX 可应用」
+
 ## [0.0.78] · 2026-08-30
 
 - **适配 v0.0.78**：应用自动更新至 0.0.78（渲染 bundle：`index-DOLT0u31.js` →

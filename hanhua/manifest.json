@@ -1,4 +1,5 @@
 {
   "targetVersion": "0.0.78",
-  "comment": "词典适配的 Freebuff Desktop 版本。多开控制器读取该字段，在本机版本高于词典版本时提醒先更新词典并重新构建。"
+  "packVersion": "0.0.78",
+  "comment": "targetVersion = 词典适配的 Freebuff Desktop 版本（多开控制器读取做兼容检查）；packVersion = 汉化包自身的发布版本，构建时打进产物（控制器比对是否需要更新），同 targetVersion 的词典修复版可独立递增。"
 }

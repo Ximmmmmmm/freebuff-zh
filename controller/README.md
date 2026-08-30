@@ -53,6 +53,11 @@ Freebuff 的自动更新会用原版文件覆盖[汉化包](../hanhua/)的产物
 控制器还会对比本机 Freebuff 版本与 `hanhua/manifest.json` 的 `targetVersion`：
 本机版本更新时提醒先更新词典并重新构建，避免把过时的汉化产物打上去。
 
+汉化包本身也可以作为 GitHub Release 分发（`hanhua/tools/release.sh` 发布）：控制器
+每 30 分钟检查一次 pack Release（与 Freebuff 更新检查共用同一条代理链），当包的
+targetVersion 与本机 Freebuff 版本一致且 packVersion 比已装/已暂存的新时，自动下载、
+SHA512 校验并落到 `hanhua/output/`，状态栏提示后点「应用汉化」即可换上新包。
+
 Freebuff 的 automatic updates overwrite the localization pack's patched files.
 The controller shows the localization status at the bottom of its window and offers
 one-click **apply / restore** (the first apply backs up the pristine English files,
