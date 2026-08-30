@@ -2,6 +2,10 @@
 
 ## 工具链 · 2026-08-30（之二）
 
+- **发布渠道启用 + 声明调整**：首个汉化包 Release `pack-v0.0.78` 已发布；免责声明
+  从「仅限本机自用、勿公开传播」调整为「面向已合法获取 Freebuff Desktop 的用户
+  供个人自用，可经本项目 Release 渠道获取与分发（勿商用、勿移除声明）」，
+  同步更新根/子 README 与 release.sh 提示
 - **汉化包发布/更新通道**：新增 `tools/release.sh`（打包 `output/` 为 zip + 生成
   pack-manifest.json + 发布 GitHub Release，`--no-upload` 仅打包并打印手工步骤）；
   `build.sh` 给产物注入 `<meta name="hanhua-pack">` 版本戳；`manifest.json` 新增

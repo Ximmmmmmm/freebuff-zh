@@ -58,5 +58,5 @@ freebuff-toolkit/
 
 - 两个子项目均以 **MIT License** 发布（[`hanhua/LICENSE`](hanhua/LICENSE) /
   [`controller/LICENSE`](controller/LICENSE)）。
-- **免责声明**：汉化产物派生自 Freebuff 的专有软件，仅限本人在已合法获取的设备上自用，
-  请勿公开传播；详见 [`hanhua/README.md`](hanhua/README.md) 文末说明。
+- **免责声明**：汉化产物派生自 Freebuff 的专有软件，仅面向已合法获取 Freebuff Desktop
+  的用户供个人自用（经汉化包 Release 渠道分发），请勿商用；详见 [`hanhua/README.md`](hanhua/README.md) 文末说明。

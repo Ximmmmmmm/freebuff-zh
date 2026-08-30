@@ -44,9 +44,8 @@ node -e 'const fs = require("fs"); fs.writeFileSync(process.argv[1], JSON.string
 echo "汉化包已打包：${ZIP}"
 echo "  packVersion=${VER}  targetVersion=${TARGET}  sha512(-base64)=${SHA:0:16}…"
 echo
-echo "⚠ 免责声明提醒：汉化产物派生自 Freebuff 专有软件，公开上传 Release 属于"
-echo "  公开传播，与 README 免责声明的「仅限本机自用」条款冲突——是否发布由你"
-echo "  自行权衡决定；发布前请确认你接受并更新相应声明。"
+echo "⚠ 提醒：发布的是派生自 Freebuff 专有软件的汉化产物，按 README 声明仅限"
+echo "  面向已合法获取 Freebuff 的用户供个人自用分发（勿商用）；声明如有调整请同步 README。"
 
 if [ "${UPLOAD}" -eq 0 ]; then
   echo

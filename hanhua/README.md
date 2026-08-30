@@ -31,7 +31,7 @@ Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.78）的**简体中文汉�
 
 ## 📦 快速开始（安装）
 
-> ⚠️ 汉化产物（修改后的 `app.asar` / `ui/`）派生自 Freebuff 的专有软件，**请仅在本机自用，勿公开传播**。详见文末免责声明。
+> ⚠️ 汉化产物（修改后的 `app.asar` / `ui/`）派生自 Freebuff 的专有软件，仅面向已合法获取 Freebuff Desktop 的用户供个人自用（可经本项目的 Release 渠道获取），请勿商用。详见文末免责声明。
 
 先在本机构建产物，再安装：
 
@@ -138,6 +138,7 @@ bash hanhua/build.sh <app.asar> <ui-dir>   # 或显式指定原版文件
 - 本仓库的**脚本、词典、补丁与文档**以 **MIT License** 发布（见 `LICENSE`），属于你的原创内容。
 - **免责声明**：Freebuff Desktop（`@codebuff/freebuff-desktop`）是 Freebuff, Inc. 的专有商业软件，
   其安装包内不含任何开源许可（仅 Electron/Chromium 组件有各自的开源许可）。
-  本项目的汉化产物（修改后的 `app.asar` / `ui/`）派生自该软件，**仅限你本人在已合法获取的
-  设备上自用**；请勿公开传播、再分发或用于商业用途，并请遵守 Freebuff 的服务条款。
-  如 Freebuff 官方提出异议，请立即停止使用并删除相关文件。购买正版是对开发者的支持。
+  本项目的汉化产物（修改后的 `app.asar` / `ui/`）派生自该软件，**仅面向已合法获取
+  Freebuff Desktop 的用户供个人自用**：可经本项目的 Release 渠道获取与分发，但请勿
+  用于商业用途、请勿移除本声明或声称原创，并请遵守 Freebuff 的服务条款。
+  如 Freebuff 官方提出异议，请立即停止分发并删除相关文件。购买正版是对开发者的支持。
