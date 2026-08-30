@@ -2002,9 +2002,11 @@ namespace FreebuffController
         }
 
         // exe-adjacent probes → config (the order the README documents). A
-        // hanhua/ sitting next to the exe is almost certainly the one to use;
-        // the remembered path only rescues a controller exe that lives
-        // somewhere else, so it must not override a real sibling directory.
+        // hanhua checkout sitting next to the exe is almost certainly the one
+        // to use; the remembered path only rescues a controller exe that
+        // lives somewhere else, so it must not override a real sibling
+        // directory. The folder is named hanhua/ in the monorepo layout and
+        // freebuff-zh/ as the standalone repo clone.
         private string FindHanhuaDir()
         {
             try
@@ -2013,7 +2015,9 @@ namespace FreebuffController
                 string[] probes = new string[]
                 {
                     Path.Combine(exeDir, "hanhua"),
-                    Path.GetFullPath(Path.Combine(exeDir, "..\\hanhua"))
+                    Path.GetFullPath(Path.Combine(exeDir, "..\\hanhua")),
+                    Path.Combine(exeDir, "freebuff-zh"),
+                    Path.GetFullPath(Path.Combine(exeDir, "..\\freebuff-zh"))
                 };
                 foreach (string p in probes)
                     if (IsValidHanhuaDir(p)) return p;

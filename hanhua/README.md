@@ -40,7 +40,7 @@ bash hanhua/build.sh     # 在仓库根目录运行；自动选原版：优先�
 bash hanhua/apply.sh     # 应用汉化（自动备份原文件）
 ```
 
-> 也可以在多开控制器（`../controller/`）里一键应用，无需命令行。
+> 也可以在[多开控制器](https://github.com/Ximmmmmmm/freebuff-controller)里一键应用，无需命令行。
 
 脚本会先把现有 `app.asar` 和 `ui/` 备份到 `resources/hanhua-backup-<时间戳>/`，再替换，**重启应用生效**。
 
@@ -95,7 +95,7 @@ bash hanhua/build.sh <app.asar> <ui-dir>   # 或显式指定原版文件
 
 ## 🗂️ 目录结构
 
-本目录是 [freebuff-toolkit](../README.md) monorepo 的汉化子项目，与多开控制器（`../controller/`）同级：
+本仓库（`freebuff-zh`）是独立的汉化项目；配套的多开控制器是独立仓库 [freebuff-controller](https://github.com/Ximmmmmmm/freebuff-controller)：
 
 ```
 ├── dict.json          # 翻译词典（exact / template / code / pattern 四类）
@@ -129,7 +129,7 @@ bash hanhua/build.sh <app.asar> <ui-dir>   # 或显式指定原版文件
 ## 🗺️ 路线图
 
 - [x] **更新后恢复汉化的外部触发机制**：已由同仓库的多开控制器实现——状态检测 + 一键应用/还原，
-  Freebuff 更新覆盖汉化后打开控制器点一下即可恢复（见 `../controller/`）
+  Freebuff 更新覆盖汉化后打开控制器点一下即可恢复（见 [freebuff-controller](https://github.com/Ximmmmmmm/freebuff-controller)）
 - [ ] **启动时自检自动恢复汉化**：主进程注入逻辑，检测 `ui/index.html` 缺失汉化标记时自动从内置副本恢复，更新后首次启动即回到中文
 
 ## 📜 许可证与声明
