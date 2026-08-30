@@ -13,6 +13,3 @@ dist/
 # editor / os cruft
 .vs/
 *.user
-
-# legacy monorepo working folder (split 2026-08-30)
-controller/

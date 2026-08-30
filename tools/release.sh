@@ -5,6 +5,7 @@
 # 用法：
 #   bash tools/release.sh               # 打包并上传（需要 gh CLI 已登录）
 #   bash tools/release.sh --no-upload   # 只打包到 dist/，打印手工上传步骤
+#   bash tools/release.sh --force       # 覆盖同 packVersion 发布（默认拒绝不升版本的发布）
 #
 # 发布前确认 output/ 是最新构建（bash build.sh）。packVersion 在 manifest.json
 # 里维护：适配新 Freebuff 版本时与 targetVersion 一起升；同版本的词典修复可只升
@@ -14,7 +15,14 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPO="Ximmmmmmm/freebuff-zh"
 UPLOAD=1
-[ "${1:-}" = "--no-upload" ] && UPLOAD=0
+FORCE=0
+for a in "$@"; do
+  case "$a" in
+    --no-upload) UPLOAD=0 ;;
+    --force)     FORCE=1 ;;
+    *) echo "未知参数：$a（支持 --no-upload / --force）" >&2; exit 1 ;;
+  esac
+done
 
 if [ ! -f "${HERE}/output/app.asar" ] || [ ! -f "${HERE}/output/ui/index.html" ]; then
   echo "ERROR: 缺少 output/ 构建产物，先 bash build.sh" >&2
@@ -28,6 +36,23 @@ grep -q 'hanhua-pack' "${HERE}/output/ui/index.html" || {
 VER="$(node -e 'const m = require(process.argv[1]); console.log(m.packVersion || m.targetVersion)' "${HERE}/manifest.json")"
 TARGET="$(node -e 'const m = require(process.argv[1]); console.log(m.targetVersion)' "${HERE}/manifest.json")"
 ASSET="hanhua-pack-${VER}.zip"
+
+# packVersion 防呆：客户端对「packVersion <= 已暂存」的包会静默跳过，因此
+# 发布前对比远端最新 pack-manifest，版本没升就拒绝（--force 才允许覆盖）。
+REMOTE_VER=""
+MURL="$(gh api "repos/${REPO}/releases/latest" --jq '.assets[] | select(.name=="pack-manifest.json") | .browser_download_url' 2>/dev/null || true)"
+if [ -n "${MURL}" ]; then
+  REMOTE_VER="$(curl -sL "${MURL}" 2>/dev/null | node -e 'let s = ""; process.stdin.on("data", (d) => s += d); process.stdin.on("end", () => { try { console.log(JSON.parse(s).packVersion || ""); } catch { console.log(""); } })' 2>/dev/null || true)"
+fi
+if [ -n "${REMOTE_VER}" ]; then
+  ORDER="$(printf '%s\n%s\n' "${VER}" "${REMOTE_VER}" | sort -V | head -1)"
+  if [ "${ORDER}" = "${VER}" ] && [ "${FORCE}" -eq 0 ]; then
+    echo "ERROR: 本地 packVersion (${VER}) 不高于远端已发布的 (${REMOTE_VER})——客户端会静默跳过这个包。" >&2
+    echo "  请在 manifest.json 里调高 packVersion 后重跑；确要覆盖同版本请追加 --force。" >&2
+    exit 1
+  fi
+  echo "远端 packVersion: ${REMOTE_VER}；本次发布: ${VER}"
+fi
 
 DIST="${HERE}/dist"
 mkdir -p "${DIST}"
