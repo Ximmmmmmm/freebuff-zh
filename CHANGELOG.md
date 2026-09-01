@@ -1,5 +1,14 @@
 # 更新日志
 
+## [0.0.79] · 2026-09-01
+
+- **适配 Freebuff v0.0.79**：targetVersion / packVersion 升至 0.0.79，汉化包 Release `pack-v0.0.79` 已发布
+- **新增文案翻译**：0.0.79 新增的 agent 工具按钮 label 21 条（pattern）+ guidance 使用说明 15 条（exact），
+  主 bundle 替换 935 处，纯字面量词条覆盖 99.0%（671/678）
+- **模板变量自动重映射**：remap 迁移 30 条（$ → j、x → S、jS → j1 等），0 条 MISSING
+- **残留核对**：uipos/prose/leftover 扫描确认剩余均为代码标识符、键盘键名、模型名
+  （GPT-5.6-*/Opus 4.8/Opus 5/Sonnet 5/Fable 5）与 HTML input type，无需翻译
+
 ## 工具链 · 2026-08-30（之二）
 
 - **release.sh packVersion 防呆**：发布前对比远端最新 pack-manifest 的 packVersion，
