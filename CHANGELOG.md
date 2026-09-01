@@ -9,6 +9,25 @@
 - **残留核对**：uipos/prose/leftover 扫描确认剩余均为代码标识符、键盘键名、模型名
   （GPT-5.6-*/Opus 4.8/Opus 5/Sonnet 5/Fable 5）与 HTML input type，无需翻译
 
+### 词典修复版 · 2026-09-01（之二）
+
+- **补翻 0.0.79 漏掉的一批用户可见文案**（新增 86 条、清理 9 条失效词条）：
+  - 强度选择器（1–5 档悬浮提示）：Sprint/Focused/Crafted/Thorough/Exhaustive —… → 冲刺/专注/精工/彻底/穷尽
+  - 空空间/起步页：Start a new thread / Open a project to get started / Choose a project folder…
+  - 邀请页脚：Copied! / Copy invite link
+  - Claude Code 运行时安装：Step 1 of 2 · Downloading/Verifying… / Connected / Retry download…
+  - 应用更改（Apply）流程：Nothing to apply / Could not apply the changes / 各分支冲突原因（模板）
+  - 技能编辑器：Edit/Delete/Restore…/Insert skill、删除确认、技能模板说明（含整段 SKILL.md 引导）
+  - 会话状态/通知：Merge conflict / The agent sent nothing back
+  - 文件浏览器/差异：No matches / Could not load diff / Path copied
+  - 登录/提升权限/反馈/更新弹窗：Waiting for sign-in / Deny administrator access / A crash, error… / Development build…
+  - 终端无障碍播报 + 拖拽键盘操作提示：Terminal input / Too much output… / dnd-kit 拖拽与空格键说明
+- **清理死键**：✓ Copied!、⧉ Copy invite link、Balanced/Lean/Minimal…（强度旧文案）、
+  Context ${gs(g)}、${e.label} ${Yye(e.used)} of ${e.limit} 等 9 条原文已被 0.0.79 改写的失效词条
+- **验证**：替换 935 → 1030 处、`all keys matched`、纯字面量覆盖 729/729（100%）、`lint_dict` 通过；
+  剩留英文均为有意保留（模型名、代码关键字、正则/编辑器内部报错、路径、`month` 用量标签）
+- 词典更新为 exact 743 / template 105 / code 4 / pattern 28
+
 ## 工具链 · 2026-08-30（之二）
 
 - **release.sh packVersion 防呆**：发布前对比远端最新 pack-manifest 的 packVersion，
