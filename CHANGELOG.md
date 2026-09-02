@@ -2,7 +2,7 @@
 
 ## [0.0.82] · 2026-09-02
 
-- **适配 Freebuff v0.0.82**：targetVersion / packVersion 升至 0.0.82 / 0.0.82.1（渲染 bundle：
+- **适配 Freebuff v0.0.82**：targetVersion / packVersion 升至 0.0.82（渲染 bundle：
   `index-B-G-js1m.js` → `index-B7Da-BoE.js`）。本轮首次实战「安装目录已是英文原版且无备份」的
   迁移回退（应用自动更新覆盖汉化后未重装汉化包，构建回退直接用安装目录英文原版作 pristine）
 - **模板变量自动重映射**：`tools/remap.js` 迁移 30 条（`j → B`、`RT() → LT()`、`av → uv`、
@@ -32,6 +32,8 @@
   `lint_dict` 通过；uipos 残留仅剩代码关键字、模型名（GPT-5.6-*/Opus/Sonnet/Fable 5.1）、
   `mcpServers` 等内部标识与 HTML input type
 - 词典更新为 exact 741 / template 120 / code 4 / pattern 44
+- **版本号规范调整**：packVersion 不再使用 `x.y.z.1` 修复后缀，直接与 targetVersion
+  保持一致（曾短暂发布的 `pack-v0.0.82.1` 已删除，由 `pack-v0.0.82` 取代）
 
 ## [0.0.79] · 2026-09-01
 
