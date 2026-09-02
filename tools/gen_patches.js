@@ -94,6 +94,11 @@ patchFor('electron/main.cjs', [
   ["title: 'Freebuff failed to start'", "title: 'Freebuff 启动失败'"],
   ["['Relaunch Without Sandbox', 'Quit']", "['不使用沙箱重启', '退出']"],
   ["['Show Log', 'Quit']", "['查看日志', '退出']"],
+  ["error instanceof Error ? error.message : 'Could not open that path'", "error instanceof Error ? error.message : '无法打开该路径'"],
+])
+
+patchFor('electron/open-in.cjs', [
+  ["label: 'Copy path', kind: 'system'", "label: '复制路径', kind: 'system'"],
 ])
 
 patchFor('electron/consent-window.html', [

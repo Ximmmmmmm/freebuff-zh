@@ -14,8 +14,8 @@ if (!f) {
 const replacements = [
   ['<html lang="en">', '<html lang="zh-CN">'],
   ['<title>Freebuff Desktop</title>', '<title>Freebuff 桌面版</title>'],
-  ["<h1>Freebuff couldn't load</h1>", '<h1>Freebuff 无法加载</h1>'],
   ['<h1>Freebuff couldn’t load</h1>', '<h1>Freebuff 无法加载</h1>'],
+  ["<h1>Freebuff couldn't load</h1>", '<h1>Freebuff 无法加载</h1>'],
   [/Part of the interface did not start\. Reload once; if this screen returns, reinstall the\r?\n\s+latest version\. Your projects and conversations are safe\./,
    '部分界面未能启动。请重新加载一次；如果此界面再次出现，请重新安装最新版本。你的项目和对话都是安全的。'],
   ['Reload Freebuff', '重新加载 Freebuff'],

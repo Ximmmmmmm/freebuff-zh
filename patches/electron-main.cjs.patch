@@ -55,6 +55,15 @@
      properties: ['openDirectory', 'createDirectory'],
    })
    return res.canceled || res.filePaths.length === 0 ? null : res.filePaths[0]
+@@ -1171,7 +1169,7 @@
+     }
+     return { ok: true, path: resolved.requested, openedPath: resolved.opened, fallback: resolved.fallback }
+   } catch (error) {
+-    return { ok: false, error: error instanceof Error ? error.message : 'Could not open that path' }
++    return { ok: false, error: error instanceof Error ? error.message : '无法打开该路径' }
+   }
+ })
+
 @@ -1271,8 +1269,8 @@
        resolve(action)
      }

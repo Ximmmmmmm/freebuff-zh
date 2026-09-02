@@ -1,0 +1,11 @@
+--- a/electron/open-in.cjs
++++ b/electron/open-in.cjs
+@@ -90,7 +90,7 @@
+     label: platform === 'darwin' ? 'Finder' : 'File Explorer',
+     kind: 'system',
+   })
+-  targets.push({ id: 'copy-path', label: 'Copy path', kind: 'system' })
++  targets.push({ id: 'copy-path', label: '复制路径', kind: 'system' })
+   return targets
+ }
+

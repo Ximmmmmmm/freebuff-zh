@@ -819,6 +819,8 @@
     "${i.subscription[0].toUpperCase()}${i.subscription.slice(1)} subscription connected": "已连接 ${i.subscription[0].toUpperCase()}${i.subscription.slice(1)} 订阅",
     ", needs attention: ${B}": "，需要注意：${B}",
     "Each qualified referral adds +1 session per day (up to +${uv})": "每个符合资格的推荐每天增加 1 次会话（最多 +${uv}）",
+    "Open in ${C.label}": "在 ${C.label} 中打开",
+    "Couldn’t open in ${C.label}.": "无法在 ${C.label} 中打开。",
     "You've used all of ${r.label} for now.": "你现在已用完${r.label}。",
     "You're close to the limit on ${r.label} — ${Math.floor(r.used*10)/10} of ${r.limit} used.": "你即将达到${r.label}的用量上限 — 已用 ${Math.floor(r.used*10)/10}/${r.limit}。",
     "Dismiss notification: ${s.message}": "关闭通知：${s.message}",

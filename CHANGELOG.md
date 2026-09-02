@@ -1,5 +1,25 @@
 # 更新日志
 
+## [0.0.84] · 2026-09-02
+
+- **适配 Freebuff v0.0.84**：targetVersion / packVersion 升至 0.0.84。本轮渲染 bundle
+  内容哈希不变（仍为 `index-qE9EmCR_.js`），**变更全部在主进程 asar**（package.json
+  除版本号外无差异）；装机目录无新增备份，构建回退直接用上一轮的
+  `hanhua-backup-20260902-110906`（实为 0.0.84 英文原版）作 pristine
+- **主进程补丁重新生成**：五份既有补丁与 0.0.83 版逐字节一致（相关区域无实质变更），
+  仅 `electron-main.cjs.patch` 随新词条 +9 行；**新增 `electron-open-in.cjs.patch`**
+- **补翻两条存量漏翻**（0.0.83 就存在、主进程单引号字符串词典覆盖不到，走补丁分区）：
+  - 「打开方式」右键菜单里的 `Copy path` → 复制路径（主进程传 label，渲染端原样显示）
+  - 打开失败 toast 兜底 `Could not open that path` → 无法打开该路径
+- **补翻渲染端配套两条历史漏翻**（template）：`Open in ${C.label}` → `在 ${C.label} 中打开`、
+  `Couldn’t open in ${C.label}.` → `无法在 ${C.label} 中打开。`（主 bundle 替换 1057 → 1060 处）
+- **`tools/apply_ui_patch.js` 微修**：`couldn’t`（弯引号）变体提前到 `couldn't` 之前判断，
+  消除 0.0.84 index.html 上的误报 MISSED
+- **验证**：`all keys matched`、纯字面量覆盖 727/727（100%）、`lint_dict` 通过；
+  uipos 残留 26 条不变（均为有意保留项），主进程 UI 位置英文从 15 → 13 条（余下均为
+  内部 API 错误与编辑器/终端名）
+- 词典更新为 exact 741 / template 123 / code 4 / pattern 45
+
 ## [0.0.83] · 2026-09-02
 
 - **适配 Freebuff v0.0.83**：targetVersion / packVersion 升至 0.0.83（渲染 bundle：
