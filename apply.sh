@@ -2,11 +2,14 @@
 # Apply the 汉化 (Chinese localization) build to the installed Freebuff Desktop.
 # - Backs up the current app.asar and ui/ to <install>/resources/hanhua-backup-<timestamp>/
 # - Replaces resources/app.asar and resources/orchestrator/ui/
+# - Writes the "AI 默认中文回复" preference into ~/.AGENTS.md (FREEBUFF_ZH_NO_LANG=1 skips)
 # Run from anywhere:  bash apply.sh
 set -euo pipefail
 
 INSTALL="${LOCALAPPDATA}/Programs/@codebufffreebuff-desktop"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=tools/lang_pref.sh
+. "${HERE}/tools/lang_pref.sh"
 # optional: source dir of the localized build (defaults to this repo's output/)
 OUT="${1:-${HERE}/output}"
 
@@ -38,4 +41,5 @@ cp "${OUT}/ui/index.html" "${INSTALL}/resources/orchestrator/ui/index.html"
 mkdir -p "${INSTALL}/resources/orchestrator/ui/assets"
 cp -r "${OUT}/ui/assets/." "${INSTALL}/resources/orchestrator/ui/assets/"
 echo "汉化已应用：app.asar 与 ui/ 已替换。"
-echo "重启 Freebuff 桌面应用即可看到中文界面。"
+lang_pref_install
+echo "重启 Freebuff 桌面应用即可看到中文界面；AI 回复语言偏好对新建会话生效。"

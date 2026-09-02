@@ -1,5 +1,33 @@
 # 更新日志
 
+## [未发布] · 2026-09-02
+
+- **新增：让 AI 智能体也默认中文回复**（`tools/lang_pref.sh`，被 `apply.sh` / `restore.sh` source）
+  - **机制**：Freebuff 的 orchestrator 在 `initialSessionState` 里**无条件**调用
+    `loadUserKnowledgeFiles()`，读取 `~/.AGENTS.md` 并以
+    `Project instructions: ... Follow them for the rest of the session.` 注入系统提示词，
+    且每次请求都携带。这是不必修改专有 bundle 就能常驻影响回复语言的官方入口
+  - **为什么不补丁 `orchestrator.js`**：主提示词（`You are Buffy, ...`）整段英文且不含任何
+    语言指令，直接改它要新增 9MB bundle 补丁阶段 + 语法与命中数自检，每次升版都要重新迁移，
+    出错会波及所有使用者启动；写 `~/.AGENTS.md` 零构建成本、不怕自动更新覆盖
+  - **语义**：`apply.sh` 追加一段夹在 `# >>> freebuff-zh:lang-pref >>>` /
+    `# <<< freebuff-zh:lang-pref <<<` 之间的指令；`FREEBUFF_ZH_NO_LANG=1` 跳过。
+    `restore.sh` 精确移除该段，移除后若只剩空白则连文件一起删除
+  - **实现取舍**：一律用 `head` / `tail` 做行级切片而非 awk/sed 重写整文件——实测 awk
+    在 CRLF 文件上会吞掉 `\r`，破坏用户内容逐字节一致性；起始标记在但结束标记被手工删掉时
+    （无法判断边界）一律不改动文件，只 WARN 提示手动处理，不做「按到文件末尾」的危险兜底
+  - **已知边界**：用户文件原本结尾无换行时，为保证标记独立成行必须补一个 `\n`，行级切片无法
+    记住该事实，故还原后文件会比原状多出一个结尾换行
+- **顺带查证**：界面上「包含 AGENTS.md」勾选（`injectAgentsMd`，**默认关闭**）只管
+  **项目根目录**那一份（`loadRootKnowledgeFiles(turn.cwd)`，上限 64000 字符），
+  子目录的 `AGENTS.md` 与 `*.knowledge.md` 不进 prompt；与本次的用户级文件是两条独立通道
+- **验证**：`tools/test_lang_pref.sh`（沙箱 HOME，13 组用例 / 30 条断言）全通过并已接入
+  GitHub Actions 作为回归门禁，覆盖新建、幂等、保留用户内容、CRLF、无结尾换行、
+  残缺段落拒改、`set -euo pipefail` 下不中断等路径；
+  `bash -n` 全部 shell 脚本通过（与 CI 冒烟一致）；真实装机端到端已确认——新建会话询问
+  Project instructions 列表，应用能报出 `~/.AGENTS.md` 并自动以中文回复
+- 未改词典与构建产物，`targetVersion` / `packVersion` 维持 0.0.84，尚未随 Release 发布
+
 ## [0.0.84] · 2026-09-02
 
 - **适配 Freebuff v0.0.84**：targetVersion / packVersion 升至 0.0.84。本轮渲染 bundle
