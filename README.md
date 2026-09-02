@@ -69,10 +69,7 @@ bash tools/release.sh --no-upload   # 只打包到 dist/，打印手工上传步
 
 - **发布端**：Release tag `pack-v<packVersion>`，附件为 `hanhua-pack-<版本>.zip`（= `output/` 打包）和 `pack-manifest.json`（packVersion / targetVersion / asset / sha512）
 - **客户端**：控制器每 30 分钟检查一次（与 Freebuff 更新检查共用同一条代理链）。仅当 manifest 的 targetVersion 与本机 Freebuff 版本**完全一致**且 packVersion 更新时才下载，SHA512 校验、解包后落到 `output/`，点「应用汉化」生效
-- **packVersion**：默认跟随 targetVersion；**targetVersion 不变但包内容有实质变更**（补翻、
-  新增随包资产如 `lang-pref.md`）时升第四段（如 `0.0.84.1`）。注意 `release.sh --force`
-  只解开发布端的版本比对——控制器对 `packVersion <= 已暂存` 的包直接静默跳过，
-  同版本重发老用户是拿不到的，所以要升段
+- **packVersion**：跟随 targetVersion，与所适配的 Freebuff 版本保持一致（不带第四段修复后缀）；同版本只改词典的重发用 `release.sh --force`
 - ⚠️ 汉化产物派生自 Freebuff 专有软件，发布 Release 即公开传播，与文末免责声明的「仅限本机自用」条款冲突——是否发布由你决定，发布前请确认接受并相应调整声明
 
 ### 还原英文原版

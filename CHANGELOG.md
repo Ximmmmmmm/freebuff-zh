@@ -1,6 +1,6 @@
 # 更新日志
 
-## [0.0.84.1] · 2026-09-02
+## [未发布] · 2026-09-02
 
 - **新增：让 AI 智能体也默认中文回复**（`tools/lang_pref.sh`，被 `apply.sh` / `restore.sh` source）
   - **机制**：Freebuff 的 orchestrator 在 `initialSessionState` 里**无条件**调用
@@ -31,16 +31,12 @@
 - **顺带查证**：界面上「包含 AGENTS.md」勾选（`injectAgentsMd`，**默认关闭**）只管
   **项目根目录**那一份（`loadRootKnowledgeFiles(turn.cwd)`，上限 64000 字符），
   子目录的 `AGENTS.md` 与 `*.knowledge.md` 不进 prompt；与本次的用户级文件是两条独立通道
-- **验证**：`tools/test_lang_pref.sh`（沙箱 HOME，16 组用例 / 44 条断言）全通过并已接入
+- **验证**：`tools/test_lang_pref.sh`（沙箱 HOME，13 组用例 / 30 条断言）全通过并已接入
   GitHub Actions 作为回归门禁，覆盖新建、幂等、保留用户内容、CRLF、无结尾换行、
-  残缺段落拒改、关闭标记、正文同源、`set -euo pipefail` 下不中断等路径；
+  残缺段落拒改、`set -euo pipefail` 下不中断等路径；
   `bash -n` 全部 shell 脚本通过（与 CI 冒烟一致）；真实装机端到端已确认——新建会话询问
   Project instructions 列表，应用能报出 `~/.AGENTS.md` 并自动以中文回复
-- **发布 `pack-v0.0.84.1`**：词典与主进程补丁均未改动，只是新增一份随包资产，因此
-  `targetVersion` 保持 0.0.84、`packVersion` 升第四段到 0.0.84.1 —— 控制器只在
-  `packVersion` 严格大于已暂存值时才下载，同版本 `--force` 重发老用户拿不到
-- 使用者拿到的方式：命令行走 `apply.sh` 即刻生效；多开控制器「应用汉化」的一键写入
-  需配套 **v1.4.0.0**（旧版控制器不读 `lang-pref.md`，只会保持原样并跳过）
+- 未改词典与构建产物，`targetVersion` / `packVersion` 维持 0.0.84，尚未随 Release 发布
 
 ## [0.0.84] · 2026-09-02
 
