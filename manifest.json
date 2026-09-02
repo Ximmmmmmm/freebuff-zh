@@ -1,5 +1,5 @@
 {
   "targetVersion": "0.0.84",
-  "packVersion": "0.0.84",
-  "comment": "targetVersion = 词典适配的 Freebuff Desktop 版本（多开控制器读取做兼容检查）；packVersion = 汉化包自身的发布版本，构建时打进产物（控制器比对是否需要更新），跟随 targetVersion、与其保持一致；同版本重发用 release.sh --force。"
+  "packVersion": "0.0.84.1",
+  "comment": "targetVersion = 词典适配的 Freebuff Desktop 版本（多开控制器读取做兼容检查）；packVersion = 汉化包自身的发布版本，构建时打进产物，控制器只在它严格大于已暂存值时才下载。默认跟随 targetVersion；targetVersion 不变但包内容有实质变更（补翻、新增随包资产如 lang-pref.md）时升第四段（如 0.0.84.1）——同 packVersion 用 --force 重发只解开发布端限制，已暂存该包的老用户仍会被客户端静默跳过，拿不到更新。"
 }
