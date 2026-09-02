@@ -87,8 +87,6 @@ done
 
 echo "== 4/4 重打包 asar 并处理 ui =="
 mkdir -p "${HERE}/output"
-# 语言偏好正文：多开控制器从 output/ 读它来写 ~/.AGENTS.md（命令行与控制器共用一份）
-cp "${HERE}/lang-pref.md" "${HERE}/output/lang-pref.md"
 npx -y @electron/asar pack "${WORK}/main" "${HERE}/output/app.asar"
 
 if [ -n "${PRISTINE_UI}" ]; then

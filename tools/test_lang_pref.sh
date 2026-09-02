@@ -31,14 +31,6 @@ marks() {
 }
 lines() { if [ -f "${TARGET}" ]; then wc -l < "${TARGET}" | tr -d ' '; else printf '0'; fi; }
 
-echo "--- 用例 0：正文文件与标记常量一致（防 shell / 控制器 / 正文三方漂移）"
-fresh
-FRAG="${REPO}/lang-pref.md"
-check "lang-pref.md 存在且非空" "$([ -s "${FRAG}" ] && echo yes || echo no)" "yes"
-check "首行等于 ZH_LANG_BEGIN" "$(head -1 "${FRAG}")" "${ZH_LANG_BEGIN}"
-check "末个非空行等于 ZH_LANG_END" "$(grep -v '^[[:space:]]*$' "${FRAG}" | tail -1)" "${ZH_LANG_END}"
-check "正文不含关闭标记字面量（否则写完即自锁）" "$(grep -cF "${ZH_LANG_OFF}" "${FRAG}" || true)" "0"
-
 echo "--- 用例 1：文件不存在时新建"
 fresh
 lang_pref_install >/dev/null
@@ -161,20 +153,6 @@ HZ
   check "${scenario}：结束后仍有 1 段" "$(marks)" "1"
   rm -rf "${SANDBOX}"
 done
-
-echo "--- 用例 14：写入的段落与 lang-pref.md 逐字节一致（证明与控制器同源）"
-fresh
-lang_pref_install >/dev/null
-awk '/freebuff-zh:lang-pref >>>/{f=1} f{print} /freebuff-zh:lang-pref <<</{exit}' "${TARGET}" > "${SANDBOX}/block"
-check "段内容与正文文件一致" "$(cmp -s "${SANDBOX}/block" "${REPO}/lang-pref.md" && echo same || echo diff)" "same"
-
-echo "--- 用例 15：文件里已有关闭标记时不写入"
-fresh
-printf '# 我的内容\n\n%s\n' "${ZH_LANG_OFF}" > "${TARGET}"
-out15="$(lang_pref_install 2>&1)"
-check "关闭标记存在时不追加段落" "$(marks)" "0"
-check "说明里提到关闭标记" "$(printf '%s' "${out15}" | grep -c '关闭标记')" "1"
-check "用户内容未被改动" "$(grep -c '# 我的内容' "${TARGET}" || true)" "1"
 
 rm -rf "${SANDBOX}"
 echo

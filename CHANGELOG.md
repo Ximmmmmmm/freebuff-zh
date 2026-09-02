@@ -10,19 +10,9 @@
   - **为什么不补丁 `orchestrator.js`**：主提示词（`You are Buffy, ...`）整段英文且不含任何
     语言指令，直接改它要新增 9MB bundle 补丁阶段 + 语法与命中数自检，每次升版都要重新迁移，
     出错会波及所有使用者启动；写 `~/.AGENTS.md` 零构建成本、不怕自动更新覆盖
-  - **语义**：应用汉化时追加一段夹在 `# >>> freebuff-zh:lang-pref >>>` /
-    `# <<< freebuff-zh:lang-pref <<<` 之间的指令；`restore.sh` 精确移除该段，
-    移除后若只剩空白则连文件一起删除
-  - **正文单一来源**：段落正文抽到仓库根 `lang-pref.md`（首尾行即两个标记），
-    `tools/lang_pref.sh` 改为读该文件而非内嵌 heredoc；`build.sh` 把它复制进 `output/`、
-    `tools/release.sh` 一并打进汉化包 zip，因此多开控制器「应用汉化」读的是**同一份正文与
-    同一对标记**，命令行与控制器写出的段落逐字节一致（原「控制器不写此文件」的缺口就此闭合）
-  - **永久关闭**：在 `~/.AGENTS.md` 的**标记段之外**写一行 `freebuff-zh:lang-pref:off`，
-    或设 `FREEBUFF_ZH_NO_LANG=1` 后应用汉化。标记段外是因为该段每次应用都会被重写
-  - **新增断言**：`tools/postbuild.js` 校验 `output/lang-pref.md` 存在、首尾标记正确、
-    且与仓库源逐字节一致（防 build 漏拷或 output 过期）；`tools/test_lang_pref.sh`
-    扩到 16 组用例，新增「标记常量与正文首尾行一致」「写入段与正文逐字节一致」
-    「有关闭标记时跳过」三项
+  - **语义**：`apply.sh` 追加一段夹在 `# >>> freebuff-zh:lang-pref >>>` /
+    `# <<< freebuff-zh:lang-pref <<<` 之间的指令；`FREEBUFF_ZH_NO_LANG=1` 跳过。
+    `restore.sh` 精确移除该段，移除后若只剩空白则连文件一起删除
   - **实现取舍**：一律用 `head` / `tail` 做行级切片而非 awk/sed 重写整文件——实测 awk
     在 CRLF 文件上会吞掉 `\r`，破坏用户内容逐字节一致性；起始标记在但结束标记被手工删掉时
     （无法判断边界）一律不改动文件，只 WARN 提示手动处理，不做「按到文件末尾」的危险兜底
