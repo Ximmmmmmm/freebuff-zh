@@ -15,9 +15,9 @@ Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.84）的**简体中文汉�
 
 ## ✨ 特性
 
-- **AI 回复也中文化**：`apply.sh` 顺带把回复语言偏好写进 `~/.AGENTS.md`（Freebuff 无条件读取的
-  用户级指令入口，无需改动专有 bundle），界面与 AI 语言一次搞定；不想动这个文件用
-  `FREEBUFF_ZH_NO_LANG=1 bash apply.sh` 跳过
+- **AI 回复也中文化**：应用汉化时把回复语言偏好写进 `~/.AGENTS.md`（Freebuff 无条件读取的
+  用户级指令入口，无需改动专有 bundle）。正文唯一来源是仓库根的 `lang-pref.md`，随汉化包一起
+  分发，命令行 `apply.sh` 与多开控制器的「应用汉化」读同一份、写出逐字节一致的一段
 - **覆盖全面**：渲染进程约 920 处文案 + 主进程菜单 / 对话框 / 同意窗口全面中文化
 - **词典驱动**：`dict.json`（exact 741 / template 123 / code 4 / pattern 45），幂等应用、可审计
 - **可复现构建**：`build.sh` 从原版 + 词典 + 补丁**逐字节重建**汉化产物（v0.0.77 曾对照 Release 产物验证；v0.0.83 适配经防呆自检通过）
@@ -103,6 +103,7 @@ bash build.sh <app.asar> <ui-dir>   # 或显式指定原版文件
 ```
 ├── dict.json          # 翻译词典（exact / template / code / pattern 四类）
 ├── manifest.json      # 词典适配的 Freebuff 版本（多开控制器读取做兼容检查）
+├── lang-pref.md       # AI 回复语言偏好的正文唯一来源（build.sh 复制进 output/ 随包分发）
 ├── patches/           # 人工补丁：词典覆盖不到的手工修改（主进程 6 个文件；index.html 由 tools/apply_ui_patch.js 直改）
 ├── tools/             # 提取/翻译/核查脚本（见 docs/汉化流程.md）
 │   ├── update.sh      # 一键版本迁移：重映射 → 构建 → 残留扫描 → 待办汇总
@@ -127,16 +128,18 @@ bash build.sh <app.asar> <ui-dir>   # 或显式指定原版文件
 - **自动更新会覆盖汉化**：应用自带 electron-updater，更新后汉化文件会被替换。更新后重新执行
   `apply.sh`（或用 `build.sh` 对新版本重新构建；也可直接在多开控制器里点「应用汉化」）。
   详见 `docs/更新维护.md`。
-- **会写入一个用户级配置文件**：`apply.sh` 会在 `~/.AGENTS.md` 末尾追加一段 AI 回复语言指令，
+- **会写入一个用户级配置文件**：应用汉化时会往 `~/.AGENTS.md` 追加一段 AI 回复语言指令，
   用 `# >>> freebuff-zh:lang-pref >>>` 与 `# <<< freebuff-zh:lang-pref <<<` 两个标记包住。
-  **只增删这一段**，你文件里的自有内容按字节原样保留；重复运行不会堆叠（先剥旧段再追加）。
-  `restore.sh` 会精确移除这一段，移除后若文件只剩空白则连文件一起删除。
+  **只增删这一段**，你文件里的自有内容按字节原样保留；重复应用不会堆叠（先剥旧段再追加）。
+  `restore.sh` 与控制器的「还原英文」都会精确移除这一段，移除后若文件只剩空白则连文件一起删除。
   原理：Freebuff 的 orchestrator 每次新建会话都无条件读取 `~/.AGENTS.md` 并注入系统提示词，
   而界面上「包含 AGENTS.md」那个勾选只管**项目根目录**那份（且默认关闭），两者互不相干。
-  段落被手工改坏（只剩起始标记）时脚本一律不改动文件，只提示手动处理，以免误删你的内容。
-- **多开控制器不写这个文件**：控制器的「应用汉化」是直接复制 `app.asar` 与 `ui/`，不经过
-  `apply.sh`，所以只汉化界面。要 AI 也说中文，在本仓库根目录跑一次
-  `bash apply.sh` 或单独执行 `bash tools/lang_pref.sh install`。
+  段落被手工改坏（只剩起始标记）时写入器一律不改动文件，只提示手动处理，以免误删你的内容。
+  - **永久关闭（两种方式，命令行与控制器都认）**：在 `~/.AGENTS.md` 里**标记段之外**另起一行
+    写入 `freebuff-zh:lang-pref:off`；或设置环境变量 `FREEBUFF_ZH_NO_LANG=1` 后再应用汉化。
+    注意只删掉那一段是不够的——下次应用汉化会按正文重新写回，所以请留下关闭标记。
+- **命令行与多开控制器行为一致**：控制器「应用汉化」不经过 `apply.sh`，但读的是汉化包里同一份
+  `output/lang-pref.md` 和同一对标记，所以两条路径写出的段落逐字节相同。
 - **有意保留英文的部分**：编程语言名（Python、TypeScript…）、主题名（Ayu Dark…）、键盘键名
   （Enter、Delete…）、内部枚举/类型名、库内部错误信息——改动会破坏逻辑，故不翻译。
 - 汉化不涉及任何联网、上传或凭据改动。

@@ -4,9 +4,9 @@ name: lint
 
 on:
   push:
-    paths: ['dict.json', 'tools/**', '*.sh', '.github/workflows/**']
+    paths: ['dict.json', 'lang-pref.md', 'tools/**', '*.sh', '.github/workflows/**']
   pull_request:
-    paths: ['dict.json', 'tools/**', '*.sh', '.github/workflows/**']
+    paths: ['dict.json', 'lang-pref.md', 'tools/**', '*.sh', '.github/workflows/**']
   workflow_dispatch:
 
 jobs:

@@ -15,6 +15,14 @@
 
 ZH_LANG_BEGIN="# >>> freebuff-zh:lang-pref >>>"
 ZH_LANG_END="# <<< freebuff-zh:lang-pref <<<"
+# 段落正文的唯一来源：仓库根的 lang-pref.md，其首尾两行必须与上面两个标记一致
+# （由 tools/test_lang_pref.sh 断言）。多开控制器读同一份文件，因此命令行与
+# 控制器写出的段落逐字节一致。
+ZH_LANG_REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ZH_LANG_FRAGMENT="${ZH_LANG_REPO_ROOT}/lang-pref.md"
+# 永久关闭标记：写在标记段「之外」（标记段每次应用汉化都会被重写），
+# 在 ~/.AGENTS.md 里另起一行写入这个字符串即可让两侧写入器都跳过本段
+ZH_LANG_OFF="freebuff-zh:lang-pref:off"
 
 # 定位用户主目录（与应用的 os.homedir() 保持一致）
 zh_lang_home() {
@@ -45,19 +53,14 @@ zh_lang_target() {
   printf '%s/.AGENTS.md\n' "${home%/}"
 }
 
+# 输出本包段落：正文一律取自 lang-pref.md（缺失或为空则返回 2，由调用方跳过写入）
 zh_lang_block() {
-  printf '%s\n' "${ZH_LANG_BEGIN}"
-  cat <<'ZH_LANG_BLOCK'
-# 由 freebuff-zh 汉化包写入。运行 restore.sh 可只移除本段而不影响你自己的内容；
-# 想应用汉化时不写这一段，设 FREEBUFF_ZH_NO_LANG=1 再跑 apply.sh。
-
-- **始终使用简体中文回复**，无论提问使用什么语言；不要先输出英文再补中文。
-- 仅当用户本轮明确指定其他语言时那一轮才改用该语言，下一轮恢复中文。
-- 保持原文不翻译：代码、命令、文件路径、标识符、API 名、日志与报错原文、库名与专有名词。
-- 需要用户确认的选项、计划、待办清单、总结与进度说明一律用中文书写。
-- 代码中的注释跟随所在文件的既有语言惯例，不要为了中文而改动既有代码。
-ZH_LANG_BLOCK
-  printf '%s\n' "${ZH_LANG_END}"
+  if [ ! -s "${ZH_LANG_FRAGMENT}" ]; then
+    return 2
+  fi
+  cat "${ZH_LANG_FRAGMENT}"
+  # 正文文件可能没有结尾换行，补齐以免与后续内容粘连
+  [ -z "$(tail -c 1 "${ZH_LANG_FRAGMENT}")" ] || printf '\n'
 }
 
 # 本包段落的行号区间，正常时输出 "begin end" 并返回 0
@@ -122,6 +125,10 @@ lang_pref_install() {
   fi
   if [ -f "${target}" ]; then
     pre_exists="1"
+    if grep -qF "${ZH_LANG_OFF}" "${target}"; then
+      echo "检测到 ${target} 里的关闭标记，未写入 AI 回复语言偏好。"
+      return 0
+    fi
   fi
   tmp="${target}.freebuff-zh.tmp"
   rng="$(zh_lang_range "${target}")" && rc=0 || rc=$?
@@ -155,7 +162,12 @@ lang_pref_install() {
       zh_lang_ensure_sep "${tmp}"
       ;;
   esac
-  if ! zh_lang_block >>"${tmp}" || ! mv -f "${tmp}" "${target}"; then
+  if ! zh_lang_block >>"${tmp}"; then
+    rm -f "${tmp}"
+    echo "WARN: 段落正文 ${ZH_LANG_FRAGMENT} 缺失或为空，跳过 AI 回复语言设置（界面汉化不受影响）。" >&2
+    return 0
+  fi
+  if ! mv -f "${tmp}" "${target}"; then
     rm -f "${tmp}"
     echo "WARN: 无法写入 ${target}，跳过 AI 回复语言设置（界面汉化不受影响）。" >&2
     return 0

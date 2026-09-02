@@ -69,6 +69,29 @@ if (!fs.existsSync(idxPath)) {
   }
 }
 
+// --- 1b. 语言偏好正文（控制器读 output/lang-pref.md 写 ~/.AGENTS.md）-----------
+// 下面两个标记常量必须与 tools/lang_pref.sh 和控制器 LangPref 保持一致，
+// 这里正是防止三方漂移的断言点。
+const LANG_BEGIN = '# >>> freebuff-zh:lang-pref >>>'
+const LANG_END = '# <<< freebuff-zh:lang-pref <<<'
+const lpOut = path.join(outDir, 'lang-pref.md')
+const lpSrc = path.join(REPO, 'lang-pref.md')
+if (!fs.existsSync(lpOut)) {
+  bad('缺少 output/lang-pref.md —— build.sh 未复制语言偏好正文，控制器无法配置 AI 中文回复')
+} else {
+  const outText = fs.readFileSync(lpOut, 'utf8')
+  const lines = outText.replace(/\r\n/g, '\n').split('\n').filter((l) => l.trim() !== '')
+  if (lines[0] !== LANG_BEGIN || lines[lines.length - 1] !== LANG_END) {
+    bad(`output/lang-pref.md 首尾标记不符（应为 ${LANG_BEGIN} / ${LANG_END}）`)
+  } else if (lines.length < 4) {
+    bad(`output/lang-pref.md 只有 ${lines.length} 行非空内容，疑似被清空`)
+  } else if (!fs.existsSync(lpSrc) || fs.readFileSync(lpSrc, 'utf8') !== outText) {
+    bad('output/lang-pref.md 与仓库根的 lang-pref.md 不一致 —— output 是旧构建，请重跑 bash build.sh')
+  } else {
+    ok(`lang-pref.md 标记完整且与仓库源一致（${lines.length} 行）`)
+  }
+}
+
 // --- 2. 主 bundle 覆盖率统计 ---------------------------------------------------
 // 只统计“纯字面量”词条（原文/译文都不含 ${、引号、反引号、反斜杠、换行），
 // 避免转义形态差异造成误判。单条缺失可能是词条过期（产品改文案），属正常；
