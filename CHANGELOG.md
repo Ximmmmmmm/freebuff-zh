@@ -1,5 +1,19 @@
 # 更新日志
 
+## [0.0.83] · 2026-09-02
+
+- **适配 Freebuff v0.0.83**：targetVersion / packVersion 升至 0.0.83（渲染 bundle：
+  `index-B7Da-BoE.js` → `index-qE9EmCR_.js`）。应用自动更新再次覆盖汉化，且 NSIS 安装器
+  清掉了 `hanhua-backup-*`，继续走「无备份回退安装目录英文原版」构建路径
+- **模板变量自动重映射**：`tools/remap.js` 迁移 13 条（`LT() → QT()`、`Ku(...) → fc(...)`、
+  `Tc(...) → Ec(...)`、`fPe → yPe`、`mz(...) → pz(...)`），0 条 AMBIGUOUS / MISSING
+- **补翻 0.0.83 新增文案**（2 条）：应用内更新日志面板标题 `What's new` → 更新内容、
+  aria `What changed in Freebuff ${r}` → `Freebuff ${r} 更新内容`；
+  模型列表新英文 tagline（Powerful all-round coding model 等）与 0.0.82 译文逐字相同，无需新增
+- **验证**：主 bundle 替换 1057 处、`all keys matched`、纯字面量覆盖 727/727（100%）、
+  `lint_dict` 通过；uipos 残留回到 26 条，均为有意保留项
+- 词典更新为 exact 742 / template 121 / code 4 / pattern 45
+
 ## [0.0.82] · 2026-09-02
 
 - **适配 Freebuff v0.0.82**：targetVersion / packVersion 升至 0.0.82（渲染 bundle：

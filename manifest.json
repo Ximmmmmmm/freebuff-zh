@@ -1,5 +1,5 @@
 {
-  "targetVersion": "0.0.82",
-  "packVersion": "0.0.82",
+  "targetVersion": "0.0.83",
+  "packVersion": "0.0.83",
   "comment": "targetVersion = 词典适配的 Freebuff Desktop 版本（多开控制器读取做兼容检查）；packVersion = 汉化包自身的发布版本，构建时打进产物（控制器比对是否需要更新），跟随 targetVersion、与其保持一致；同版本重发用 release.sh --force。"
 }
