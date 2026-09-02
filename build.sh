@@ -111,6 +111,11 @@ if [ -n "${PRISTINE_UI}" ]; then
       echo "ERROR: 词典对主 bundle 的替换次数为 0 —— 词典应用未生效（v0.0.70 式静默失败），已中止构建" >&2
       exit 1
     fi
+    MISSED="$(printf '%s' "${APPLY_LOG}" | sed -n 's/^MISSED (\([0-9][0-9]*\) keys.*/\1/p')"
+    if [ -n "${MISSED}" ] && [ "${MISSED}" -gt 0 ]; then
+      echo "ERROR: 词典有 ${MISSED} 条未命中（MISSED 明细见上方日志）——原文可能随版本改写，请核对 dict.json 后重试，已中止构建" >&2
+      exit 1
+    fi
   else
     echo "  ! 未在 index.html 中找到主 bundle，跳过词典应用" >&2
   fi

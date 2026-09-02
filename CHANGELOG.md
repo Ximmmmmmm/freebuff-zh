@@ -1,5 +1,38 @@
 # 更新日志
 
+## [0.0.82] · 2026-09-02
+
+- **适配 Freebuff v0.0.82**：targetVersion / packVersion 升至 0.0.82 / 0.0.82.1（渲染 bundle：
+  `index-B-G-js1m.js` → `index-B7Da-BoE.js`）。本轮首次实战「安装目录已是英文原版且无备份」的
+  迁移回退（应用自动更新覆盖汉化后未重装汉化包，构建回退直接用安装目录英文原版作 pristine）
+- **模板变量自动重映射**：`tools/remap.js` 迁移 30 条（`j → B`、`RT() → LT()`、`av → uv`、
+  `Q → $`、`U → H`、`sU → dV`、`IP → UP`、`ib → Tc`、`ly → uy`、`nU → cV`、`iU → uV` 等），
+  0 条 MISSING；2 条 AMBIGUOUS 人工核对
+  - `Context ${As(g)}`：0.0.82 已被重写为 `Context ${$s(g)}`（同一模型选择器上下文百分比），
+    按新原文重建词条
+  - `${e.label} ${HEe(e.used)} of ${e.limit}`：0.0.82 用量面板重做后已无对应原文，删除死键
+- **补翻 0.0.82 重写的用量面板与限额提示条**（新增 30 条、删除 3 条失效词条）：
+  - 额度环 hint 六连：`… of ${…} plan sessions left this week/this billing period`、
+    `… free premium sessions left today`、`… free sessions left this week/this month`、
+    `… premium sessions left today (${o} free + ${r.dayLimit} from ${i.tierName})`
+  - 面板标题与状态行：`Free` / `${i.tierName} plan` / `Free sessions` aria、
+    `Free sessions are used first · today resets in …`（已入 exact）、
+    `Today's premium sessions are used · resets in …`、
+    `Premium sessions reset in … · MiMo and V4 Flash stay unmetered`
+  - 限额提示条（limit-nudge）：`You've used all of ${r.label} for now.` / 
+    `You're close to the limit on ${r.label} — … of ${r.limit} used.`、CTA `Get more sessions` / 
+    `See plans`、关闭按钮 aria `Dismiss` 与 toast aria `Dismiss notification: …`
+  - 状态标签：`your free sessions` / `your plan sessions` / `daily/weekly/monthly plan sessions`、
+    模型池标签 `${r.poolLabel.toLowerCase()} sessions`、
+    `${t.poolLabel.toLowerCase()} ${t.countsAdmissions?"starts":"sessions"}`、
+    环 label `week` / `month` / `tokens`（pattern 分区，仅属性位置，不会误伤代码）
+- **防呆加固**：`build.sh` 对 UI bundle 构建日志断言 `all keys matched`（此前仅检查替换次数 > 0，
+  MISSED 死键不报错——本轮迁移中 `5-day limit reached` 死键正是靠这个新检查暴露的）
+- **验证**：主 bundle 替换 1055 处、`all keys matched`、纯字面量覆盖 727/727（100%）、
+  `lint_dict` 通过；uipos 残留仅剩代码关键字、模型名（GPT-5.6-*/Opus/Sonnet/Fable 5.1）、
+  `mcpServers` 等内部标识与 HTML input type
+- 词典更新为 exact 741 / template 120 / code 4 / pattern 44
+
 ## [0.0.79] · 2026-09-01
 
 - **适配 Freebuff v0.0.79**：targetVersion / packVersion 升至 0.0.79，汉化包 Release `pack-v0.0.79` 已发布
