@@ -8,8 +8,8 @@
 #   bash tools/release.sh --force       # 覆盖同 packVersion 发布（默认拒绝不升版本的发布）
 #
 # 发布前确认 output/ 是最新构建（bash build.sh）。packVersion 在 manifest.json
-# 里维护：适配新 Freebuff 版本时与 targetVersion 一起升；同版本的词典修复可只升
-# packVersion。
+# 里维护：跟随 targetVersion、与其保持一致；同版本重发需追加 --force（客户端
+# 对「packVersion <= 已暂存」的包会静默跳过，除非先清掉已装的包版本戳）。
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -48,7 +48,7 @@ if [ -n "${REMOTE_VER}" ]; then
   ORDER="$(printf '%s\n%s\n' "${VER}" "${REMOTE_VER}" | sort -V | head -1)"
   if [ "${ORDER}" = "${VER}" ] && [ "${FORCE}" -eq 0 ]; then
     echo "ERROR: 本地 packVersion (${VER}) 不高于远端已发布的 (${REMOTE_VER})——客户端会静默跳过这个包。" >&2
-    echo "  请在 manifest.json 里调高 packVersion 后重跑；确要覆盖同版本请追加 --force。" >&2
+    echo "  请在 manifest.json 里调高 packVersion（跟随新 targetVersion）后重跑；确要覆盖同版本请追加 --force。" >&2
     exit 1
   fi
   echo "远端 packVersion: ${REMOTE_VER}；本次发布: ${VER}"
