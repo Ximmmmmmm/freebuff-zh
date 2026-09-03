@@ -1,5 +1,33 @@
 # 更新日志
 
+## [未发布] · 2026-09-03
+
+- **重新加入：让 AI 智能体也默认中文回复**（`tools/lang_pref.sh`，被 `apply.sh` / `restore.sh` source）
+  - 该能力曾在 0.0.84 实现（fda4ddf）后随语言偏好迁往多开控制器而整体回退；本次按需恢复为
+    汉化包自带能力：普通版装汉化后，即使不在汉化包仓库里写代码，AI 对话也全局默认简体中文
+  - **机制**：Freebuff 的 orchestrator 在 `initialSessionState` 里无条件调用
+    `loadUserKnowledgeFiles()`，读取 `~/.AGENTS.md` 并以
+    `Project instructions: ... Follow them for the rest of the session.` 注入系统提示词，
+    且每次请求都携带。这是不必修改专有 bundle 就能常驻影响回复语言的官方入口
+  - **为什么不补丁 `orchestrator.js`**：主提示词整段英文且不含任何语言指令，直接改它要新增
+    bundle 补丁阶段 + 语法与命中数自检，每次升版都要重新迁移，出错会波及所有使用者启动；
+    写 `~/.AGENTS.md` 零构建成本、不怕自动更新覆盖
+  - **语义**：`apply.sh` 追加一段夹在 `# >>> freebuff-zh:lang-pref >>>` /
+    `# <<< freebuff-zh:lang-pref <<<` 之间的指令；`FREEBUFF_ZH_NO_LANG=1` 跳过。
+    `restore.sh` 精确移除该段，移除后若只剩空白则连文件一起删除
+  - **实现取舍**：一律用 `head` / `tail` 做行级切片而非 awk/sed 重写整文件——实测 awk
+    在 CRLF 文件上会吞掉 `\r`，破坏用户内容逐字节一致性；起始标记在但结束标记被手工删掉时
+    （无法判断边界）一律不改动文件，只 WARN 提示手动处理，不做「按到文件末尾」的危险兜底
+  - **已知边界**：用户文件原本结尾无换行时，为保证标记独立成行必须补一个 `\n`，行级切片无法
+    记住该事实，故还原后文件会比原状多出一个结尾换行
+- **顺带查证**：界面上「包含 AGENTS.md」勾选（`injectAgentsMd`，**默认关闭**）只管
+  **项目根目录**那一份（`loadRootKnowledgeFiles(turn.cwd)`），与本次的用户级文件是两条独立通道
+- **验证**：`tools/test_lang_pref.sh`（沙箱 HOME，13 组用例 / 30 条断言）接入 GitHub Actions
+  的 ubuntu 与 windows 双 runner 作回归门禁（CRLF 坑只在 Windows 侧暴露），覆盖新建、幂等、
+  保留用户内容、CRLF、无结尾换行、残缺段落拒改、`set -euo pipefail` 下不中断等路径；
+  `bash -n` 全部 shell 脚本通过
+- 未改词典与构建产物，`targetVersion` / `packVersion` 维持 0.0.86
+
 ## [0.0.86] · 2026-09-03
 
 - **适配 Freebuff v0.0.86**：targetVersion / packVersion 升至 0.0.86。渲染 bundle
