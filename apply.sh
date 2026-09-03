@@ -32,6 +32,11 @@ else
   mkdir -p "${BK}"
   cp "${INSTALL}/resources/app.asar" "${BK}/app.asar"
   cp -r "${INSTALL}/resources/orchestrator/ui" "${BK}/ui"
+  # orchestrator.js 的原版也一并备份，供 restore.sh 还原与 build.sh 作 pristine。
+  # 旧备份没有这个文件（此前版本不处理 orchestrator.js），这里只在首次备份时补齐。
+  if [ -f "${INSTALL}/resources/orchestrator/orchestrator.js" ] && [ ! -f "${BK}/orchestrator.js" ]; then
+    cp "${INSTALL}/resources/orchestrator/orchestrator.js" "${BK}/orchestrator.js"
+  fi
   echo "Backed up current files to: ${BK}"
 fi
 
@@ -40,6 +45,14 @@ cp "${OUT}/app.asar" "${INSTALL}/resources/app.asar"
 cp "${OUT}/ui/index.html" "${INSTALL}/resources/orchestrator/ui/index.html"
 mkdir -p "${INSTALL}/resources/orchestrator/ui/assets"
 cp -r "${OUT}/ui/assets/." "${INSTALL}/resources/orchestrator/ui/assets/"
+# orchestrator.js：注入「强制中文回复」的那份（output/orchestrator.js）。旧产物没有
+# 这个文件时跳过（只汉化界面，AI 语言仍靠 ~/.AGENTS.md）。
+if [ -f "${OUT}/orchestrator.js" ]; then
+  cp "${OUT}/orchestrator.js" "${INSTALL}/resources/orchestrator/orchestrator.js"
+  echo "orchestrator.js（含强制中文回复注入）已替换。"
+else
+  echo "WARN: ${OUT}/orchestrator.js 不存在，跳过 orchestrator.js 替换（AI 语言仍靠 ~/.AGENTS.md）。" >&2
+fi
 echo "汉化已应用：app.asar 与 ui/ 已替换。"
 lang_pref_install
 echo "重启 Freebuff 桌面应用即可看到中文界面；AI 回复语言偏好对新建会话生效。"

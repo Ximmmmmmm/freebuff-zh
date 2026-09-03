@@ -104,6 +104,43 @@ if (bundleText) {
   }
 }
 
+// --- 2.5. orchestrator.js 强制中文注入自检 --------------------------------
+// output/orchestrator.js 由 build.sh 从 pristine 复制并跑 tools/inject_force_zh.js
+// 注入「强制中文回复」指令。这里断言：文件存在、含注入哨兵——杜绝
+// 「注入步骤被静默跳过，AI 仍回英文」的漏网。
+// 语法校验：orchestrator.js 是 Bun 专用格式（import.meta.require / @bun 头部），
+// node --check 无法解析，得用应用自带的 bun.exe；找不到时跳过（build.sh 里
+// 注入后已用 bun 校验过，这里只是兜底）。
+{
+  const orkPath = path.join(outDir, 'orchestrator.js')
+  const ORK_SENTINEL = 'Reply language (forced by the freebuff-zh localization pack)'
+  if (!fs.existsSync(orkPath)) {
+    bad('缺少 output/orchestrator.js —— 强制中文回复注入未生成（用最新 build.sh 重建）')
+  } else {
+    const orkText = fs.readFileSync(orkPath, 'utf8')
+    if (!orkText.includes(ORK_SENTINEL)) {
+      bad('output/orchestrator.js 缺少强制中文注入哨兵 —— inject_force_zh.js 未生效')
+    } else {
+      ok(`orchestrator.js 已注入强制中文 (${(orkText.length / 1048576).toFixed(1)} MB)`)
+    }
+    const bunBin = path.join(
+      process.env.LOCALAPPDATA || '',
+      'Programs', '@codebufffreebuff-desktop', 'resources', 'bun', 'bun.exe'
+    )
+    if (fs.existsSync(bunBin)) {
+      try {
+        execFileSync(bunBin, ['build', '--no-bundle', orkPath, '--outfile', orkPath + '.check'], { stdio: 'pipe' })
+        fs.unlinkSync(orkPath + '.check')
+        ok('orchestrator.js 语法校验通过 (bun)')
+      } catch (e) {
+        bad(`orchestrator.js bun 语法校验失败（注入破坏了 JS 结构）：\n${String(e.stderr || e)}`)
+      }
+    } else {
+      warn('未找到 bun.exe，跳过 orchestrator.js 语法校验（哨兵断言已通过）')
+    }
+  }
+}
+
 // --- 3. 主进程检查（可选，--main-src 指向已解包/尚未打包的 asar 内容目录） -----
 // 各补丁注入的稳定中文哨兵；gen_patches 重生成时这些词不变，若改了措辞需同步这里。
 const MAIN_SENTINELS = {

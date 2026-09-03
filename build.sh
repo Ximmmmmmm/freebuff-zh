@@ -31,6 +31,12 @@ else
   if [ -n "${BK}" ] && [ -f "${BK}/app.asar" ]; then
     PRISTINE_ASAR="${BK}/app.asar"
     PRISTINE_UI="${BK}/ui"
+    # orchestrator.js 的 pristine：优先备份目录里的原版；旧备份没有则回落安装目录。
+    if [ -f "${BK}/orchestrator.js" ]; then
+      PRISTINE_ORK="${BK}/orchestrator.js"
+    else
+      PRISTINE_ORK="${INSTALL}/resources/orchestrator/orchestrator.js"
+    fi
   elif [ -f "${INSTALL}/resources/app.asar" ]; then
     if grep -q '<html lang="zh-CN">' "${INSTALL}/resources/orchestrator/ui/index.html" 2>/dev/null; then
       echo "ERROR: 安装目录已是汉化版且没有 hanhua-backup-* 备份，无法确定英文原版。" >&2
@@ -39,6 +45,7 @@ else
     fi
     PRISTINE_ASAR="${INSTALL}/resources/app.asar"
     PRISTINE_UI="${INSTALL}/resources/orchestrator/ui"
+    PRISTINE_ORK="${INSTALL}/resources/orchestrator/orchestrator.js"
     echo "未找到 hanhua-backup-*，改用安装目录当前的英文原版作 pristine。"
   else
     echo "ERROR: no pristine source found." >&2
@@ -54,8 +61,13 @@ if [ -n "${PRISTINE_UI}" ] && [ ! -d "${PRISTINE_UI}" ]; then
   echo "ERROR: ${PRISTINE_UI} is not a directory." >&2
   exit 1
 fi
+if [ -n "${PRISTINE_ORK}" ] && [ ! -f "${PRISTINE_ORK}" ]; then
+  echo "ERROR: ${PRISTINE_ORK} not found（orchestrator.js pristine 源缺失）。" >&2
+  exit 1
+fi
 echo "Pristine app.asar: ${PRISTINE_ASAR}"
 [ -n "${PRISTINE_UI}" ] && echo "Pristine ui dir:   ${PRISTINE_UI}"
+[ -n "${PRISTINE_ORK}" ] && echo "Pristine orchestrator.js: ${PRISTINE_ORK}"
 
 WORK="$(mktemp -d)"
 trap 'rm -rf "${WORK}"' EXIT
@@ -123,6 +135,26 @@ else
   echo "  (no ui dir given — skipping ui)"
 fi
 
+echo "== 注入强制中文回复指令到 orchestrator.js =="
+if [ -n "${PRISTINE_ORK}" ]; then
+  cp "${PRISTINE_ORK}" "${HERE}/output/orchestrator.js"
+  node "${HERE}/tools/inject_force_zh.js" "${HERE}/output/orchestrator.js" --write
+  # orchestrator.js 是 Bun 专用格式（import.meta.require / @bun 头部），node --check
+  # 无法校验，得用应用自带的 bun.exe。找不到 bun 时退化为仅检查注入哨兵（postbuild 已断言）。
+  BUN_BIN="${INSTALL}/resources/bun/bun.exe"
+  if [ -x "${BUN_BIN}" ]; then
+    if ! "${BUN_BIN}" build --no-bundle "${HERE}/output/orchestrator.js" --outfile "${HERE}/output/.ork-check" >/dev/null 2>&1; then
+      echo "ERROR: 注入后的 orchestrator.js 语法校验失败 —— 注入破坏了 JS 结构，已中止构建" >&2
+      exit 1
+    fi
+    rm -f "${HERE}/output/.ork-check"
+  else
+    echo "  (未找到 bun.exe，跳过 orchestrator.js 语法校验；注入哨兵由 postbuild 断言)" >&2
+  fi
+else
+  echo "  (no orchestrator.js pristine given — skipping force-zh injection)" >&2
+fi
+
 echo
 node "${HERE}/tools/postbuild.js" "${HERE}/output" --main-src "${WORK}/main" || {
   echo "ERROR: 构建产物自检未通过，output/ 不可靠。请勿安装。" >&2
@@ -130,6 +162,6 @@ node "${HERE}/tools/postbuild.js" "${HERE}/output" --main-src "${WORK}/main" || 
 }
 
 echo
-echo "完成：output/app.asar 与 output/ui/ 已生成。"
+echo "完成：output/app.asar、output/ui/ 与 output/orchestrator.js 已生成。"
 echo "安装：bash apply.sh"
 echo "注意：asar 内容与 Release 产物一致；容器头部可能因 @electron/asar 版本不同有细微差异，不影响运行。"

@@ -19,5 +19,13 @@ fi
 cp "${BK}/app.asar" "${INSTALL}/resources/app.asar"
 rm -rf "${INSTALL}/resources/orchestrator/ui"
 cp -r "${BK}/ui" "${INSTALL}/resources/orchestrator/ui"
+# orchestrator.js：备份里有原版则还原（含强制中文回复注入的那份会被覆盖回英文原版）；
+# 旧备份没有这个文件则跳过（该文件此前未被汉化包改动，无需还原）。
+if [ -f "${BK}/orchestrator.js" ]; then
+  cp "${BK}/orchestrator.js" "${INSTALL}/resources/orchestrator/orchestrator.js"
+  echo "orchestrator.js 已还原英文原版。"
+else
+  echo "备份里没有 orchestrator.js，跳过（该文件未被汉化包改动）。"
+fi
 lang_pref_uninstall
 echo "已从 ${BK} 还原英文原版。重启应用生效。"
