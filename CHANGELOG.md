@@ -1,5 +1,36 @@
 # 更新日志
 
+## [0.0.86] · 2026-09-03
+
+- **适配 Freebuff v0.0.86**：targetVersion / packVersion 升至 0.0.86。渲染 bundle
+  `index-qE9EmCR_.js` → `index-kOlI7uqe.js`；NSIS 安装器再次清掉 `hanhua-backup-*`，
+  走「无备份回退安装目录英文原版」构建路径
+- **模板变量自动重映射**：`tools/remap.js` 迁移 34 条（`bn → pn`、`wo → So`、`dV → $8`、
+  `UP → ey`、`I1 → W1`、`Ni → Di`、`jD(re) → XD(ne)`、`dQ → vQ`、`DS → qS`、
+  `Jt → Kt`、`hV → A8`、`pm → Xp`、`cV → P8`、`uV → R8`、`XP → BE`、`uy → Jb`、
+  `H → W`、`QT → yb`、`Ec → kc`、`yPe → tRe`、`pz → bz`、`uv → pv` 等），1 条
+  AMBIGUOUS（`Context ${$s(g)}`，锚文本命中 2 处插值不一致）手工改为 `Context ${As(g)}`
+- **GLM 5.2 推荐活动整体改名**为「高级会话 / 赏金（Bounty）」，删除 8 条旧词条并补翻
+  对应新文案：
+  - 奖池标题 `${r?"Promo":"GLM 5.2 promo"}` → `` ${r?"Promo":"Bounty promo"} ``，
+    翻译由残留的「GLM 5.2 推广」更正为「赏金推广」
+  - `GLM 5.2 unlocked` → `Reward session unlocked` / `Earned sessions`；
+    `Refer friends to unlock GLM 5.2` → `Refer friends for more free sessions` /
+    `Refer friends for an extra premium session`；`Each qualified referral earns…` →
+    「+1 次/天」模板与「one more 1-hour premium session」两式；
+    `GLM 5.2 — today’s sessions used` → `Today’s premium sessions used`
+  - 新增 `Premium sessions`、`Reward session unlocked`、`earned from bounties`、
+    `Complete a bounty to unlock` 等 exact 词条
+- **标签页关闭交互重写**：旧 `Delete the queued close action to cancel` /
+  `Tab close scheduled` 删除，改为状态化 label/tooltip——`Cancel closing this tab` /
+  `Close tab when done` / `Closing this tab…` / `This tab will close once the queue finishes. Click to cancel.`
+  / `Couldn't cancel the tab close` 等
+- **移除已下线文案**：`Time since the agent finished`（→ 现有 `Time since your latest prompt`）、
+  `After everything above finishes, close this tab and clean up the thread`
+- **验证**：`all keys matched`、纯字面量覆盖 728/728（100%）、`lint_dict` 通过；
+  主进程补丁逐字节套用、`node --check` 通过，postbuild 自检 4 项全绿
+- 词典更新为 exact 743 / template 123 / code 4 / pattern 45
+
 ## [0.0.84] · 2026-09-02
 
 - **适配 Freebuff v0.0.84**：targetVersion / packVersion 升至 0.0.84。本轮渲染 bundle
