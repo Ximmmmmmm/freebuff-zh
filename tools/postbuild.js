@@ -111,6 +111,7 @@ const MAIN_SENTINELS = {
   'electron/orchestrator-failure.cjs': ['编排器未能在规定时间内就绪。'],
   'electron/mcp-consent-bridge.cjs': ['此连接器没有可运行的命令——已拒绝'],
   'electron/linux-launch.cjs': ['无法启动所需的子进程。'],
+  'electron/open-in.cjs': ['复制路径'],
 }
 if (mainSrc) {
   for (const rel of Object.keys(MAIN_SENTINELS)) {
@@ -139,6 +140,9 @@ if (mainSrc) {
     const t = fs.readFileSync(cw, 'utf8')
     if (!t.includes('批准') || !t.includes('取消')) {
       bad('consent-window.html 缺少「批准/取消」—— 同意窗口补丁可能未套用')
+    }
+    if (!t.includes('批准此连接器？')) {
+      bad('consent-window.html 缺少标题哨兵「批准此连接器？」—— 同意窗口补丁可能未套用')
     }
   } else {
     warn('未找到 electron/consent-window.html，跳过同意窗口检查')
