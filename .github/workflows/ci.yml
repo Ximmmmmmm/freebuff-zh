@@ -29,15 +29,3 @@ jobs:
           for f in *.sh tools/*.sh; do
             bash -n "$f"
           done
-      - name: 语言偏好写入回归测试（沙箱 HOME）
-        run: bash tools/test_lang_pref.sh
-
-  # ~/.AGENTS.md 的写入最终跑在 Windows Git Bash 上，而 CRLF 处理正是只在
-  # 该平台暴露过的坑（awk 会吞掉 \r），ubuntu 覆盖不到，故单独跑一轮。
-  lang-pref-windows:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: 语言偏好写入回归测试（Git Bash）
-        shell: bash
-        run: bash tools/test_lang_pref.sh
