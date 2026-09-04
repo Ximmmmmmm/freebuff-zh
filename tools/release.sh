@@ -28,10 +28,6 @@ if [ ! -f "${HERE}/output/app.asar" ] || [ ! -f "${HERE}/output/ui/index.html" ]
   echo "ERROR: 缺少 output/ 构建产物，先 bash build.sh" >&2
   exit 1
 fi
-if [ ! -f "${HERE}/output/orchestrator.js" ]; then
-  echo "ERROR: 缺少 output/orchestrator.js（强制中文回复注入产物）——请用最新 build.sh 重新构建" >&2
-  exit 1
-fi
 grep -q 'hanhua-pack' "${HERE}/output/ui/index.html" || {
   echo "ERROR: output/ui/index.html 缺少 hanhua-pack 版本戳——请用最新 build.sh 重新构建" >&2
   exit 1
@@ -63,7 +59,7 @@ mkdir -p "${DIST}"
 ZIP="${DIST}/${ASSET}"
 rm -f "${ZIP}"
 # Windows 自带 bsdtar（System32）能写 zip 且条目用正斜杠；GNU tar 不支持 -a 写 zip
-(cd "${HERE}/output" && "$SYSTEMROOT/System32/tar.exe" -a -cf "${ZIP}" app.asar ui orchestrator.js)
+(cd "${HERE}/output" && "$SYSTEMROOT/System32/tar.exe" -a -cf "${ZIP}" app.asar ui)
 
 SHA="$(node -e 'const c = require("crypto"); console.log(c.createHash("sha512").update(require("fs").readFileSync(process.argv[1])).digest("base64"))' "${ZIP}")"
 MANIFEST="${DIST}/pack-manifest.json"
