@@ -1,6 +1,6 @@
 --- a/electron/main.cjs
 +++ b/electron/main.cjs
-@@ -375,10 +375,10 @@
+@@ -395,10 +395,10 @@
    const buttons = []
    const actions = []
    if (failure.logPath) {
@@ -13,7 +13,7 @@
    actions.push(() => {})
 
    const options = {
-@@ -943,15 +943,13 @@
+@@ -972,15 +972,13 @@
    try {
      const response = askSync(parent, {
        type: 'question',
@@ -33,7 +33,7 @@
        // a stray Return keeps the agents alive
        defaultId: 0,
        cancelId: 0,
-@@ -1007,8 +1005,8 @@
+@@ -1043,8 +1041,8 @@
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return []
    const res = await dialog.showOpenDialog(win, {
@@ -44,7 +44,18 @@
      properties: ['openFile', 'openDirectory', 'multiSelections', 'treatPackageAsDirectory'],
    })
    if (res.canceled) return []
-@@ -1030,8 +1028,8 @@
+@@ -1073,8 +1071,8 @@
+   const win = BrowserWindow.fromWebContents(event.sender)
+   if (!win) return []
+   const res = await dialog.showOpenDialog(win, {
+-    title: 'Attach images',
+-    buttonLabel: 'Attach',
++    title: '附加图片',
++    buttonLabel: '附加',
+     properties: ['openFile', 'multiSelections'],
+     filters: [
+       { name: 'Images', extensions: VIEWABLE_IMAGE_EXTENSIONS },
+@@ -1097,8 +1095,8 @@
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return null
    const res = await dialog.showOpenDialog(win, {
@@ -55,7 +66,7 @@
      properties: ['openDirectory', 'createDirectory'],
    })
    return res.canceled || res.filePaths.length === 0 ? null : res.filePaths[0]
-@@ -1171,7 +1169,7 @@
+@@ -1238,7 +1236,7 @@
      }
      return { ok: true, path: resolved.requested, openedPath: resolved.opened, fallback: resolved.fallback }
    } catch (error) {
@@ -64,18 +75,19 @@
    }
  })
 
-@@ -1271,8 +1269,8 @@
+@@ -1349,9 +1347,9 @@
        resolve(action)
      }
      const menu = Menu.buildFromTemplate([
 -      { label: 'Rename Tab', click: () => done('rename') },
--      { label: 'Close Tab', click: () => done('close') },
 +      { label: '重命名标签页', click: () => done('rename') },
+       { label: 'Move to New Window', click: () => done('move-to-window') },
+-      { label: 'Close Tab', click: () => done('close') },
 +      { label: '关闭标签页', click: () => done('close') },
      ])
      menu.popup({
        window: BrowserWindow.fromWebContents(event.sender) ?? undefined,
-@@ -1295,7 +1293,7 @@
+@@ -1374,7 +1372,7 @@
              label: app.name,
              submenu: [
                { role: 'about' },
@@ -84,7 +96,7 @@
                { type: 'separator' },
                { role: 'services' },
                { type: 'separator' },
-@@ -1305,7 +1303,7 @@
+@@ -1384,7 +1382,7 @@
                { type: 'separator' },
                {
                  // not `role: 'quit'`: that reaches app.quit() directly, with no chance to ask
@@ -93,7 +105,7 @@
                  accelerator: 'Command+Q',
                  click: () => requestQuit(),
                },
-@@ -1314,15 +1312,15 @@
+@@ -1393,15 +1391,15 @@
          ]
        : []),
      {
@@ -112,7 +124,7 @@
            accelerator: 'CmdOrCtrl+Shift+T',
            click: () => sendMenuCommand('reopen-tab'),
          },
-@@ -1331,23 +1329,23 @@
+@@ -1410,24 +1408,24 @@
          // other, and on a fresh install its menu lists only the project already open — so ⌘O is
          // where someone who has never heard the word "space" is going to look.
          {
@@ -122,6 +134,7 @@
            click: () => sendMenuCommand('open-project'),
          },
          { type: 'separator' },
+         { label: 'Move Tab to New Window', click: () => sendMenuCommand('pop-out-tab') },
 -        { label: 'Close Tab', accelerator: 'CmdOrCtrl+W', click: () => sendMenuCommand('close-tab') },
 +        { label: '关闭标签页', accelerator: 'CmdOrCtrl+W', click: () => sendMenuCommand('close-tab') },
          { type: 'separator' },
@@ -142,7 +155,7 @@
          { role: 'toggleDevTools' },
          { type: 'separator' },
          { role: 'resetZoom' },
-@@ -1357,15 +1355,15 @@
+@@ -1437,15 +1435,15 @@
          { role: 'togglefullscreen' },
        ],
      },
@@ -161,7 +174,7 @@
              ],
            },
          ]),
-@@ -1500,7 +1498,7 @@
+@@ -1580,7 +1578,7 @@
      if (err?.orchestratorFailure) {
        await showOrchestratorFailure(err.orchestratorFailure, win)
      } else {
@@ -170,7 +183,7 @@
      }
      app.quit()
      return
-@@ -1614,8 +1612,8 @@
+@@ -1694,8 +1692,8 @@
        canRelaunch: !!relaunchExecPath,
      })
      const buttons = canRetryWithoutSandbox
@@ -181,7 +194,7 @@
      const body = `${detail}\n\n(${details.type} process: ${details.reason})`
      // A launch failure this early can land before `ready`, where the dialog
      // module throws — and an exception here would replace the message we came to
-@@ -1624,7 +1622,7 @@
+@@ -1704,7 +1702,7 @@
      // buttons, so the pre-ready path explains and quits rather than offering the
      // retry. Nothing is running yet, so there is nothing to tear down.
      if (!app.isReady()) {
@@ -190,7 +203,7 @@
        app.exit(1)
        return
      }
-@@ -1632,7 +1630,7 @@
+@@ -1712,7 +1710,7 @@
      try {
        response = dialog.showMessageBoxSync({
          type: 'error',

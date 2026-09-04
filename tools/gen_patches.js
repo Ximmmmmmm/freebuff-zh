@@ -72,6 +72,7 @@ patchFor('electron/main.cjs', [
   ["'Quitting stops the agents now. The next time you open Freebuff, interrupted turns ' +\n        'continue automatically from their latest saved step. Completed steps, conversation ' +\n        'context, and changes already written to your files are kept.',", "'退出将立即停止智能体。下次打开 Freebuff 时，中断的轮次将从最近保存的步骤自动继续。已完成的步骤、对话上下文以及已写入你文件的更改都会保留。',"],
   ["buttons: ['Cancel', 'Quit anyway']", "buttons: ['取消', '仍要退出']"],
   ["title: 'Attach files or folders'", "title: '附加文件或文件夹'"],
+  ["title: 'Attach images'", "title: '附加图片'"],
   ["buttonLabel: 'Attach'", "buttonLabel: '附加'"],
   ["title: 'Open a project folder'", "title: '打开项目文件夹'"],
   ["buttonLabel: 'Open'", "buttonLabel: '打开'"],
@@ -108,6 +109,12 @@ patchFor('electron/consent-window.html', [
   ["options.buttons || ['Cancel', 'Approve']", "options.buttons || ['取消', '批准']"],
   ["options.title || 'Approve this connector?'", "options.title || '批准此连接器？'"],
   ['(this dialog could not describe what would run — do not approve)', '(此对话框无法描述将要运行的内容——请勿批准)'],
+  // v0.0.87 新增赞助任务流程：句子以广告主名字开头（who span 之后接正文，须保留前导空格）
+  [
+    "' wants to integrate itself into this project, on its own branch. Nothing is pushed until you review it.'",
+    "' 想要将它自己集成到此项目，并使用它自己的分支。在你审查之前，不会推送任何内容。'",
+  ],
+  ['This dialog could not say who is asking — do not approve.', '此对话框无法说明请求方是谁——请勿批准。'],
 ])
 
 patchFor('electron/linux-launch.cjs', [
@@ -142,8 +149,27 @@ patchFor('electron/mcp-consent-bridge.cjs', [
   ['`Environment:  ', '`环境变量：  '],
   ['`Address:  ', '`地址：  '],
   ["'(this connector has no runnable command — refusing)'", "'(此连接器没有可运行的命令——已拒绝)'"],
-  ["buttons: ['Cancel', local ? 'Run it' : 'Connect']", "buttons: ['取消', local ? '运行' : '连接']"],
-  ["title: local ? 'Run this connector?' : 'Connect to this server?'", "title: local ? '运行此连接器？' : '连接到此服务器？'"],
+  // v0.0.87 新增赞助任务分支：buttons/title 的三元表达式多包了一层 sponsored
+  ["buttons: sponsored ? ['No', 'Yes'] : ['Cancel', local ? 'Run it' : 'Connect']", "buttons: sponsored ? ['否', '是'] : ['取消', local ? '运行' : '连接']"],
+  [
+    "title: sponsored\n            ? 'Run this sponsored task?'\n            : local\n              ? 'Run this connector?'\n              : 'Connect to this server?',",
+    "title: sponsored\n            ? '运行此赞助任务？'\n            : local\n              ? '运行此连接器？'\n              : '连接到此服务器？',",
+  ],
+  // 赞助任务的一句话说明（广告主名字 + 本句，前导空格须保留）
+  [
+    "' wants to integrate itself into this project, on its own branch. Nothing is pushed until you review it.'",
+    "' 想要将它自己集成到此项目，并使用它自己的分支。在你审查之前，不会推送任何内容。'",
+  ],
+  // 本地/远程连接器的两段说明（v0.0.86 已有但漏翻，源码为单引号跨行拼接，只能走补丁）
+  [
+    'This runs a program with the same permissions as you. Only continue if you recognise it.',
+    '这会以与你相同的权限运行一个程序。只有在你认识它的情况下才继续。',
+  ],
+  ["'Only continue if you recognise it.'", "'只有在你认识它的情况下才继续。'"],
+  [
+    'This sends requests to that address, and it may ask you to sign in.',
+    '这会向该地址发送请求，对方可能会要求你登录。',
+  ],
   ['`Run "${clamp(name)}" on this computer?`', '`在此计算机上运行“${clamp(name)}”？`'],
   ['`Let Freebuff connect to "${clamp(name)}"?`', '`允许 Freebuff 连接到“${clamp(name)}”？`'],
 ])

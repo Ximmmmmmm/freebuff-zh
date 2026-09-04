@@ -1,5 +1,46 @@
 # 更新日志
 
+## [0.0.87] · 2026-09-04
+
+- **适配 Freebuff v0.0.87**：targetVersion / packVersion 升至 0.0.87。渲染 bundle
+  `index-kOlI7uqe.js` → `index-_MSBgH2Z.js`；NSIS 安装器再次清掉 `hanhua-backup-*`，
+  走「无备份回退安装目录英文原版」构建路径
+- **模板变量自动重映射**：`tools/remap.js` 迁移 41 条（`fc → gc`、`pn → wn`、
+  `W1 → ow`、`$8 → nq`、`ey → ly`、`XD → oM`、`So → xo`、`Di → Gn`、`pv → wv` 等），
+  0 条 MISSING；1 条 AMBIGUOUS（`Context ${$s(g)}`）手工确认
+- **主进程「赞助任务（sponsored proposal）」新流程全面中文化**（v0.0.87 新增）：
+  - `mcp-consent-bridge.cjs`：赞助确认对话框（`Run this sponsored task?`、
+    「否/是」按钮、`wants to integrate itself into this project…` 一句话征求同意）；
+    顺带补翻 v0.0.86 即存在但漏翻的本地/远程连接器两段 explanation
+    （`This runs a program with the same permissions as you…` /
+    `This sends requests to that address…`）
+  - `consent-window.html`：新增赞助布局（who/rest 双 span 拆分广告主名与句子，
+    译文保留前导空格）与「无法说明请求方」拒绝文案
+  - `main.cjs`：新增「附加图片」（Attach images）文件对话框
+- **渲染进程补翻 52 条新词条**（exact 47 / template 5）：
+  - 赞助提案 UI 全套：状态标题表（`Sponsored proposal` / `Start sponsored thread` /
+    `Sponsored thread running` / `… committed its work` / `… landed a PR` / `… failed` /
+    `Sponsored PR merged`）、操作（`Create pull request` / `Watch this run` /
+    `View what it did` / `Dismiss sponsored proposal` / `Never show ${t}` /
+    `Report this proposal` / `Turn off sponsored proposals` / `Remove worktree`）、
+    默认 whyThis 与四种不可用原因（Windows 无 containment / bubblewrap 缺失 /
+    不支持的平台 / 需要桌面应用）、标签页徽标与提示模板
+  - 预览元素选择/缩放：`Click an element · Esc to cancel`、`Preview zoom`、
+    `Zoom preview in/out`、`Reset preview zoom, currently ${o}%`、
+    `Remove preview element ${t.selector}` 等
+  - 管理员审批：`Administrator approval required` 及标签页 tooltip
+  - 其他：`Attach images`（配合主进程新对话框）、`Markdown view`、`Source`、
+    `Move to new window`、`Premium session time remaining`、
+    `Changed during agent work`（文件变更统计新拆分）
+- **结构变更迁移**：文件计数复数 `," file",t.files.length===1?"":"s"` →
+  ` file${t===1?"":"s"}`（提取为 LI 辅助函数的内联模板）；`Agent changed ` 拼接 →
+  `` `Agent changed ${LI(t)}` `` 模板词条；移除已下线的
+  `Drop files, photos, or folders to attach`
+- **验证**：`all keys matched`、纯字面量覆盖 771/771（100%）、`lint_dict` 通过；
+  主进程补丁逐字节套用、`node --check` 通过，postbuild 自检全绿；
+  uipos 残留扫描由 52 → 26 条（剩余均为约定保留英文项：代码关键字、模型名、命令）
+- 词典更新为 exact 787 / template 131 / code 4 / pattern 45
+
 ## [0.0.86] · 2026-09-03
 
 - **适配 Freebuff v0.0.86**：targetVersion / packVersion 升至 0.0.86。渲染 bundle
