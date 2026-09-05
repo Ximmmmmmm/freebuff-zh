@@ -70,6 +70,10 @@ for f in "${WORK}/main/electron/"*.cjs "${WORK}/main/electron/"*.html "${WORK}/m
 done
 
 echo "== 3/4 套用人工补丁 (patches/) =="
+# 原版 asar 内文本是 CRLF 行尾，而补丁文件是 LF。Windows 的 git apply 会自动
+# 处理行尾差异，但 Linux（服务器 CI）上严格匹配会直接失败，所以打补丁前先统一
+# 成 LF。词典步骤已用 node 重写这些文件，这里再转一次无副作用。
+find "${WORK}/main" -type f \( -name '*.cjs' -o -name '*.html' -o -name '*.js' -o -name '*.json' -o -name '*.ts' \) -exec sed -i 's/\r$//' {} +
 (cd "${WORK}/main" && for p in "${HERE}"/patches/electron-*.patch; do
   if ! git apply -p1 "$p"; then
     echo "ERROR: 补丁未干净套用：$(basename "$p")（原版文件与补丁预期不符？需重新 gen_patches）" >&2
