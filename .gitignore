@@ -2,6 +2,7 @@
 output/
 backup/
 work/
+downloads/
 
 # Node / misc
 node_modules/

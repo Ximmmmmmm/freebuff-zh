@@ -62,19 +62,54 @@ BASE="https://github.com/${OWNER}/${REPO}/releases/download/${LATEST_TAG}"
 
 EXE_PATH="downloads/${ASSET_EXE}"
 YML_PATH="downloads/${ASSET_YML}"
-log "下载 ${BASE}/${ASSET_EXE} ..."
-curl -sL --max-time 600 -o "${EXE_PATH}" "${BASE}/${ASSET_EXE}"
-curl -sL --max-time 60  -o "${YML_PATH}" "${BASE}/${ASSET_YML}"
 
-# SHA512 校验（latest.yml 里是 base64，转 hex 后与本地文件比对）
+# 先下小的 latest.yml（拿期望 sha512），再据此断点续传大文件。服务器网络慢，
+# 中断后循环续传（-C -），每次最长 15 分钟，直至 sha512 完全匹配。
+log "下载 ${BASE}/${ASSET_YML} ..."
+for i in 1 2 3 4 5; do
+  if curl -sL --max-time 120 -o "${YML_PATH}" "${BASE}/${ASSET_YML}"; then
+    break
+  fi
+  log "latest.yml 下载中断（第 ${i} 次），5 秒后重试"
+  sleep 5
+done
+[ -s "${YML_PATH}" ] || { log "ERROR: latest.yml 下载失败"; exit 1; }
+
 EXPECT_B64="$(grep -m1 '^sha512:' "${YML_PATH}" | awk '{print $2}')"
-EXPECT_HEX="$(node -e "console.log(Buffer.from('${EXPECT_B64}','base64').toString('hex'))")"
-ACTUAL_HEX="$(sha512sum "${EXE_PATH}" | awk '{print $1}')"
-if [ "${EXPECT_HEX}" != "${ACTUAL_HEX}" ]; then
-  log "ERROR: SHA512 校验失败（官方包下载不完整或被篡改）"
+if [ -z "${EXPECT_B64}" ]; then
+  log "ERROR: latest.yml 里没有 sha512，无法校验"
   exit 1
 fi
-log "SHA512 校验通过"
+EXPECT_HEX="$(node -e "console.log(Buffer.from('${EXPECT_B64}','base64').toString('hex'))")"
+
+log "下载 ${ASSET_EXE}（断点续传，SHA512 校验）..."
+for i in $(seq 1 30); do
+  # 已有完整文件先验 sha512（覆盖上次中断但已下载完的情形，避免 416 死循环）
+  if [ -f "${EXE_PATH}" ]; then
+    ACTUAL_HEX="$(sha512sum "${EXE_PATH}" | awk '{print $1}')"
+    if [ "${EXPECT_HEX}" = "${ACTUAL_HEX}" ]; then
+      log "SHA512 校验通过（第 ${i} 次尝试）"
+      break
+    fi
+  fi
+  if curl -sL -C - --max-time 900 -o "${EXE_PATH}" "${BASE}/${ASSET_EXE}"; then
+    ACTUAL_HEX="$(sha512sum "${EXE_PATH}" | awk '{print $1}')"
+    if [ "${EXPECT_HEX}" = "${ACTUAL_HEX}" ]; then
+      log "SHA512 校验通过（第 ${i} 次尝试）"
+      break
+    fi
+    log "下载完成但 sha512 不匹配（第 ${i} 次），删掉重下"
+    rm -f "${EXE_PATH}"
+  else
+    log "下载中断（第 ${i} 次），10 秒后续传 ..."
+    sleep 10
+  fi
+done
+ACTUAL_HEX="$(sha512sum "${EXE_PATH}" 2>/dev/null | awk '{print $1}')"
+if [ "${EXPECT_HEX}" != "${ACTUAL_HEX:-}" ]; then
+  log "ERROR: 多次尝试后 SHA512 仍不匹配（官方包下载不完整或被篡改）"
+  exit 1
+fi
 
 # --- 3. 从安装包解出原版 app.asar 与 ui/ --------------------------------------
 # NSIS 安装包可用 7z 解包；无 7z 时用 npx asar 直接从安装包尾部找 app.asar 不可行，
@@ -96,48 +131,65 @@ fi
 [ -f "${PRISTINE_ASAR}" ] && [ -d "${PRISTINE_UI}" ] || { log "ERROR: 安装包里找不到 app.asar / ui"; exit 1; }
 log "原版就绪: ${PRISTINE_ASAR}"
 
-# --- 4. 更新 manifest 版本 + remap 模板变量 -----------------------------------
-node -e "
+# --- 4. 版本变化时才更新 manifest（同版本 --force 重建会留下假 diff）---------
+# 注意 manifest.json 是 CRLF 行尾，node 以 LF 重写会造出无意义 diff，所以非换行尾策略：
+# 直接用 node 读改后以原文件换行风格写回。
+if [ "${NEWVER}" != "${CURVER}" ]; then
+  node -e "
 const fs=require('fs');
-const m=JSON.parse(fs.readFileSync('manifest.json','utf8'));
+const p='manifest.json';
+const raw=fs.readFileSync(p,'utf8');
+const nl=raw.includes('\\r\\n') ? '\\r\\n' : '\\n';
+const m=JSON.parse(raw);
 m.targetVersion='${NEWVER}'; m.packVersion='${NEWVER}';
-fs.writeFileSync('manifest.json', JSON.stringify(m,null,2)+'\n');
+fs.writeFileSync(p, JSON.stringify(m,null,2).split('\\n').join(nl)+nl);
 "
-log "manifest.json → target=${NEWVER} pack=${NEWVER}"
+  log "manifest.json → target=${NEWVER} pack=${NEWVER}"
+else
+  log "manifest.json 版本未变（${NEWVER}），跳过重写"
+fi
 
-# 主 bundle 在 ui/assets/index-*.js；remap 自动迁移 ${...} 变量名
+# 主 bundle 在 ui/assets/index-*.js；remap 自动迁移 ${...} 变量名（dict.json 若
+# 被改出实质 diff，提交阶段会体现——同版本重建时 remap 无变化则不会触发发布）
 BUNDLE="$(ls "${PRISTINE_UI}"/assets/index-*.js 2>/dev/null | head -1 || true)"
 if [ -n "${BUNDLE}" ]; then
   log "remap 模板变量..."
   node tools/remap.js "${BUNDLE}" --write || true
 fi
 
-# --- 5. 构建（防呆自检内建）---------------------------------------------------
-log "构建..."
-bash build.sh "${PRISTINE_ASAR}" "${PRISTINE_UI}"
-
-# --- 6. 残留扫描：有未翻译新增文案就不发布，只留报告 ----------------------------
+# --- 5/6. 构建 + 残留扫描（tools/update.sh 内建构建与防呆自检）---------------
+# 有未翻译新增文案或构建失败就不发布，只留报告。
 REPORT="work/update-${NEWVER}.txt"
+log "构建 + 残留扫描（日志: ${REPORT}）..."
+set +e
 {
-  echo "=== autoupdate ${NEWVER} 残留扫描 ==="
-  bash tools/update.sh "${PRISTINE_ASAR}" "${PRISTINE_UI}" || true
-} > "${REPORT}" 2>&1 || true
+  echo "=== autoupdate ${NEWVER} 构建 + 残留扫描 ==="
+  bash tools/update.sh "${PRISTINE_ASAR}" "${PRISTINE_UI}"
+} > "${REPORT}" 2>&1
+RC=$?
+set -e
 
-if grep -qE "MISSED|未命中" "${REPORT}"; then
-  log "有新增未翻译文案——不发布半成品。请人工补翻 dict.json 后重跑（--force）。报告: ${REPORT}"
-  git checkout -- manifest.json 2>/dev/null || true
-  exit 2
+if [ "${RC}" -ne 0 ]; then
+  if grep -qE "MISSED|未命中" "${REPORT}"; then
+    log "有新增未翻译文案——不发布半成品。请人工补翻 dict.json 后重跑（--force）。报告: ${REPORT}"
+    git checkout -- manifest.json dict.json 2>/dev/null || true
+    exit 2
+  fi
+  log "ERROR: 构建/自检失败（退出码 ${RC}），不发布。报告: ${REPORT}"
+  git checkout -- manifest.json dict.json 2>/dev/null || true
+  exit 1
 fi
 
 # --- 7. 提交 + 发布 Release ---------------------------------------------------
 git add manifest.json dict.json
 if git diff --cached --quiet; then
-  log "无词典/版本变更，跳过发布"
-else
-  git -c user.name="hanhua-bot" -c user.email="bot@users.noreply.github.com" \
-    commit -m "适配 Freebuff v${NEWVER}（autoupdate）"
-  git push origin "$(git branch --show-current)"
+  log "无词典/版本变更（同版本 --force 重建？），跳过提交与发布"
+  exit 0
 fi
+git -c user.name="hanhua-bot" -c user.email="bot@users.noreply.github.com" \
+  commit -m "适配 Freebuff v${NEWVER}（autoupdate）"
+git push origin "$(git branch --show-current)"
 
+# 只有确实产生提交（版本/词典变化）才发布 Release；release.sh 自带版本防呆
 bash tools/release.sh
 log "✅ Freebuff v${NEWVER} 汉化包已发布。控制器会在 30 分钟内提示用户更新。"

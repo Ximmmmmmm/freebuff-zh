@@ -58,8 +58,22 @@ DIST="${HERE}/dist"
 mkdir -p "${DIST}"
 ZIP="${DIST}/${ASSET}"
 rm -f "${ZIP}"
-# Windows 自带 bsdtar（System32）能写 zip 且条目用正斜杠；GNU tar 不支持 -a 写 zip
-(cd "${HERE}/output" && "$SYSTEMROOT/System32/tar.exe" -a -cf "${ZIP}" app.asar ui)
+# 打 zip 跨平台：Windows 用自带 bsdtar（System32/tar.exe，条目用正斜杠且能写 zip）；
+# Linux 服务器优先 zip 命令，其次 7z（-tzip）。GNU tar 不支持 -a 写 zip。
+make_zip() {
+  local out="$1"
+  if [ -n "${SYSTEMROOT:-}" ] && [ -f "${SYSTEMROOT}/System32/tar.exe" ]; then
+    (cd "${HERE}/output" && "${SYSTEMROOT}/System32/tar.exe" -a -cf "${out}" app.asar ui)
+  elif command -v zip >/dev/null 2>&1; then
+    (cd "${HERE}/output" && zip -q -r "${out}" app.asar ui)
+  elif command -v 7z >/dev/null 2>&1; then
+    (cd "${HERE}/output" && 7z a -tzip -y "${out}" app.asar ui >/dev/null)
+  else
+    echo "ERROR: 打 zip 需要 Windows bsdtar / zip / 7z 之一" >&2
+    exit 1
+  fi
+}
+make_zip "${ZIP}"
 
 SHA="$(node -e 'const c = require("crypto"); console.log(c.createHash("sha512").update(require("fs").readFileSync(process.argv[1])).digest("base64"))' "${ZIP}")"
 MANIFEST="${DIST}/pack-manifest.json"
