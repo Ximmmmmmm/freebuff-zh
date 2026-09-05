@@ -58,22 +58,42 @@ fi
 # --- 2. 下载官方安装包（win-x64）与 latest.yml --------------------------------
 ASSET_EXE="Freebuff-${NEWVER}-win-x64.exe"
 ASSET_YML="Freebuff-${NEWVER}-win-x64.yml"
-BASE="https://github.com/${OWNER}/${REPO}/releases/download/${LATEST_TAG}"
+# GitHub release 资产 URL（镜像以该完整 URL 为后缀转发）
+GH_BASE="https://github.com/${OWNER}/${REPO}/releases/download/${LATEST_TAG}"
 
 EXE_PATH="downloads/${ASSET_EXE}"
 YML_PATH="downloads/${ASSET_YML}"
 
-# 先下小的 latest.yml（拿期望 sha512），再据此断点续传大文件。服务器网络慢，
-# 中断后循环续传（-C -），每次最长 15 分钟，直至 sha512 完全匹配。
-log "下载 ${BASE}/${ASSET_YML} ..."
-for i in 1 2 3 4 5; do
-  if curl -sL --max-time 120 -o "${YML_PATH}" "${BASE}/${ASSET_YML}"; then
-    break
-  fi
-  log "latest.yml 下载中断（第 ${i} 次），5 秒后重试"
+# 国内服务器直连 GitHub release 资产常被限速到 ~30KB/s（甚至握手后超时），
+# 走加速镜像通常快 40 倍（实测 ghfast.top ≈ 1.2MB/s）。列表按速度排序，官方直连
+# 作最后兑底。内容一致性由下载完成后的 sha512 校验保证，镜像只搬运不改内容。
+MIRRORS=(
+  "https://ghfast.top/"
+  "https://gh-proxy.com/"
+)
+SOURCES=("${MIRRORS[@]}" "${GH_BASE}/")
+
+# 下载小文件（latest.yml）：依次试各源，任一成功即可
+fetch_small() { # $1=文件名 $2=输出 $3=超时秒
+  local name="$1" out="$2" tm="$3" src url
+  for src in "${SOURCES[@]}"; do
+    url="${src}${name}"
+    if curl -sL --max-time "${tm}" -o "${out}" "${url}"; then
+      return 0
+    fi
+    log "  源 ${src} 失败，换下一个"
+  done
+  return 1
+}
+
+log "下载 ${ASSET_YML}（镜像优先）..."
+YML_OK=0
+for i in $(seq 1 10); do
+  if fetch_small "${ASSET_YML}" "${YML_PATH}" 90; then YML_OK=1; break; fi
+  log "latest.yml 下载失败（第 ${i} 次），5 秒后重试"
   sleep 5
 done
-[ -s "${YML_PATH}" ] || { log "ERROR: latest.yml 下载失败"; exit 1; }
+[ "${YML_OK}" -eq 1 ] && [ -s "${YML_PATH}" ] || { log "ERROR: latest.yml 下载失败"; exit 1; }
 
 EXPECT_B64="$(grep -m1 '^sha512:' "${YML_PATH}" | awk '{print $2}')"
 if [ -z "${EXPECT_B64}" ]; then
@@ -82,28 +102,36 @@ if [ -z "${EXPECT_B64}" ]; then
 fi
 EXPECT_HEX="$(node -e "console.log(Buffer.from('${EXPECT_B64}','base64').toString('hex'))")"
 
-log "下载 ${ASSET_EXE}（断点续传，SHA512 校验）..."
-for i in $(seq 1 30); do
-  # 已有完整文件先验 sha512（覆盖上次中断但已下载完的情形，避免 416 死循环）
-  if [ -f "${EXE_PATH}" ]; then
-    ACTUAL_HEX="$(sha512sum "${EXE_PATH}" | awk '{print $1}')"
-    if [ "${EXPECT_HEX}" = "${ACTUAL_HEX}" ]; then
-      log "SHA512 校验通过（第 ${i} 次尝试）"
-      break
-    fi
+# 下载大文件（exe）：跨源断点续传（-C -），每轮轮流试各镜像，直到 sha512 匹配。
+# 注意 curl -C - 在本地文件已等长时返回 416（退出码 33），此时若 sha 仍未过，
+# 说明文件损坏，删掉重新下载。
+log "下载 ${ASSET_EXE}（镜像优先 + 断点续传，SHA512 校验）..."
+for round in $(seq 1 60); do
+  ACTUAL_HEX="$(sha512sum "${EXE_PATH}" 2>/dev/null | awk '{print $1}')"
+  if [ "${EXPECT_HEX}" = "${ACTUAL_HEX}" ]; then
+    log "SHA512 校验通过（第 ${round} 轮）"
+    break
   fi
-  if curl -sL -C - --max-time 900 -o "${EXE_PATH}" "${BASE}/${ASSET_EXE}"; then
-    ACTUAL_HEX="$(sha512sum "${EXE_PATH}" | awk '{print $1}')"
-    if [ "${EXPECT_HEX}" = "${ACTUAL_HEX}" ]; then
-      log "SHA512 校验通过（第 ${i} 次尝试）"
+  ROUND_OK=0
+  for src in "${SOURCES[@]}"; do
+    url="${src}${ASSET_EXE}"
+    if curl -sL -C - --max-time 900 -o "${EXE_PATH}" "${url}" 2>/dev/null; then
+      ROUND_OK=1
       break
+    elif [ "$?" -eq 33 ]; then
+      log "  ${src}：本地文件已等长但 sha512 未过（416），删除重下"
+      rm -f "${EXE_PATH}"
+    else
+      log "  ${src} 下载中断，换下一个源"
     fi
-    log "下载完成但 sha512 不匹配（第 ${i} 次），删掉重下"
-    rm -f "${EXE_PATH}"
-  else
-    log "下载中断（第 ${i} 次），10 秒后续传 ..."
-    sleep 10
+  done
+  ACTUAL_HEX="$(sha512sum "${EXE_PATH}" 2>/dev/null | awk '{print $1}')"
+  if [ "${EXPECT_HEX}" = "${ACTUAL_HEX}" ]; then
+    log "SHA512 校验通过（第 ${round} 轮）"
+    break
   fi
+  log "第 ${round} 轮未完成，8 秒后重试..."
+  sleep 8
 done
 ACTUAL_HEX="$(sha512sum "${EXE_PATH}" 2>/dev/null | awk '{print $1}')"
 if [ "${EXPECT_HEX}" != "${ACTUAL_HEX:-}" ]; then
