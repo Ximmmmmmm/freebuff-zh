@@ -58,30 +58,31 @@ fi
 # --- 2. 下载官方安装包（win-x64）与 latest.yml --------------------------------
 ASSET_EXE="Freebuff-${NEWVER}-win-x64.exe"
 ASSET_YML="Freebuff-${NEWVER}-win-x64.yml"
-# GitHub release 资产 URL（镜像以该完整 URL 为后缀转发）
-GH_BASE="https://github.com/${OWNER}/${REPO}/releases/download/${LATEST_TAG}"
+# GitHub release 资产完整 URL；镜像源以「镜像前缀 + 完整 GitHub URL」转发
+GH_EXE_URL="https://github.com/${OWNER}/${REPO}/releases/download/${LATEST_TAG}/${ASSET_EXE}"
+GH_YML_URL="https://github.com/${OWNER}/${REPO}/releases/download/${LATEST_TAG}/${ASSET_YML}"
 
 EXE_PATH="downloads/${ASSET_EXE}"
 YML_PATH="downloads/${ASSET_YML}"
 
 # 国内服务器直连 GitHub release 资产常被限速到 ~30KB/s（甚至握手后超时），
 # 走加速镜像通常快 40 倍（实测 ghfast.top ≈ 1.2MB/s）。列表按速度排序，官方直连
-# 作最后兑底。内容一致性由下载完成后的 sha512 校验保证，镜像只搬运不改内容。
-MIRRORS=(
+# 作最后兑底（空前缀）。内容一致性由下载完成后的 sha512 校验保证，镜像只搬运不改内容。
+SOURCES=(
   "https://ghfast.top/"
   "https://gh-proxy.com/"
+  ""
 )
-SOURCES=("${MIRRORS[@]}" "${GH_BASE}/")
 
-# 下载小文件（latest.yml）：依次试各源，任一成功即可
-fetch_small() { # $1=文件名 $2=输出 $3=超时秒
-  local name="$1" out="$2" tm="$3" src url
+# 下载小文件（latest.yml）：依次试各源，任一成功即可（镜像前缀 + 完整 GitHub URL）
+fetch_small() { # $1=完整 GitHub URL $2=输出 $3=超时秒
+  local full="$1" out="$2" tm="$3" src url
   for src in "${SOURCES[@]}"; do
-    url="${src}${name}"
-    if curl -sL --max-time "${tm}" -o "${out}" "${url}"; then
+    url="${src}${full}"
+    if curl -sL --max-time "${tm}" -o "${out}" "${url}" && grep -q '^sha512:' "${out}" 2>/dev/null; then
       return 0
     fi
-    log "  源 ${src} 失败，换下一个"
+    log "  源 ${src}失败，换下一个"
   done
   return 1
 }
@@ -89,7 +90,7 @@ fetch_small() { # $1=文件名 $2=输出 $3=超时秒
 log "下载 ${ASSET_YML}（镜像优先）..."
 YML_OK=0
 for i in $(seq 1 10); do
-  if fetch_small "${ASSET_YML}" "${YML_PATH}" 90; then YML_OK=1; break; fi
+  if fetch_small "${GH_YML_URL}" "${YML_PATH}" 90; then YML_OK=1; break; fi
   log "latest.yml 下载失败（第 ${i} 次），5 秒后重试"
   sleep 5
 done
@@ -112,11 +113,9 @@ for round in $(seq 1 60); do
     log "SHA512 校验通过（第 ${round} 轮）"
     break
   fi
-  ROUND_OK=0
   for src in "${SOURCES[@]}"; do
-    url="${src}${ASSET_EXE}"
+    url="${src}${GH_EXE_URL}"
     if curl -sL -C - --max-time 900 -o "${EXE_PATH}" "${url}" 2>/dev/null; then
-      ROUND_OK=1
       break
     elif [ "$?" -eq 33 ]; then
       log "  ${src}：本地文件已等长但 sha512 未过（416），删除重下"
