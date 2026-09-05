@@ -14,7 +14,7 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-INSTALL="${LOCALAPPDATA}/Programs/@codebufffreebuff-desktop"
+INSTALL="${LOCALAPPDATA:-}/Programs/@codebufffreebuff-desktop"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 REPORT="${HERE}/work/update-${STAMP}.txt"
 

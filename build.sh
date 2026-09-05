@@ -16,7 +16,7 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-INSTALL="${LOCALAPPDATA}/Programs/@codebufffreebuff-desktop"
+INSTALL="${LOCALAPPDATA:-}/Programs/@codebufffreebuff-desktop"
 
 # --- resolve pristine sources ------------------------------------------------
 # Priority: explicit args > newest hanhua-backup-* > installed English files.
