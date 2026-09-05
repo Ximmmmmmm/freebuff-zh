@@ -4,6 +4,9 @@ backup/
 work/
 downloads/
 
+# Local secrets — never commit API keys
+.translator.json
+
 # Node / misc
 node_modules/
 *.log

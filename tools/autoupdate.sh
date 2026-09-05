@@ -196,7 +196,8 @@ if [ -n "${BUNDLE}" ]; then
 fi
 
 # --- 5/6. 构建 + 残留扫描（tools/update.sh 内建构建与防呆自检）---------------
-# 有未翻译新增文案或构建失败就不发布，只留报告。
+# 有未翻译新增文案或构建失败就不发布，只留报告。新增文案先自动翻译一轮（配置了
+# .translator.json / HANHUA_LLM_* 时），仍有残留才中止人工。
 REPORT="work/update-${NEWVER}.txt"
 log "构建 + 残留扫描（日志: ${REPORT}）..."
 set +e
@@ -207,9 +208,46 @@ set +e
 RC=$?
 set -e
 
+# 主 bundle（自动翻译输入：英文原版，提取未入词典的新文案）
+UI_BUNDLE="$(ls "${PRISTINE_UI}"/assets/index-*.js 2>/dev/null | head -1 || true)"
+
+# 新版本文案的自动翻译：最多补两轮，每轮把 LLM 新翻的词条合入 dict 后重建。
+# 未配置 .translator.json 时 autotranslate 退出码 3，直接走人工中止分支。
+AUTO_TRIES=0
+while [ "${RC}" -ne 0 ] && [ "${AUTO_TRIES}" -lt 2 ]; do
+  if ! grep -qE "MISSED|未命中" "${REPORT}"; then
+    break  # 构建失败与词典无关（补丁/语法），不自动处理
+  fi
+  if { [ -z "${UI_BUNDLE}" ] || { [ ! -s ".translator.json" ] && [ -z "${HANHUA_LLM_BASE:-}" ]; }; }; then
+    log "无 .translator.json（或主 bundle 缺失）——不能自动翻译，转人工"
+    break
+  fi
+  AUTO_TRIES=$((AUTO_TRIES + 1))
+  log "检测到新增未翻译文案（第 ${AUTO_TRIES} 轮自动翻译，源: ${UI_BUNDLE}）..."
+  TR_OUT="$(node tools/autotranslate.js "${UI_BUNDLE}" --max 300 2>&1)"
+  TR_RC=$?
+  printf '%s\n' "${TR_OUT}" | tail -20 | sed 's/^/  /'
+  if [ "${TR_RC}" -ne 0 ]; then
+    log "自动翻译未生效（检查 .translator.json 配置/LLM 可达性），转人工"
+    break
+  fi
+  if printf '%s' "${TR_OUT}" | grep -qE '没有发现新的未翻译|AUTOTRANSLATE_NONE|新增 0 条'; then
+    log "自动翻译未发现可补词条（或全部被拒），转人工"
+    break
+  fi
+  log "自动翻译完成，重新构建验证..."
+  set +e
+  {
+    echo "=== autoupdate ${NEWVER} 构建 + 残留扫描（自动翻译后第 ${AUTO_TRIES} 轮）==="
+    bash tools/update.sh "${PRISTINE_ASAR}" "${PRISTINE_UI}"
+  } > "${REPORT}" 2>&1
+  RC=$?
+  set -e
+done
+
 if [ "${RC}" -ne 0 ]; then
   if grep -qE "MISSED|未命中" "${REPORT}"; then
-    log "有新增未翻译文案——不发布半成品。请人工补翻 dict.json 后重跑（--force）。报告: ${REPORT}"
+    log "自动翻译后仍有新增未翻译文案——不发布半成品。请人工补翻 dict.json 后重跑（--force）。报告: ${REPORT}"
     git checkout -- manifest.json dict.json 2>/dev/null || true
     exit 2
   fi

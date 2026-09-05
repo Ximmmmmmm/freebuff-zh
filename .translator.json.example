@@ -1,0 +1,11 @@
+{
+  "_说明": "把本文件复制为 .translator.json 并填入真实值(.translator.json 已被 .gitignore 排除,不会进版本库)",
+  "baseUrl": "https://api.openai.com/v1",
+  "apiKey": "sk-xxxxxxxx",
+  "model": "gpt-4o-mini",
+  "_可选": {
+    "maxBatch": 40,
+    "timeoutMs": 120000,
+    "temperature": 0.2
+  }
+}
