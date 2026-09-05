@@ -1,5 +1,46 @@
 # 更新日志
 
+## [0.0.88] · 2026-09-05
+
+- **适配 Freebuff v0.0.88**：targetVersion / packVersion 升至 0.0.88。渲染 bundle
+  `index-_MSBgH2Z.js` → `index-B3HBZoIa.js`；装机目录无 `hanhua-backup-*`（从未 apply 过），
+  走「无备份回退安装目录英文原版」构建路径
+- **模板变量自动重映射**：`tools/remap.js` 迁移 43 条（`gc→yc`、`r→l`、`wn→xn`、
+  `wv→Tv`、`xo→To`、`nq→vq`、`ly→Jc`、`ow→fw`、`Gn→B`、`oM→vM`、`LQ→ZQ`、`YS→r1`、
+  `Wp→Kp`、`J8→mq`、`eq→gq`、`rP→fP`、`ay→my`、`Ec→co`、`xI→Nz`、`P→E` 等）；
+  1 条 AMBIGUOUS（`Context ${$s(g)}`）手工改为 `Context ${Qs(g)}`（`$s→Qs` 且两处命中）
+- **额度系统全面改版：Freebucks 钱包**（v0.0.88 重大变更，会话购买从「次数」改为
+  「每小时单价 + 每日 Freebucks 额度」），补翻新额度/钱包 UI 全套约 40 处：
+  - 引导弹窗（`Meet Freebucks` / `Sessions are now bought with Freebucks—…` /
+    `Your daily Freebucks refill at midnight Pacific…`）、四个要点卡
+    （`A fresh pool every day` / `Spend it how you like` / `No more weekly or monthly session caps` /
+    `The only thing that counts is what you spend…`）、`Got it` 按钮
+  - 额度环 hint/status：`${po} balance`、`Out of ${po} · more in …`、
+    `Running low · today's refill in …`、`…of today's … left. Spent before your wallet…`、
+    `…in your wallet. Used after today's pool…`（含月度奖励 / 奖励到账两式）、
+    `…of usage left this month…`（成本口径说明）、`Free sessions are used first · today resets in`
+  - 模型选单价格文案：`…an hour, more than the … you have left today plus your wallet.`（两处变量）、
+    `…buys one hour of unlimited messages…`、`…bought this hour of …`、
+    `…costs … for an hour of unlimited messages…`、`Ends your session and starts a new one for …`、
+    `Unlimited messages and tool calls until it ends…`、`/hr` 价格后缀
+  - 支付/状态按钮与标签：`Get more` / `Use wallet` / `Switch` / `Upgrade` / `Limited access` /
+    额度环 label `wallet`/`left`/`daily`/`allowance`；`Lower limits` 说明卡头 + 两段额度降低说明文案
+- **其他补翻**：模型 tagline 改写（删除 `Latest frontier agentic coding model`，新增
+  `Reliable agentic workhorse for everyday tasks` / `Most capable model for complex, demanding work`；
+  `Balanced…` / `Fast and affordable…` 等 4 条沿用旧译）；计划分享（`Copy plan` /
+  `Copy plan as Markdown` / `Plan copied`）；`Attaching images needs the desktop app`、
+  `Could not open that sponsored run`、`Committed to ${b.branch}…`、`Could not switch branch…`
+- **修复词典模板交互**：`Could not update this sponsored proposal` 与 `Could not switch branch`
+  两条含 `"unknown error"` 内联字符串的模板，remap 曾误把键/值回写为英文，恢复为
+  「exact 先跑、模板键用 `"未知错误"`」的既有约定
+- **工具链**：`lint_dict.js` 的 `skeletonOf` 骨架归一化补上反引号模板字面量（此前只抹
+  `"…"`/`'…'`，含嵌套反引号模板的 `${…}` 表达式会被 E3 误判——本轮 `…plus … in your wallet`
+  条件片段即触发）
+- **验证**：`all keys matched`、纯字面量覆盖 796/796（100%）、`lint_dict` 通过；
+  主进程补丁逐字节套用、`node --check` 通过，postbuild 自检全绿；uipos 残留 28 条均为
+  有意保留项（代码关键字、模型名、shell 命令、内部标识）
+- 词典更新为 exact 813 / template 148 / code 4 / pattern 50
+
 ## [0.0.87] · 2026-09-04
 
 - **适配 Freebuff v0.0.87**：targetVersion / packVersion 升至 0.0.87。渲染 bundle
