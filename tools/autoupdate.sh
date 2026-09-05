@@ -139,21 +139,32 @@ if [ "${EXPECT_HEX}" != "${ACTUAL_HEX:-}" ]; then
 fi
 
 # --- 3. 从安装包解出原版 app.asar 与 ui/ --------------------------------------
-# NSIS 安装包可用 7z 解包；无 7z 时用 npx asar 直接从安装包尾部找 app.asar 不可行，
-# 所以这里统一要求 7z（apt install p7zip-full）。
+# NSIS 安装包用 7z 解出的是外壳（$PLUGINSDIR/app-64.7z 内嵌真正的应用 payload，
+# Electron 多文件结构），需二次解压 app-*.7z 才能拿到 resources/。
 command -v 7z >/dev/null || { log "ERROR: 需要 7z（apt install p7zip-full）"; exit 1; }
 
 STAGE="work/pristine-${NEWVER}"
 rm -rf "${STAGE}"; mkdir -p "${STAGE}/installer"
-7z x -y -o"${STAGE}/installer" "${EXE_PATH}" >/dev/null
+7z x -y -o"${STAGE}/installer" "${EXE_PATH}" >/dev/null 2>&1 || { log "ERROR: 7z 解外层 NSIS 失败"; exit 1; }
 
-# 安装包内布局（NSIS）：resources/app.asar 与 resources/orchestrator/ui/
-PRISTINE_ASAR="${STAGE}/installer/resources/app.asar"
-PRISTINE_UI="${STAGE}/installer/resources/orchestrator/ui"
+# 二次解压内嵌 payload（app-*.7z / archive 等命名，全局找最大的 .7z）
+INNER_7Z="$(find "${STAGE}/installer" -name '*.7z' -printf '%s %p\n' 2>/dev/null | sort -rn | head -1 | awk '{print $2}')"
+if [ -n "${INNER_7Z}" ]; then
+  log "内嵌 payload: ${INNER_7Z}，二次解压..."
+  7z x -y -o"${STAGE}/app" "${INNER_7Z}" >/dev/null 2>&1 || { log "ERROR: 7z 二次解压失败"; exit 1; }
+else
+  # 无内嵌压缩包：外层即应用目录（老版本/其他打包方式兑底）
+  mkdir -p "${STAGE}/app"
+  cp -r "${STAGE}"/installer/. "${STAGE}/app/" 2>/dev/null || true
+fi
+
+# 安装包内布局（Electron）：resources/app.asar 与 resources/orchestrator/ui/
+PRISTINE_ASAR="${STAGE}/app/resources/app.asar"
+PRISTINE_UI="${STAGE}/app/resources/orchestrator/ui"
 if [ ! -f "${PRISTINE_ASAR}" ] || [ ! -d "${PRISTINE_UI}" ]; then
   # 布局兜底：全局搜一遍，避免官方调整目录结构后管线挂掉
-  PRISTINE_ASAR="$(find "${STAGE}/installer" -name app.asar | head -1)"
-  PRISTINE_UI="$(find "${STAGE}/installer" -type d -name ui | grep orchestrator | head -1)"
+  PRISTINE_ASAR="$(find "${STAGE}" -name app.asar | head -1)"
+  PRISTINE_UI="$(find "${STAGE}" -type d -name ui | grep orchestrator | head -1)"
 fi
 [ -f "${PRISTINE_ASAR}" ] && [ -d "${PRISTINE_UI}" ] || { log "ERROR: 安装包里找不到 app.asar / ui"; exit 1; }
 log "原版就绪: ${PRISTINE_ASAR}"
