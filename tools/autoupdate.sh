@@ -1,0 +1,143 @@
+#!/usr/bin/env bash
+# Freebuff 汉化包全自动更新流水线（Linux 服务器版）
+#
+# 监测 Freebuff Desktop 新版本 → 下载官方安装包 → 解出原版 → remap → 构建 → 发布 Release
+# 有新增未翻译文案时自动中止，只发通知，不发半成品。
+#
+# 依赖：bash / curl / unzip / node 20+ / npx（拉 @electron/asar）/ gh CLI（已登录）
+# 用法：
+#   bash tools/autoupdate.sh                 # 单次检查
+#   bash tools/autoupdate.sh --force         # 跳过"版本未变"短路，强制重建
+# 配合 cron（每 30 分钟）：
+#   */30 * * * * cd /opt/freebuff-zh && bash tools/autoupdate.sh >> work/autoupdate.log 2>&1
+set -euo pipefail
+
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "${HERE}"
+
+FORCE=0
+for a in "$@"; do
+  case "$a" in
+    --force) FORCE=1 ;;
+    *) echo "未知参数：$a" >&2; exit 1 ;;
+  esac
+done
+
+mkdir -p work downloads
+
+log() { echo "[$(date '+%F %T')] $*"; }
+
+# 官方安装包信息：GitHub Releases 上的 freebuff-desktop-v* tag（freebuff.com 的
+# 下载直链 302 到这里的 asset）。
+OWNER=CodebuffAI
+REPO=codebuff-community
+OFFICIAL_DL="https://freebuff.com/api/desktop/download/windows"
+
+# --- 1. 探测最新版本 ----------------------------------------------------------
+# 注意：官方的 freebuff-desktop-v* tag 混在 codebuff-community 仓库里，但列表页前
+# 几十页全是 codebuff CLI 的 v1.0.x release，按列表过滤会扑空。官方下载直链是
+# 302 到最新 desktop 安装包（和控制器 CheckVersionAsync 同一招），跟随重定向拿
+# 版本号最稳。
+LOC="$(curl -sI --max-time 30 "${OFFICIAL_DL}" | tr -d '\r' | grep -i '^location:' | awk '{print $2}')"
+LATEST_TAG="$(echo "${LOC}" | grep -oE 'freebuff-desktop-v[0-9.]+')"
+
+if [ -z "${LATEST_TAG}" ]; then
+  log "无法从官方下载直链解析最新版本（location=${LOC:-空}），退出"
+  exit 0
+fi
+
+NEWVER="${LATEST_TAG#freebuff-desktop-v}"
+CURVER="$(node -e 'const m=require("./manifest.json"); console.log(m.targetVersion)')"
+log "官方最新: ${NEWVER} / 当前适配: ${CURVER}"
+
+if [ "${NEWVER}" = "${CURVER}" ] && [ "${FORCE}" -eq 0 ]; then
+  log "版本未变，无需更新"
+  exit 0
+fi
+
+# --- 2. 下载官方安装包（win-x64）与 latest.yml --------------------------------
+ASSET_EXE="Freebuff-${NEWVER}-win-x64.exe"
+ASSET_YML="Freebuff-${NEWVER}-win-x64.yml"
+BASE="https://github.com/${OWNER}/${REPO}/releases/download/${LATEST_TAG}"
+
+EXE_PATH="downloads/${ASSET_EXE}"
+YML_PATH="downloads/${ASSET_YML}"
+log "下载 ${BASE}/${ASSET_EXE} ..."
+curl -sL --max-time 600 -o "${EXE_PATH}" "${BASE}/${ASSET_EXE}"
+curl -sL --max-time 60  -o "${YML_PATH}" "${BASE}/${ASSET_YML}"
+
+# SHA512 校验（latest.yml 里是 base64，转 hex 后与本地文件比对）
+EXPECT_B64="$(grep -m1 '^sha512:' "${YML_PATH}" | awk '{print $2}')"
+EXPECT_HEX="$(node -e "console.log(Buffer.from('${EXPECT_B64}','base64').toString('hex'))")"
+ACTUAL_HEX="$(sha512sum "${EXE_PATH}" | awk '{print $1}')"
+if [ "${EXPECT_HEX}" != "${ACTUAL_HEX}" ]; then
+  log "ERROR: SHA512 校验失败（官方包下载不完整或被篡改）"
+  exit 1
+fi
+log "SHA512 校验通过"
+
+# --- 3. 从安装包解出原版 app.asar 与 ui/ --------------------------------------
+# NSIS 安装包可用 7z 解包；无 7z 时用 npx asar 直接从安装包尾部找 app.asar 不可行，
+# 所以这里统一要求 7z（apt install p7zip-full）。
+command -v 7z >/dev/null || { log "ERROR: 需要 7z（apt install p7zip-full）"; exit 1; }
+
+STAGE="work/pristine-${NEWVER}"
+rm -rf "${STAGE}"; mkdir -p "${STAGE}/installer"
+7z x -y -o"${STAGE}/installer" "${EXE_PATH}" >/dev/null
+
+# 安装包内布局（NSIS）：resources/app.asar 与 resources/orchestrator/ui/
+PRISTINE_ASAR="${STAGE}/installer/resources/app.asar"
+PRISTINE_UI="${STAGE}/installer/resources/orchestrator/ui"
+if [ ! -f "${PRISTINE_ASAR}" ] || [ ! -d "${PRISTINE_UI}" ]; then
+  # 布局兜底：全局搜一遍，避免官方调整目录结构后管线挂掉
+  PRISTINE_ASAR="$(find "${STAGE}/installer" -name app.asar | head -1)"
+  PRISTINE_UI="$(find "${STAGE}/installer" -type d -name ui | grep orchestrator | head -1)"
+fi
+[ -f "${PRISTINE_ASAR}" ] && [ -d "${PRISTINE_UI}" ] || { log "ERROR: 安装包里找不到 app.asar / ui"; exit 1; }
+log "原版就绪: ${PRISTINE_ASAR}"
+
+# --- 4. 更新 manifest 版本 + remap 模板变量 -----------------------------------
+node -e "
+const fs=require('fs');
+const m=JSON.parse(fs.readFileSync('manifest.json','utf8'));
+m.targetVersion='${NEWVER}'; m.packVersion='${NEWVER}';
+fs.writeFileSync('manifest.json', JSON.stringify(m,null,2)+'\n');
+"
+log "manifest.json → target=${NEWVER} pack=${NEWVER}"
+
+# 主 bundle 在 ui/assets/index-*.js；remap 自动迁移 ${...} 变量名
+BUNDLE="$(ls "${PRISTINE_UI}"/assets/index-*.js 2>/dev/null | head -1 || true)"
+if [ -n "${BUNDLE}" ]; then
+  log "remap 模板变量..."
+  node tools/remap.js "${BUNDLE}" --write || true
+fi
+
+# --- 5. 构建（防呆自检内建）---------------------------------------------------
+log "构建..."
+bash build.sh "${PRISTINE_ASAR}" "${PRISTINE_UI}"
+
+# --- 6. 残留扫描：有未翻译新增文案就不发布，只留报告 ----------------------------
+REPORT="work/update-${NEWVER}.txt"
+{
+  echo "=== autoupdate ${NEWVER} 残留扫描 ==="
+  bash tools/update.sh "${PRISTINE_ASAR}" "${PRISTINE_UI}" || true
+} > "${REPORT}" 2>&1 || true
+
+if grep -qE "MISSED|未命中" "${REPORT}"; then
+  log "有新增未翻译文案——不发布半成品。请人工补翻 dict.json 后重跑（--force）。报告: ${REPORT}"
+  git checkout -- manifest.json 2>/dev/null || true
+  exit 2
+fi
+
+# --- 7. 提交 + 发布 Release ---------------------------------------------------
+git add manifest.json dict.json
+if git diff --cached --quiet; then
+  log "无词典/版本变更，跳过发布"
+else
+  git -c user.name="hanhua-bot" -c user.email="bot@users.noreply.github.com" \
+    commit -m "适配 Freebuff v${NEWVER}（autoupdate）"
+  git push origin "$(git branch --show-current)"
+fi
+
+bash tools/release.sh
+log "✅ Freebuff v${NEWVER} 汉化包已发布。控制器会在 30 分钟内提示用户更新。"
