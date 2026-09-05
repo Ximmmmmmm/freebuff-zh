@@ -909,8 +909,6 @@
     "${o.tierName} plan usage": "${o.tierName} 套餐用量",
     "All ${D.limit} unlimited-model tabs are in use": "所有 ${D.limit} 个不限量模型标签页均已被占用",
     "${Mi.overflow} more — keep typing": "还有 ${Mi.overflow} 个 — 继续输入",
-    "Go to the tab using the ${B} slot": "转到使用 ${B} 配额槽的标签页",
-    "The ${B} tab is already in use": "${B} 标签页已被占用",
     "frees in ${Math.max(1,Math.ceil((M-Date.now())/6e4))}m": "${Math.max(1,Math.ceil((M-Date.now())/6e4))} 分钟后释放",
     "This is ${E.advertiserName}’s sponsored task, running on its own branch. You can watch it here; send your own work from your own tab.": "这是 ${E.advertiserName} 的赞助任务，在其自己的分支上运行。你可以在这里观看；请在自己的标签页中处理自己的工作。",
     "${t.price} ${n} an hour, more than the ${((i=e==null?void 0:e.freebucks)==null?void 0:i.balance)??0} you have left today plus your wallet.": "${t.price} ${n}/小时，比你今天剩余加钱包里的 ${((i=e==null?void 0:e.freebucks)==null?void 0:i.balance)??0} 还要多。",
@@ -969,7 +967,9 @@
     "Step 1 of 2 · Download Claude Code ${t.version} for Freebuff (${h3(t.downloadBytes)}; ${h3(t.installedBytes)} installed).${e}": "第 1 步，共 2 步 · 为 Freebuff 下载 Claude Code ${t.version}（${h3(t.downloadBytes)}；已安装 ${h3(t.installedBytes)}）。${e}",
     "${Kx(d.remainingUsd)} of usage left this month, out of ${Kx(d.limitUsd)}. That is what your sessions cost to run, not what you are billed.": "本月剩余用量 ${Kx(d.remainingUsd)} / ${Kx(d.limitUsd)}。这个数字是你的会话运行成本，不是你被收取的金额。",
     "Could not update this sponsored proposal: ${e||\"unknown error\"}": "无法更新此赞助提案：${e||\"unknown error\"}",
-    "Could not switch branch: ${u instanceof Error?u.message:\"unknown error\"}": "无法切换分支：${u instanceof Error?u.message:\"unknown error\"}"
+    "Could not switch branch: ${u instanceof Error?u.message:\"unknown error\"}": "无法切换分支：${u instanceof Error?u.message:\"unknown error\"}",
+    "Go to the tab using the ${z} slot": "转到使用 ${z} 配额槽的标签页",
+    "The ${z} tab is already in use": "${z} 标签页已被占用"
   },
   "code": {
     ",\" code comment\",o.length===1?\"\":\"s\"": ",\" 条代码评论\"",

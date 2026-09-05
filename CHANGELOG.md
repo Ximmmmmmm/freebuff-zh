@@ -1,5 +1,13 @@
 # 更新日志
 
+## [0.0.92] · 2026-09-05
+
+- **适配 Freebuff v0.0.92**：targetVersion / packVersion 升至 0.0.92；渲染 bundle
+  `index-B1uU0-oL.js` → `index-hMCUOXxW.js`。本轮使用已安装的 v0.0.92 英文原版重新构建。
+- **模板变量自动重映射**：迁移 2 条 template 词条（`B` → `z`），其余模板保持兼容；新版扫描未发现缺失模板。
+- **复核新版文案**：新增模型 `GLM 5.3 Flash` 为模型名，按约定保留英文；其余用户可见文案沿用现有词典，未发现需要新增的可翻译 UI 文案。
+- **验证**：完成 v0.0.92 原版 UI 扫描、词典全命中构建、主进程补丁套用、语法检查与 postbuild 自检。
+
 ## [0.0.91] · 2026-09-05
 
 - **适配 Freebuff v0.0.91**：targetVersion / packVersion 升至 0.0.91；渲染 bundle
