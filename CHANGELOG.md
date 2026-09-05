@@ -1,5 +1,25 @@
 # 更新日志
 
+## [0.0.91] · 2026-09-05
+
+- **适配 Freebuff v0.0.91**：targetVersion / packVersion 升至 0.0.91；渲染 bundle
+  `index-B3HBZoIa.js` → `index-B1uU0-oL.js`。本轮从已安装的 v0.0.91 英文原版重新扫描并构建。
+- **模板变量自动重映射**：迁移 48 条 template 词条（例如 `xn→kn`、`To→Po`、`co→ho`、
+  `_c→wc`、`Cq→eU`、`pw→Tw`、`Jp→nm`、`gy→Ty`、`Bz→h3`、`Ix→Kx` 等），并清理旧 bundle
+  中已失效的 7 条模板键；新版模板全部命中。
+- **补翻新增界面文案**：
+  - 赞助插播：`Sponsored break`、`Close sponsor break`、`Dismiss sponsored message`、
+    `Why this ad?`、`You can continue`；
+  - 限时模型试用：`Limited-time trial`；
+  - 会话/操作界面：`More actions`、新版队列计数、上下文用量、模型价格提示和赞助提案报错。
+- **修复动态错误模板译文**：恢复 `Could not update this sponsored proposal` / `Could not switch branch`
+  中的 `${...}` 插值，确保错误信息不会把表达式源码直接显示给用户。
+- **工具链修复**：`tools/apply.js` 先处理完整 template、再处理 exact 字面量，避免 `unknown error`
+  先替换导致模板无法命中；`tools/update.sh` 明确只对指定的 pristine bundle 执行模板迁移。
+- **验证**：词典 `lint_dict` 通过（exact 820 / template 148 / code 4 / pattern 50）；
+  v0.0.91 原版 UI 词典替换 1189 处并显示 `all keys matched`；主进程补丁全部干净套用，
+  `node --check` 通过，postbuild 自检全绿。
+
 ## [0.0.88] · 2026-09-05
 
 - **适配 Freebuff v0.0.88**：targetVersion / packVersion 升至 0.0.88。渲染 bundle

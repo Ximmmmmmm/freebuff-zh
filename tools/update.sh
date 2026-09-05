@@ -67,6 +67,9 @@ echo
 echo "== 1/4 模板变量重映射 =="
 REMAPPED=0
 if [ -n "${UI_BUNDLE}" ]; then
+  # remap.js --write only needs to inspect the pristine bundle. The installed
+  # asset is never modified, which is important when the user runs update.sh
+  # before applying a new pack.
   REMAP_LOG="$(node "${HERE}/tools/remap.js" "${UI_BUNDLE}" --write)"
   printf '%s\n' "${REMAP_LOG}" | tee -a "${REPORT}"
   REMAPPED="$(printf '%s' "${REMAP_LOG}" | sed -n 's/^  RENAMED[[:space:]]*\([0-9][0-9]*\).*/\1/p')"

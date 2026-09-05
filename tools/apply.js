@@ -84,8 +84,6 @@ for (const [en, zh] of Object.entries(dict.code || {})) {
   totalReplaced += n
 }
 
-src = applyExact(src, dict.exact)
-
 for (const [en, zh] of Object.entries(dict.template)) {
   const re = new RegExp('`' + esc(en) + '`', 'g')
   const n = countOf(src, re)
@@ -97,6 +95,11 @@ for (const [en, zh] of Object.entries(dict.template)) {
   src = src.replace(re, '`' + zh + '`')
   totalReplaced += n
 }
+
+// Apply exact literals after templates. This prevents an exact entry such as
+// "unknown error" from changing an embedded string before its full template
+// entry has a chance to match.
+src = applyExact(src, dict.exact)
 
 const diffLen = src.length - before.length
 console.log(`replaced ${totalReplaced} occurrences (bundle size ${before.length} -> ${src.length}, ${diffLen >= 0 ? '+' : ''}${diffLen} bytes)`)
