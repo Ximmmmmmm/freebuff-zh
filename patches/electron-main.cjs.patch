@@ -1,6 +1,6 @@
 --- a/electron/main.cjs
 +++ b/electron/main.cjs
-@@ -395,10 +395,10 @@
+@@ -396,10 +396,10 @@
    const buttons = []
    const actions = []
    if (failure.logPath) {
@@ -13,7 +13,7 @@
    actions.push(() => {})
 
    const options = {
-@@ -972,15 +972,13 @@
+@@ -973,15 +973,13 @@
    try {
      const response = askSync(parent, {
        type: 'question',
@@ -33,7 +33,7 @@
        // a stray Return keeps the agents alive
        defaultId: 0,
        cancelId: 0,
-@@ -1043,8 +1041,8 @@
+@@ -1044,8 +1042,8 @@
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return []
    const res = await dialog.showOpenDialog(win, {
@@ -44,7 +44,7 @@
      properties: ['openFile', 'openDirectory', 'multiSelections', 'treatPackageAsDirectory'],
    })
    if (res.canceled) return []
-@@ -1073,8 +1071,8 @@
+@@ -1074,8 +1072,8 @@
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return []
    const res = await dialog.showOpenDialog(win, {
@@ -55,7 +55,7 @@
      properties: ['openFile', 'multiSelections'],
      filters: [
        { name: 'Images', extensions: VIEWABLE_IMAGE_EXTENSIONS },
-@@ -1097,8 +1095,8 @@
+@@ -1098,8 +1096,8 @@
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return null
    const res = await dialog.showOpenDialog(win, {
@@ -66,7 +66,7 @@
      properties: ['openDirectory', 'createDirectory'],
    })
    return res.canceled || res.filePaths.length === 0 ? null : res.filePaths[0]
-@@ -1238,7 +1236,7 @@
+@@ -1228,7 +1226,7 @@
      }
      return { ok: true, path: resolved.requested, openedPath: resolved.opened, fallback: resolved.fallback }
    } catch (error) {
@@ -75,7 +75,7 @@
    }
  })
 
-@@ -1349,9 +1347,9 @@
+@@ -1339,9 +1337,9 @@
        resolve(action)
      }
      const menu = Menu.buildFromTemplate([
@@ -87,7 +87,7 @@
      ])
      menu.popup({
        window: BrowserWindow.fromWebContents(event.sender) ?? undefined,
-@@ -1374,7 +1372,7 @@
+@@ -1364,7 +1362,7 @@
              label: app.name,
              submenu: [
                { role: 'about' },
@@ -96,7 +96,7 @@
                { type: 'separator' },
                { role: 'services' },
                { type: 'separator' },
-@@ -1384,7 +1382,7 @@
+@@ -1374,7 +1372,7 @@
                { type: 'separator' },
                {
                  // not `role: 'quit'`: that reaches app.quit() directly, with no chance to ask
@@ -105,7 +105,7 @@
                  accelerator: 'Command+Q',
                  click: () => requestQuit(),
                },
-@@ -1393,15 +1391,15 @@
+@@ -1383,15 +1381,15 @@
          ]
        : []),
      {
@@ -124,7 +124,7 @@
            accelerator: 'CmdOrCtrl+Shift+T',
            click: () => sendMenuCommand('reopen-tab'),
          },
-@@ -1410,24 +1408,24 @@
+@@ -1400,24 +1398,24 @@
          // other, and on a fresh install its menu lists only the project already open — so ⌘O is
          // where someone who has never heard the word "space" is going to look.
          {
@@ -155,7 +155,7 @@
          { role: 'toggleDevTools' },
          { type: 'separator' },
          { role: 'resetZoom' },
-@@ -1437,15 +1435,15 @@
+@@ -1427,15 +1425,15 @@
          { role: 'togglefullscreen' },
        ],
      },
@@ -174,7 +174,7 @@
              ],
            },
          ]),
-@@ -1580,7 +1578,7 @@
+@@ -1570,7 +1568,7 @@
      if (err?.orchestratorFailure) {
        await showOrchestratorFailure(err.orchestratorFailure, win)
      } else {
@@ -183,7 +183,7 @@
      }
      app.quit()
      return
-@@ -1694,8 +1692,8 @@
+@@ -1684,8 +1682,8 @@
        canRelaunch: !!relaunchExecPath,
      })
      const buttons = canRetryWithoutSandbox
@@ -194,7 +194,7 @@
      const body = `${detail}\n\n(${details.type} process: ${details.reason})`
      // A launch failure this early can land before `ready`, where the dialog
      // module throws — and an exception here would replace the message we came to
-@@ -1704,7 +1702,7 @@
+@@ -1694,7 +1692,7 @@
      // buttons, so the pre-ready path explains and quits rather than offering the
      // retry. Nothing is running yet, so there is nothing to tear down.
      if (!app.isReady()) {
@@ -203,7 +203,7 @@
        app.exit(1)
        return
      }
-@@ -1712,7 +1710,7 @@
+@@ -1702,7 +1700,7 @@
      try {
        response = dialog.showMessageBoxSync({
          type: 'error',

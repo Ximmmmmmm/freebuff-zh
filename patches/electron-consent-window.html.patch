@@ -1,6 +1,6 @@
 --- a/electron/consent-window.html
 +++ b/electron/consent-window.html
-@@ -63,14 +63,14 @@
+@@ -62,14 +62,14 @@
    button:focus-visible { outline: 2px solid var(--warn); outline-offset: 2px; }
  </style>
 
@@ -18,7 +18,7 @@
  </div>
 
  <script>
-@@ -93,7 +93,7 @@
+@@ -92,7 +92,7 @@
    }
 
    window.consent.ready((options) => {
@@ -26,8 +26,8 @@
 +    const [no, go] = options.buttons || ['取消', '批准']
      el('no').textContent = no
      // Two layouts share this window and nothing else: a connector's argv, cwd and env ARE the
-     // decision and need the field list; a sponsored task needs one sentence. The flag decides,
-@@ -118,15 +118,15 @@
+     // decision and need the field list; a sponsored task shows its short sentence plus the exact
+@@ -117,15 +117,15 @@
        const who = clampName(sponsored.advertiser)
        el('who').textContent = who
        el('rest').textContent = who
@@ -46,12 +46,12 @@
      el('message').textContent = options.message || ''
      // Two separate fields, never one string re-split on a delimiter: the spec contains a command
      // and arguments a human may have pasted from the internet, and text that can choose where the
-@@ -134,7 +134,7 @@
+@@ -133,7 +133,7 @@
      // Blank is not a legal render here: an empty box above an Approve button asks a human to
      // approve a launch the dialog is not describing. Refuse loudly instead.
      el('spec').textContent =
 -      options.specText || '(this dialog could not describe what would run — do not approve)'
 +      options.specText || '(此对话框无法描述将要运行的内容——请勿批准)'
      el('detail').textContent = options.explanation ?? ''
-     if (!options.specText && !sponsored) el('yes').disabled = true
+     if (!options.specText) el('yes').disabled = true
      el('yes').textContent = go

@@ -1,6 +1,6 @@
 --- a/electron/mcp-consent-bridge.cjs
 +++ b/electron/mcp-consent-bridge.cjs
-@@ -89,16 +89,16 @@
+@@ -98,19 +98,19 @@
  function describeLaunch(spec) {
    const lines = []
    if (spec && typeof spec.command === 'string') {
@@ -13,17 +13,20 @@
 -      `Arguments:  ${args.length ? args.map((a) => `"${clamp(a)}"`).join(' ') : '(none)'}`,
 +      `参数：  ${args.length ? args.map((a) => `"${clamp(a)}"`).join(' ') : '（无）'}`,
      )
--    lines.push(`Directory:  ${spec.cwd ? clamp(spec.cwd) : '(your home folder)'}`)
-+    lines.push(`目录：  ${spec.cwd ? clamp(spec.cwd) : '（你的主文件夹）'}`)
+     lines.push(
+-      `Directory:  ${spec.cwd ? clamp(spec.cwd) : '(your home folder)'}`,
++      `目录：  ${spec.cwd ? clamp(spec.cwd) : '（你的主文件夹）'}`,
+     )
      const names = Array.isArray(spec.envNames) ? spec.envNames : []
--    lines.push(`Environment:  ${names.length ? clamp(names.join(', ')) : '(none)'}`)
-+    lines.push(`环境变量：  ${names.length ? clamp(names.join(', ')) : '（无）'}`)
+     lines.push(
+-      `Environment:  ${names.length ? clamp(names.join(', ')) : '(none)'}`,
++      `环境变量：  ${names.length ? clamp(names.join(', ')) : '（无）'}`,
+     )
    } else if (isSponsored(spec)) {
-     // ONE sentence (COD-410). The field list this used to be -- advertiser, task, folder, branch --
-     // was not read, and a dialog nobody reads is not informed consent however much it contains.
-@@ -106,9 +106,9 @@
-     // covered by "its own branch"; a fact that does not change the decision is not on the dialog.
-     lines.push(sponsoredSentence(spec.sponsored.advertiser))
+     // The exact procedure comes from the authenticated pre-consent read. It
+@@ -128,9 +128,9 @@
+     lines.push(`Folder:  ${clamp(spec.sponsored.folder)}`)
+     lines.push(`Branch:  ${clamp(spec.sponsored.branch)}`)
    } else if (spec && typeof spec.url === 'string') {
 -    lines.push(`Address:  ${clamp(spec.url)}`)
 +    lines.push(`地址：  ${clamp(spec.url)}`)
@@ -33,16 +36,16 @@
    }
    return lines.join('\n')
  }
-@@ -141,7 +141,7 @@
+@@ -183,7 +183,7 @@
 
- /** The one sentence. The CLI says the same words (`sponsored-proposal-block.tsx`). */
+ /** The identity sentence. The CLI says the same words (`sponsored-proposal-block.tsx`). */
  const SPONSORED_SENTENCE =
 -  ' wants to integrate itself into this project, on its own branch. Nothing is pushed until you review it.'
 +  ' 想要将它自己集成到此项目，并使用它自己的分支。在你审查之前，不会推送任何内容。'
- const sponsoredSentence = (advertiser) => `${clampName(advertiser)}${SPONSORED_SENTENCE}`
+ const sponsoredSentence = (advertiser) =>
+   `${clampName(advertiser)}${SPONSORED_SENTENCE}`
 
- function isRunnable(spec) {
-@@ -289,25 +289,25 @@
+@@ -369,10 +369,10 @@
          const explanation = sponsored
            ? ''
            : local
@@ -55,8 +58,8 @@
 +              '只有在你认识它的情况下才继续。'
          const choice = await confirm(parent, {
            type: 'warning',
--          buttons: sponsored ? ['No', 'Yes'] : ['Cancel', local ? 'Run it' : 'Connect'],
-+          buttons: sponsored ? ['否', '是'] : ['取消', local ? '运行' : '连接'],
+           buttons: sponsored
+@@ -381,15 +381,15 @@
            defaultId: 0,
            cancelId: 0,
            title: sponsored
@@ -68,7 +71,7 @@
 +              ? '运行此连接器？'
 +              : '连接到此服务器？',
            message: sponsored
-             ? specText
+             ? sponsoredSentence(spec.sponsored.advertiser)
              : local
 -              ? `Run "${clamp(name)}" on this computer?`
 -              : `Let Freebuff connect to "${clamp(name)}"?`,
