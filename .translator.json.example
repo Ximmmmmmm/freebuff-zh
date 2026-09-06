@@ -4,8 +4,8 @@
   "apiKey": "sk-xxxxxxxx",
   "model": "gpt-4o-mini",
   "_可选": {
-    "maxBatch": 40,
-    "timeoutMs": 120000,
+    "maxBatch": 20,
+    "timeoutMs": 300000,
     "temperature": 0.2
   }
 }

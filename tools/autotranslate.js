@@ -43,8 +43,8 @@ try { cfg = JSON.parse(fs.readFileSync(CONFIG, 'utf8')) } catch { /* optional */
 const baseUrl = (process.env.HANHUA_LLM_BASE || cfg.baseUrl || '').replace(/\/+$/, '')
 const apiKey = process.env.HANHUA_LLM_KEY || cfg.apiKey || ''
 const model = process.env.HANHUA_LLM_MODEL || cfg.model || ''
-const maxBatch = Number(process.env.HANHUA_MAX_BATCH || cfg.maxBatch || 40)
-const timeoutMs = Number(process.env.HANHUA_TIMEOUT_MS || cfg.timeoutMs || 120000)
+const maxBatch = Number(process.env.HANHUA_MAX_BATCH || cfg.maxBatch || 20)
+const timeoutMs = Number(process.env.HANHUA_TIMEOUT_MS || cfg.timeoutMs || 300000)
 
 const dict = JSON.parse(fs.readFileSync(DICT, 'utf8'))
 const src = fs.readFileSync(bundlePath, 'utf8')
@@ -221,6 +221,27 @@ const merged = []    // entries to add: {kind, en, zh}
 const rejected = []  // reasons
 const sleeps = (ms) => new Promise((r) => setTimeout(r, ms))
 
+// 翻译一个批次;失败时若超过 1 条则拆半递归重试(超时通常是批量太大),
+// 直到单条仍失败才记录放弃——尽量不漏翻。
+async function translateBatch(batch, depth) {
+  try {
+    return { ok: true, parsed: await callLLM(batch) }
+  } catch (e) {
+    if (batch.length > 1) {
+      const mid = Math.ceil(batch.length / 2)
+      const left = batch.slice(0, mid)
+      const right = batch.slice(mid)
+      console.log(`  ⤵ 批次超时/失败(${e.message.slice(0, 80)}),拆半重试 ${left.length}+${right.length}...`)
+      const a = await translateBatch(left, depth + 1)
+      await sleeps(300)
+      const b = await translateBatch(right, depth + 1)
+      return { ok: true, parsed: [...(a.ok ? a.parsed : []), ...(b.ok ? b.parsed : [])] }
+    }
+    rejected.push(`LLM 调用失败(单条仍失败): ${e.message}`)
+    return { ok: false, parsed: [] }
+  }
+}
+
 async function main() {
   const groups = []
   for (let i = 0; i < list.length; i += maxBatch) {
@@ -228,13 +249,7 @@ async function main() {
   }
   for (let gi = 0; gi < groups.length; gi++) {
     const batch = groups[gi]
-    let parsed = []
-    try {
-      parsed = await callLLM(batch)
-    } catch (e) {
-      rejected.push(`批次 ${gi + 1} LLM 调用失败: ${e.message}`)
-      continue
-    }
+    const { parsed } = await translateBatch(batch, 0)
     for (const item of parsed) {
       const en = item && typeof item.key === 'string' ? item.key : null
       const zh = item && typeof item.value === 'string' ? item.value : null
