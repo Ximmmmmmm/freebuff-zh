@@ -108,7 +108,7 @@ EXPECT_HEX="$(node -e "console.log(Buffer.from('${EXPECT_B64}','base64').toStrin
 # 说明文件损坏，删掉重新下载。
 log "下载 ${ASSET_EXE}（镜像优先 + 断点续传，SHA512 校验）..."
 for round in $(seq 1 60); do
-  ACTUAL_HEX="$(sha512sum "${EXE_PATH}" 2>/dev/null | awk '{print $1}')"
+  ACTUAL_HEX="$(sha512sum "${EXE_PATH}" 2>/dev/null | awk '{print $1}')" || ACTUAL_HEX=""
   if [ "${EXPECT_HEX}" = "${ACTUAL_HEX}" ]; then
     log "SHA512 校验通过（第 ${round} 轮）"
     break
@@ -124,7 +124,7 @@ for round in $(seq 1 60); do
       log "  ${src} 下载中断，换下一个源"
     fi
   done
-  ACTUAL_HEX="$(sha512sum "${EXE_PATH}" 2>/dev/null | awk '{print $1}')"
+  ACTUAL_HEX="$(sha512sum "${EXE_PATH}" 2>/dev/null | awk '{print $1}')" || ACTUAL_HEX=""
   if [ "${EXPECT_HEX}" = "${ACTUAL_HEX}" ]; then
     log "SHA512 校验通过（第 ${round} 轮）"
     break
@@ -132,7 +132,7 @@ for round in $(seq 1 60); do
   log "第 ${round} 轮未完成，8 秒后重试..."
   sleep 8
 done
-ACTUAL_HEX="$(sha512sum "${EXE_PATH}" 2>/dev/null | awk '{print $1}')"
+ACTUAL_HEX="$(sha512sum "${EXE_PATH}" 2>/dev/null | awk '{print $1}')" || ACTUAL_HEX=""
 if [ "${EXPECT_HEX}" != "${ACTUAL_HEX:-}" ]; then
   log "ERROR: 多次尝试后 SHA512 仍不匹配（官方包下载不完整或被篡改）"
   exit 1
