@@ -22,19 +22,54 @@
 //   HANHUA_LLM_BASE / HANHUA_LLM_KEY / HANHUA_LLM_MODEL override config file.
 const fs = require('fs')
 const path = require('path')
+const crypto = require('crypto')
 
 const ROOT = path.join(__dirname, '..')
 const DICT = path.join(ROOT, 'dict.json')
 const CONFIG = path.join(ROOT, '.translator.json')
+const PENDING_FILE = path.join(ROOT, 'work', 'autotranslate-pending.json')
 
 const bundlePath = process.argv[2]
 const dry = process.argv.includes('--dry')
 const extractOnly = process.argv.includes('--extract-only')
+const resetCache = process.argv.includes('--reset-cache')
 const maxIdx = process.argv.indexOf('--max')
 const MAX_CANDIDATES = maxIdx >= 0 ? Number(process.argv[maxIdx + 1] || 200) : 200
 if (!bundlePath) {
-  console.error('usage: node tools/autotranslate.js <bundle.js> [--dry] [--extract-only] [--max N]')
+  console.error('usage: node tools/autotranslate.js <bundle.js> [--dry] [--extract-only] [--max N] [--reset-cache]')
   process.exit(1)
+}
+
+// ---- 续翻缓存 ---------------------------------------------------------------
+// 单条仍失败的条目落盘到 work/autotranslate-pending.json;下次运行自动跳过,
+// 避免同一批超时条目反复重试烧 token。已翻译入 dict 的条目靠 knownKeys 天然
+// 跳过,因此“中断后续翻”由增量写 dict + 失败缓存共同实现。
+// 缓存按 bundle 内容哈希区分版本,换 bundle 后旧缓存自动作废。
+const bundleHash = () =>
+  crypto.createHash('sha256').update(fs.readFileSync(bundlePath)).digest('hex').slice(0, 16)
+
+function loadFailedCache() {
+  try {
+    const p = JSON.parse(fs.readFileSync(PENDING_FILE, 'utf8'))
+    if (p.bundle === bundleHash() && Array.isArray(p.failed)) return new Map(p.failed)
+  } catch { /* 无缓存或格式不对 */ }
+  return new Map()
+}
+
+function saveFailedCache(failedMap) {
+  fs.mkdirSync(path.join(ROOT, 'work'), { recursive: true })
+  fs.writeFileSync(
+    PENDING_FILE,
+    JSON.stringify(
+      { bundle: bundleHash(), updatedAt: new Date().toISOString(), failed: [...failedMap.entries()] },
+      null,
+      2,
+    ) + '\n',
+  )
+}
+
+function clearFailedCache() {
+  try { fs.unlinkSync(PENDING_FILE) } catch { /* 已不存在 */ }
 }
 
 // ---- config ---------------------------------------------------------------
@@ -144,6 +179,19 @@ let list = [...candidates.entries()]
   .sort((a, b) => b[1].count - a[1].count || a[0].localeCompare(b[0]))
   .slice(0, MAX_CANDIDATES)
 
+// 续翻:跳过上次已记录为失败的条目(避免重复烧 token 重试同一批超时条目)
+if (resetCache) {
+  clearFailedCache()
+  console.log('--reset-cache:已清除续翻缓存，全部候选重新翻译')
+}
+const failedCache = loadFailedCache()
+if (failedCache.size > 0) {
+  const before = list.length
+  list = list.filter(([en]) => !failedCache.has(en))
+  const skipped = before - list.length
+  if (skipped > 0) console.log(`续翻:跳过上次失败的 ${skipped} 条候选（缓存 work/autotranslate-pending.json，加 --reset-cache 可重试）`)
+}
+
 if (list.length === 0) {
   console.log('没有发现新的未翻译 UI 文案，无需自动翻译')
   process.exit(0)
@@ -222,10 +270,10 @@ const rejected = []  // reasons
 const sleeps = (ms) => new Promise((r) => setTimeout(r, ms))
 
 // 翻译一个批次;失败时若超过 1 条则拆半递归重试(超时通常是批量太大),
-// 直到单条仍失败才记录放弃——尽量不漏翻。
+// 直到单条仍失败才记录放弃——尽量不漏翻。返回 {ok, parsed, failedEn}。
 async function translateBatch(batch, depth) {
   try {
-    return { ok: true, parsed: await callLLM(batch) }
+    return { ok: true, parsed: await callLLM(batch), failedEn: [] }
   } catch (e) {
     if (batch.length > 1) {
       const mid = Math.ceil(batch.length / 2)
@@ -235,10 +283,15 @@ async function translateBatch(batch, depth) {
       const a = await translateBatch(left, depth + 1)
       await sleeps(300)
       const b = await translateBatch(right, depth + 1)
-      return { ok: true, parsed: [...(a.ok ? a.parsed : []), ...(b.ok ? b.parsed : [])] }
+      return {
+        ok: true,
+        parsed: [...(a.ok ? a.parsed : []), ...(b.ok ? b.parsed : [])],
+        failedEn: [...a.failedEn, ...b.failedEn],
+      }
     }
-    rejected.push(`LLM 调用失败(单条仍失败): ${e.message}`)
-    return { ok: false, parsed: [] }
+    const en = batch[0][0]
+    rejected.push(`LLM 调用失败(单条仍失败): ${en.slice(0, 60)} — ${e.message}`)
+    return { ok: false, parsed: [], failedEn: [en] }
   }
 }
 
@@ -247,24 +300,51 @@ async function main() {
   for (let i = 0; i < list.length; i += maxBatch) {
     groups.push(list.slice(i, i + maxBatch))
   }
+  const newFailed = new Map() // en -> reason,仅本次新增的失败
+  let doneCount = 0
   for (let gi = 0; gi < groups.length; gi++) {
     const batch = groups[gi]
-    const { parsed } = await translateBatch(batch, 0)
+    const { parsed, failedEn } = await translateBatch(batch, 0)
+    for (const en of failedEn) newFailed.set(en, 'LLM 单条调用失败(超时/网络)')
     for (const item of parsed) {
       const en = item && typeof item.key === 'string' ? item.key : null
       const zh = item && typeof item.value === 'string' ? item.value : null
       if (!en) continue
-      if (!zh) { rejected.push(`跳过（模型判定不可译）: ${en.slice(0, 80)}`); continue }
+      if (!zh) { rejected.push(`跳过（模型判定不可译）: ${en.slice(0, 80)}`); newFailed.set(en, '模型判定不可译'); continue }
       const cand = candidates.get(en)
       if (!cand) continue // model invented a key
       if (placeholderSet(en).join('|') !== placeholderSet(zh).join('|')) {
         rejected.push(`占位符不一致: ${en.slice(0, 60)}`)
+        newFailed.set(en, '占位符不一致')
         continue
       }
       if (/[\u4e00-\u9fff]/.test(en)) { rejected.push(`源已是中文: ${en.slice(0, 60)}`); continue }
       merged.push({ kind: cand.kind, en, zh })
     }
+    // 增量写 dict:每批完成后立即落盘,进程被杀也不丢已翻条目
+    if (!dry && merged.length > doneCount) {
+      const sec = (e) => (e.kind === 'template' ? dict.template : dict.exact)
+      for (const e of merged.slice(doneCount)) {
+        if (!sec(e)[e.en]) sec(e)[e.en] = e.zh
+      }
+      fs.writeFileSync(DICT, JSON.stringify(dict, null, 2) + '\n')
+      doneCount = merged.length
+    }
+    // 失败条目落盘缓存(下次自动跳过)
+    if (!dry && newFailed.size > 0) {
+      saveFailedCache(new Map([...failedCache, ...newFailed]))
+    }
     if (gi < groups.length - 1) await sleeps(500)
+  }
+
+  // 剩余新失败也入缓存;全部成功则清理缓存
+  if (!dry) {
+    if (newFailed.size > 0) {
+      saveFailedCache(new Map([...failedCache, ...newFailed]))
+      console.log(`\n失败条目已缓存 ${newFailed.size} 条 → work/autotranslate-pending.json，下次运行自动跳过（--reset-cache 可重试）`)
+    } else {
+      clearFailedCache()
+    }
   }
 
   // dedupe (dict may already have gained this key from an earlier partial run)
