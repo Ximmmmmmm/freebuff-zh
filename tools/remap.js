@@ -198,11 +198,22 @@ for (const [key, zh] of Object.entries(dict.template)) {
     stats.AMBIGUOUS.push([key, `重建的新 key 无法逐字节命中 bundle:\n      ↳ ${JSON.stringify(newKey)}`])
     continue
   }
+  // 结构自证：新 key 的插值槽数必须与原 key 一致。锚文本正则若命中无关的普通
+  // 字符串（捕获值没有 ${} 包装，如 `development: true`），重建出的 newKey 会丢
+  // 插值槽——这种"改名"是假的，降级 AMBIGUOUS 交人工，绝不写回词典。
+  const nkExprCount = (parseTemplate(newKey) || []).filter((p) => p.t === 'expr').length
+  if (nkExprCount !== keyExprs.length) {
+    stats.AMBIGUOUS.push([
+      key,
+      `重建的新 key 插值槽数与原 key 不一致（${keyExprs.length} → ${nkExprCount}），锚文本疑似命中无关字符串:\n      ↳ ${JSON.stringify(newKey)}`,
+    ])
+    continue
+  }
   stats.RENAMED.push([key, newKey, newZh])
 }
 
 // --- 报告 ----------------------------------------------------------------------
-const short = (s, n = 72) => JSON.stringify(s.length > n ? s.slice(0, n) + '…' : s)
+const short = (s, n = 72) => JSON.stringify(s == null ? '(空)' : s.length > n ? s.slice(0, n) + '…' : s)
 console.log(`template 条目共 ${Object.keys(dict.template).length}`)
 console.log(`  SAME       ${stats.SAME.length}`)
 console.log(`  RENAMED    ${stats.RENAMED.length}${write ? '' : '   （dry-run，加 --write 写回）'}`)
@@ -213,9 +224,11 @@ if (stats.RENAMED.length) {
   console.log('\nRENAMED 明细:')
   for (const [k, nk] of stats.RENAMED) {
     const kp = parseTemplate(k).filter((p) => p.t === 'expr').map((p) => p.v)
-    const nkp = parseTemplate(nk).filter((p) => p.t === 'expr').map((p) => p.v)
+    const nkp = (parseTemplate(nk) || []).filter((p) => p.t === 'expr').map((p) => p.v)
     const diff = kp
-      .map((e, i) => (e !== nkp[i] ? `${short(e, 40)} → ${short(nkp[i], 40)}` : null))
+      .map((e, i) =>
+        e !== nkp[i] ? `${short(e, 40)} → ${nkp[i] === undefined ? '(插值消失)' : short(nkp[i], 40)}` : null,
+      )
       .filter(Boolean)
     console.log(`  · ${diff.join(' ; ') || '(插值未变，仅修正了其它内容)'}`)
   }
