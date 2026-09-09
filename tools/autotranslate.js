@@ -190,12 +190,15 @@ const isUIFacing = (s) => {
 // 健壮的字面量扫描:压缩代码里的 `\"`/`\\` 转义序列会让全局正则的引号配对
 // 错位,把后续真实字面量吞进超长匹配(0.0.98 的 "Thread mentions" 因此漏提取、
 // 以英文发布)。逐字符配对,遇 `\` 跳过下一字符,保证每个字面量独立切出。
+// 单引号字符串必须一并配对:Lezer 语法数据等超长字符串里常嵌单引号,而
+// 单引号字符串内部的 `"` 若不配对会被误当成双引号字面量的开头,一路吞并
+// 到后面的真实 UI 文案("Thread mentions" 卡片就是这样漏掉的)。
 function scanLiterals(s) {
   const out = []
   let i = 0
   while (i < s.length) {
     const q = s[i]
-    if (q !== '"' && q !== '`') { i++; continue }
+    if (q !== '"' && q !== "'" && q !== '`') { i++; continue }
     let j = i + 1
     let raw = ''
     let closed = false
