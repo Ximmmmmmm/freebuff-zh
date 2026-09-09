@@ -243,30 +243,47 @@ set -e
 # 主 bundle（自动翻译输入：英文原版，提取未入词典的新文案）
 UI_BUNDLE="$(ls "${PRISTINE_UI}"/assets/index-*.js 2>/dev/null | head -1 || true)"
 
-# 新版本文案的自动翻译：最多补两轮，每轮把 LLM 新翻的词条合入 dict 后重建。
-# 未配置 .translator.json 时 autotranslate 退出码 3，直接走人工中止分支。
+# 新版本文案的自动翻译（Codex 全程驱动）：优先 Codex agent 翻译，不可用时
+# 降级 LLM 批量翻译（.translator.json 三模型链），最多三轮。每轮把新翻词条
+# 合入 dict 后重建验证；仍 MISSED 才转人工。
 AUTO_TRIES=0
-while [ "${RC}" -ne 0 ] && [ "${AUTO_TRIES}" -lt 2 ]; do
+while [ "${RC}" -ne 0 ] && [ "${AUTO_TRIES}" -lt 3 ]; do
   if ! grep -qE "MISSED|未命中" "${REPORT}"; then
     break  # 构建失败与词典无关（补丁/语法），不自动处理
   fi
-  if { [ -z "${UI_BUNDLE}" ] || { [ ! -s ".translator.json" ] && [ -z "${HANHUA_LLM_BASE:-}" ]; }; }; then
-    log "无 .translator.json（或主 bundle 缺失）——不能自动翻译，转人工"
+  if [ -z "${UI_BUNDLE}" ]; then
+    log "主 bundle 缺失——不能自动翻译，转人工"
     break
   fi
   AUTO_TRIES=$((AUTO_TRIES + 1))
   log "检测到新增未翻译文案（第 ${AUTO_TRIES} 轮自动翻译，源: ${UI_BUNDLE}）..."
-  # set -e 下不能直接写 TR_OUT="$(...)"：翻译器的 2/3/4 退出码会
-  # 让整个 autoupdate 在这里提前退出，后面的降级判断与回滚永远执行不到。
   TR_OUT=""
-  TR_RC=0
-  TR_OUT="$(node tools/autotranslate.js "${UI_BUNDLE}" --max 300 2>&1)" || TR_RC=$?
+  TR_RC=99
+  # 第一优先：Codex agent 全程翻译（read-only sandbox + 确定性校验，见 codex-translate.js）
+  if [ -f "tools/codex-translate.js" ] && command -v codex >/dev/null 2>&1; then
+    log "Codex agent 翻译（第 ${AUTO_TRIES} 轮，源: ${UI_BUNDLE}）..."
+    TR_RC=0
+    TR_OUT="$(node tools/codex-translate.js "${UI_BUNDLE}" --report "${REPORT}" --max 150 2>&1)" || TR_RC=$?
+  else
+    log "codex CLI 不可用，跳过 Codex 翻译"
+  fi
+  # Codex 不可用/未产出时，降级 LLM 批量翻译（三模型链故障切换）
+  if [ "${TR_RC}" -ne 0 ] || ! printf '%s' "${TR_OUT}" | grep -qE 'CODEX_TRANSLATE_OK'; then
+    if { [ ! -s ".translator.json" ] && [ -z "${HANHUA_LLM_BASE:-}" ]; }; then
+      log "无 .translator.json（或主 bundle 缺失）——不能自动翻译，转人工"
+      break
+    fi
+    log "Codex 未生效（rc=${TR_RC}），降级 LLM 批量翻译..."
+    TR_OUT=""
+    TR_RC=0
+    TR_OUT="$(node tools/autotranslate.js "${UI_BUNDLE}" --max 300 2>&1)" || TR_RC=$?
+  fi
   printf '%s\n' "${TR_OUT}" | tail -20 | sed 's/^/  /'
   if [ "${TR_RC}" -ne 0 ]; then
     log "自动翻译未生效（检查 .translator.json 配置/LLM 可达性），转人工"
     break
   fi
-  if printf '%s' "${TR_OUT}" | grep -qE '没有发现新的未翻译|AUTOTRANSLATE_NONE|新增 0 条'; then
+  if printf '%s' "${TR_OUT}" | grep -qE '没有发现新的未翻译|AUTOTRANSLATE_NONE|CODEX_TRANSLATE_NONE|新增 0 条'; then
     log "自动翻译未发现可补词条（或全部被拒），转人工"
     break
   fi
@@ -279,6 +296,33 @@ while [ "${RC}" -ne 0 ] && [ "${AUTO_TRIES}" -lt 2 ]; do
   RC=$?
   set -e
 done
+
+# --- 5.5/6. Codex agent 兜底 ---------------------------------------------------
+# 自动翻译两轮后仍有 MISSED 时，让 Codex agent（deepseek-v4-flash，经净化代理）
+# 产出迁移方案；agent-migrate.js 自带确定性校验（key 真实存在/占位符一致/代码
+# 语义黑名单），一条不过全不落库。agent 失败不阻塞，照旧转人工。
+if [ "${RC}" -ne 0 ] && [ -n "${UI_BUNDLE}" ] && grep -qE "MISSED|未命中" "${REPORT}" \
+   && [ -f "tools/agent-migrate.js" ]; then
+  log "自动翻译未解决的残留，尝试 Codex agent 修复..."
+  AG_OUT=""
+  AG_RC=0
+  # set -e 下捕获 agent 的非零退出码，不能让失败直接跳出而绕过后续
+  # 降级/回滚与人工提示。
+  AG_OUT="$(node tools/agent-migrate.js "${REPORT}" "${UI_BUNDLE}" 2>&1)" || AG_RC=$?
+  printf '%s\n' "${AG_OUT}" | tail -12 | sed 's/^/  /'
+  if [ "${AG_RC}" -eq 0 ]; then
+    log "agent 修复已落库，重新构建验证..."
+    set +e
+    {
+      echo "=== autoupdate ${NEWVER} 构建 + 残留扫描（agent 修复后）==="
+      bash tools/update.sh "${PRISTINE_ASAR}" "${PRISTINE_UI}"
+    } > "${REPORT}" 2>&1
+    RC=$?
+    set -e
+  else
+    log "agent 修复未通过（退出码 ${AG_RC}），转人工"
+  fi
+fi
 
 if [ "${RC}" -ne 0 ]; then
   if grep -qE "MISSED|未命中" "${REPORT}"; then

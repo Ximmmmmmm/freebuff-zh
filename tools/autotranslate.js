@@ -20,6 +20,9 @@
 // Usage:
 //   node tools/autotranslate.js <bundle.js> [--dry] [--max N]
 //   HANHUA_LLM_BASE / HANHUA_LLM_KEY / HANHUA_LLM_MODEL override config file.
+//   多模型故障切换:在 .translator.json 里配置 models 数组(每项含 baseUrl/apiKey/model,
+//   可选 timeoutMs),数组顺序即主备顺序;某个模型传输层失败(超时/网络/5xx/401/403/429)
+//   自动切换到下一个,全部失败才报错并走拆半重试。env 单模型优先于 models 数组。
 const fs = require('fs')
 const path = require('path')
 const crypto = require('crypto')
@@ -82,11 +85,39 @@ function clearFailedCache() {
 // ---- config ---------------------------------------------------------------
 let cfg = {}
 try { cfg = JSON.parse(fs.readFileSync(CONFIG, 'utf8')) } catch { /* optional */ }
-const baseUrl = (process.env.HANHUA_LLM_BASE || cfg.baseUrl || '').replace(/\/+$/, '')
-const apiKey = process.env.HANHUA_LLM_KEY || cfg.apiKey || ''
-const model = process.env.HANHUA_LLM_MODEL || cfg.model || ''
+
+// 模型 provider 链(故障切换):优先级 env 单模型 > cfg.models 数组 > cfg 单模型。
+// 数组顺序即主备顺序:传输层失败(超时/网络/5xx/401/403/429)自动切下一个,全部失败才报错。
+function buildProviders() {
+  const list = []
+  const envBase = (process.env.HANHUA_LLM_BASE || '').replace(/\/+$/, '')
+  const envKey = process.env.HANHUA_LLM_KEY || ''
+  const envModel = process.env.HANHUA_LLM_MODEL || ''
+  const defTimeout = Number(process.env.HANHUA_TIMEOUT_MS || cfg.timeoutMs || 300000)
+  if (envBase && envKey && envModel) {
+    list.push({ baseUrl: envBase, apiKey: envKey, model: envModel, timeoutMs: defTimeout })
+  } else if (Array.isArray(cfg.models) && cfg.models.length > 0) {
+    for (const m of cfg.models) {
+      if (!m || !m.baseUrl || !m.apiKey || !m.model) continue
+      list.push({
+        baseUrl: String(m.baseUrl).replace(/\/+$/, ''),
+        apiKey: m.apiKey,
+        model: m.model,
+        timeoutMs: Number(m.timeoutMs || defTimeout),
+      })
+    }
+  } else if (cfg.baseUrl && cfg.apiKey && cfg.model) {
+    list.push({
+      baseUrl: String(cfg.baseUrl).replace(/\/+$/, ''),
+      apiKey: cfg.apiKey,
+      model: cfg.model,
+      timeoutMs: defTimeout,
+    })
+  }
+  return list
+}
+const providers = buildProviders()
 const maxBatch = Number(process.env.HANHUA_MAX_BATCH || cfg.maxBatch || 20)
-const timeoutMs = Number(process.env.HANHUA_TIMEOUT_MS || cfg.timeoutMs || 300000)
 const FAILED_CACHE_TTL_MS = 60 * 60 * 1000 // 失败缓存最多阻塞一小时，之后自动重试
 
 const dict = JSON.parse(fs.readFileSync(DICT, 'utf8'))
@@ -239,17 +270,31 @@ if (extractOnly) {
   process.exit(0)
 }
 
-if (!baseUrl || !apiKey || !model) {
-  console.error('ERROR: 未配置翻译 LLM。请在 .translator.json 填 baseUrl/apiKey/model，')
-  console.error('       或用环境变量 HANHUA_LLM_BASE / HANHUA_LLM_KEY / HANHUA_LLM_MODEL。')
+if (providers.length === 0) {
+  console.error('ERROR: 未配置翻译 LLM。请在 .translator.json 填 baseUrl/apiKey/model(单模型)')
+  console.error('       或 models 数组(多模型故障切换)，或用环境变量 HANHUA_LLM_BASE / HANHUA_LLM_KEY / HANHUA_LLM_MODEL。')
   console.error('       模板见 .translator.json.example')
   process.exit(3)
 }
+console.log(`模型链(${providers.length}):${providers.map((p) => p.model).join(' → ')}`)
 
 // ---- LLM translation -------------------------------------------------------
-async function callLLM(batch) {
+// 传输层/服务端错误才换模型(超时/网络/5xx/401/403/429);
+// 内容层错误(HTTP 200 但解析失败)不换模型,交上层拆半重试。
+function isTransportError(e) {
+  if (!e || !e.message) return false
+  if (e.name === 'AbortError') return true
+  if (/failed to fetch|fetch failed|network|socket|ECONNRESET|ETIMEDOUT/i.test(e.message)) return true
+  if (/^HTTP (5\d\d|401|403|429)[:\s]/.test(e.message)) return true
+  return false
+}
+
+const deadProviders = new Set() // 本次运行内已判定失效的 provider 索引,不再撞墙
+
+async function callProvider(p, batch) {
   const body = {
-    model,
+    model: p.model,
+    stream: false,
     temperature: Number(process.env.HANHUA_TEMP || cfg.temperature || 0.2),
     messages: [
       {
@@ -273,11 +318,11 @@ async function callLLM(batch) {
     ],
   }
   const ac = new AbortController()
-  const timer = setTimeout(() => ac.abort(), timeoutMs)
+  const timer = setTimeout(() => ac.abort(), p.timeoutMs)
   try {
-    const res = await fetch(baseUrl + '/chat/completions', {
+    const res = await fetch(p.baseUrl + '/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + apiKey },
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + p.apiKey },
       body: JSON.stringify(body),
       signal: ac.signal,
     })
@@ -294,6 +339,26 @@ async function callLLM(batch) {
   } finally {
     clearTimeout(timer)
   }
+}
+
+async function callLLM(batch) {
+  let lastErr = null
+  for (let i = 0; i < providers.length; i++) {
+    if (deadProviders.has(i)) continue
+    const p = providers[i]
+    try {
+      return await callProvider(p, batch)
+    } catch (e) {
+      lastErr = e
+      if (isTransportError(e)) {
+        deadProviders.add(i)
+        console.log(`  ⚠ 模型 ${p.model} 传输层失败(${e.message.slice(0, 80)}),切换下一个可用模型…`)
+      } else {
+        throw e // 内容层错误不换模型,交上层拆半重试
+      }
+    }
+  }
+  throw lastErr || new Error('无可用模型')
 }
 
 function placeholderSet(s) {
