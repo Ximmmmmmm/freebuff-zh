@@ -1,8 +1,23 @@
 {
-  "_说明": "把本文件复制为 .translator.json 并填入真实值(.translator.json 已被 .gitignore 排除,不会进版本库)",
-  "baseUrl": "https://api.openai.com/v1",
-  "apiKey": "sk-xxxxxxxx",
-  "model": "gpt-4o-mini",
+  "_说明": "把本文件复制为 .translator.json 并填入真实值(.translator.json 已被 .gitignore 排除,不会进版本库)。两种写法二选一:① 多模型故障切换(推荐):models 数组,顺序即主备顺序,某模型传输层失败(超时/网络/5xx/401/403/429)自动切下一个,全部失败才报错;② 单模型:baseUrl/apiKey/model(见下方 _单模型写法)。models 数组优先于单模型字段;环境变量 HANHUA_LLM_BASE/HANHUA_LLM_KEY/HANHUA_LLM_MODEL 优先级最高,可覆盖文件配置。",
+  "models": [
+    {
+      "baseUrl": "https://api.openai.com/v1",
+      "apiKey": "sk-主模型密钥",
+      "model": "gpt-4o-mini"
+    },
+    {
+      "baseUrl": "https://router.flatkey.ai/v1",
+      "apiKey": "sk-备用模型密钥",
+      "model": "deepseek-v4-flash",
+      "timeoutMs": 120000
+    }
+  ],
+  "_单模型写法": {
+    "baseUrl": "https://api.openai.com/v1",
+    "apiKey": "sk-xxxxxxxx",
+    "model": "gpt-4o-mini"
+  },
   "_可选": {
     "maxBatch": 20,
     "timeoutMs": 300000,

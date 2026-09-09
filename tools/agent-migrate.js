@@ -163,7 +163,7 @@ if (!proxyAlive()) { log('净化代理 127.0.0.1:3128 未运行，转人工'); p
 
 let cfg = {};
 try { cfg = JSON.parse(fs.readFileSync(path.join(ROOT, '.translator.json'), 'utf8')); } catch {}
-const apiKey = process.env.HANHUA_LLM_KEY || cfg.apiKey || '';
+const apiKey = process.env.HANHUA_LLM_KEY || cfg.apiKey || (Array.isArray(cfg.models) && cfg.models[0] && cfg.models[0].apiKey) || '';
 if (!apiKey) { log('无 API key（.translator.json），转人工'); process.exit(2); }
 
 const WORKDIR = path.join(ROOT, 'work');
