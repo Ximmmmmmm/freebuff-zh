@@ -70,7 +70,6 @@
     "Bold": "粗体",
     "Branch": "分支",
     "Branch ": "分支 ",
-    "Branch this thread starts from before its changes are applied to your project folder": "此会话的起始分支（在其更改应用到项目文件夹之前）",
     "Build": "构建",
     "Cached input (included)": "已缓存输入（已计入）",
     "Cancel": "取消",
@@ -793,8 +792,6 @@
     "Get more": "获取更多",
     "Got it": "知道了",
     "Limited access": "限制访问",
-    "Limits are lower than they used to be. Sustained heavy usage has been outpacing what free sessions can cover, so daily allowances are smaller than before.": "额度比以前更低了。持续的高强度使用已经超过了免费会话能承担的范围，因此每日额度比以前更小。",
-    "Lower limits": "额度降低",
     "Meet Freebucks": "认识 Freebucks",
     "No more weekly or monthly session caps": "不再有每周或每月的会话上限",
     "Plan copied": "计划已复制",
@@ -1023,7 +1020,6 @@
     "Loading ${e.name}": "正在加载 ${e.name}",
     "\"${t}\" is not a valid value for ${e}": "\"${t}\" 不是 ${e} 的有效值",
     "Encountered unidirectional transform during encode: ${t}": "编码期间遇到单向转换：${t}",
-    "${D}: ${VQ[D]}": "${D}： ${VQ[D]}",
     "${e.label}: ${f.label}": "${e.label}： ${f.label}",
     "${e} cannot be less than 0, value: ${t}": "${e} 不能小于 0，值：${t}",
     "${e} cannot be less than 1, value: ${t}": "${e} 不能小于 1，值：${t}",
@@ -1041,7 +1037,8 @@
     "Could not move that project: ${Tc(l,\"unknown error\")}": "无法移动该项目：${Tc(l,\"unknown error\")}",
     "Could not save the Mobile setting: ${Tc(r,\"unknown error\")}": "无法保存移动设置：${Tc(r,\"unknown error\")}",
     "creative url protocol not allowed: ${n.protocol}": "不允许的 creative url 协议：${n.protocol}",
-    "${C} costs ${O} ${go} for an hour of unlimited messages, charged once when the session starts. You have ${Wi(v.balance)} to spend — ${Wi(v.daily.remaining)} of today's ${Wi(v.daily.limit)}${v.wallet.balance>0?`, plus ${Wi(v.wallet.balance)} in your wallet`:\"\"}.": "${C} 一小时的无限消息花费 ${O} ${go}，会话开始时一次性扣费。你可花 ${Wi(v.balance)}——今日 ${Wi(v.daily.limit)} 中的 ${Wi(v.daily.remaining)}${v.wallet.balance>0?`，另加钱包中的 ${Wi(v.wallet.balance)}`:\"\"}。"
+    "${C} costs ${O} ${go} for an hour of unlimited messages, charged once when the session starts. You have ${Wi(v.balance)} to spend — ${Wi(v.daily.remaining)} of today's ${Wi(v.daily.limit)}${v.wallet.balance>0?`, plus ${Wi(v.wallet.balance)} in your wallet`:\"\"}.": "${C} 一小时的无限消息花费 ${O} ${go}，会话开始时一次性扣费。你可花 ${Wi(v.balance)}——今日 ${Wi(v.daily.limit)} 中的 ${Wi(v.daily.remaining)}${v.wallet.balance>0?`，另加钱包中的 ${Wi(v.wallet.balance)}`:\"\"}。",
+    "${n}: ${Tc(i,\"unknown error\")}": "${n}： ${Tc(i,\"unknown error\")}"
   },
   "code": {
     ",\" code comment\",o.length===1?\"\":\"s\"": ",\" 条代码评论\"",

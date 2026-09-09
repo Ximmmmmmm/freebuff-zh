@@ -26,6 +26,7 @@
 const fs = require('fs')
 const path = require('path')
 const crypto = require('crypto')
+const { contextReason } = require('./semantic_guard')
 
 const ROOT = path.join(__dirname, '..')
 const DICT = path.join(ROOT, 'dict.json')
@@ -200,6 +201,19 @@ const blockedStr = new Set()
   while ((mm = re.exec(src)) !== null) {
     const before = src.slice(Math.max(0, mm.index - 40), mm.index)
     if (codeProp.test(before) || /[=!]==?\s*$/.test(before) || /case\s*$/.test(before)) blockedStr.add(mm[1])
+  }
+}
+// semantic_guard 语义上下文(黑屏教训的完整版)：createEvent/phrase/endsWith/
+// startsWith/types.includes/configure 调用参数、平台 API 参数、比较/switch/语义
+// 属性值位置的字符串是运行时协议常量，翻译会破坏程序行为。对每个字面量的每次
+// 出现都检查，任一处命中即整条拒翻（apply 是全局替换，词典里绝不能收这类词条）。
+{
+  const re = /"((?:[^"\\]|\\.)*)"|`((?:[^`\\]|\\.)*?)`/g
+  let mm
+  while ((mm = re.exec(src)) !== null) {
+    const raw = mm[1] !== undefined ? mm[1] : mm[2]
+    if (blockedStr.has(raw)) continue
+    if (contextReason(src, mm.index, mm.index + mm[0].length)) blockedStr.add(raw)
   }
 }
 

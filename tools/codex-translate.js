@@ -23,6 +23,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
+const { contextReason } = require('./semantic_guard');
 
 const ROOT = path.join(__dirname, '..');
 const DICT = path.join(ROOT, 'dict.json');
@@ -101,6 +102,21 @@ const blockedStr = new Set();
   while ((mm = re.exec(bundleSrc)) !== null) {
     const before = bundleSrc.slice(Math.max(0, mm.index - 40), mm.index);
     if (codeProp.test(before) || /[=!]==?\s*$/.test(before) || /case\s*$/.test(before)) blockedStr.add(mm[1]);
+  }
+}
+
+// semantic_guard 语义上下文(黑屏教训的完整版)：字符串出现在 createEvent/phrase/
+// endsWith/startsWith/types.includes/configure 调用参数、平台 API 参数、比较/switch/
+// 语义属性值等位置时是运行时协议常量，翻译会破坏程序行为（0.0.97 的 top:"Styles"
+// →"样式"导致 Lezer 引擎崩溃）。这里对每个字面量的每次出现都检查，任一处命中即
+// 整条拒翻——apply 是全局替换，词典里绝不能收这类词条。
+{
+  const re = /"((?:[^"\\]|\\.)*)"|`((?:[^`\\]|\\.)*?)`/g;
+  let mm;
+  while ((mm = re.exec(bundleSrc)) !== null) {
+    const raw = mm[1] !== undefined ? mm[1] : mm[2];
+    if (blockedStr.has(raw)) continue;
+    if (contextReason(bundleSrc, mm.index, mm.index + mm[0].length)) blockedStr.add(raw);
   }
 }
 
@@ -400,6 +416,18 @@ function validateOps(ops) {
         errors.push(`${tag}: 出现在代码语义位置`);
         continue;
       }
+    }
+    // semantic_guard 双保险：key 在 bundle 任一处出现于语义 API 参数/平台 API
+    // 参数/语义属性等位置也拒绝落库（Codex 可能输出提取层没拦住的写法）。
+    {
+      const needle = op.section === 'template' ? '`' + op.key + '`' : '"' + op.key + '"';
+      let from = 0, at2;
+      let sem = false;
+      while ((at2 = bundleSrc.indexOf(needle, from)) !== -1) {
+        if (contextReason(bundleSrc, at2, at2 + needle.length)) { sem = true; break; }
+        from = at2 + needle.length;
+      }
+      if (sem) { errors.push(`${tag}: 出现在代码语义位置(semantic_guard)`); continue; }
     }
     if (!/[\u4e00-\u9fff]/.test(op.zh || '')) { errors.push(`${tag}: zh 无中文`); continue; }
     if (op.section === 'template' && slotsOf(op.key) !== slotsOf(op.zh)) {
