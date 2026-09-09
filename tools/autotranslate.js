@@ -168,9 +168,12 @@ while ((m = dqRe.exec(src)) !== null) consider(m[1], 'exact')
 const tplRe = /`((?:[^`\\]|\\.)*?)`/g
 while ((m = tplRe.exec(src)) !== null) {
   const t = m[1]
-  if (!/\$\{/.test(t)) { consider(t, 'exact'); continue }
-  // template: the FULL literal (with real ${count} placeholders) becomes the
-  // dict key — apply.js matches the whole backtick literal verbatim.
+  // 嵌套模板（${cond?`…`:""}）会让这个非贪婪正则停在嵌套反引号上，截出一段
+  // 以未闭合 "${" 结尾的半截词条——按整条字面量做 key 的词典会因此错配。跳过。
+  if (/\$\{[^}]*$/.test(t)) continue
+  // 一律按 template（反引号整串）入典：apply.js 的 exact 匹配只认 "…" 双引号，
+  // 反引号内容当 exact 会永远 MISSED（0.0.97 构建中断的根因）。apply 的模板
+  // 匹配器按 `key` 替换，tplRe 截出的片段天然带这对反引号，必然命中。
   consider(t, 'template')
 }
 
@@ -347,12 +350,15 @@ async function main() {
     }
   }
 
-  // dedupe (dict may already have gained this key from an earlier partial run)
+  // dedupe: candidates were filtered against dict at startup (knownKeys), so
+  // any merged key already present with the same value was applied by THIS
+  // run's incremental per-batch writes — count it, or the final OK/NONE
+  // verdict always reports NONE and the caller discards the work.
   const final = []
   for (const e of merged) {
     const sec = e.kind === 'template' ? dict.template : dict.exact
-    if (sec[e.en]) continue
-    sec[e.en] = e.zh
+    if (sec[e.en] === undefined) sec[e.en] = e.zh
+    else if (sec[e.en] !== e.zh) continue
     final.push(e)
   }
 

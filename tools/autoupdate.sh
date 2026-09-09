@@ -27,6 +27,20 @@ mkdir -p work downloads
 
 log() { echo "[$(date '+%F %T')] $*"; }
 
+# --- 任务互斥锁 --------------------------------------------------------------
+# 使用 Linux 原生 flock；锁由文件描述符持有，进程退出或异常终止时内核自动释放。
+# 不删除锁文件，避免清理动作误删下一次任务刚获取的锁。
+LOCK_FILE="${HERE}/work/.autoupdate.lock"
+if ! command -v flock >/dev/null 2>&1; then
+  log "ERROR: 当前系统缺少 flock，无法安全执行更新任务"
+  exit 1
+fi
+exec 9>"${LOCK_FILE}"
+if ! flock -n 9; then
+  log "已有更新任务运行中，本次跳过"
+  exit 0
+fi
+
 # 官方安装包信息：GitHub Releases 上的 freebuff-desktop-v* tag（freebuff.com 的
 # 下载直链 302 到这里的 asset）。
 OWNER=CodebuffAI
