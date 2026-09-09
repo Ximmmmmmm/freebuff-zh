@@ -247,8 +247,21 @@ UI_BUNDLE="$(ls "${PRISTINE_UI}"/assets/index-*.js 2>/dev/null | head -1 || true
 # 降级 LLM 批量翻译（.translator.json 三模型链），最多三轮。每轮把新翻词条
 # 合入 dict 后重建验证；仍 MISSED 才转人工。
 AUTO_TRIES=0
-while [ "${RC}" -ne 0 ] && [ "${AUTO_TRIES}" -lt 3 ]; do
-  if ! grep -qE "MISSED|未命中" "${REPORT}"; then
+NEED_TRANSLATE=0
+if [ "${RC}" -ne 0 ] && grep -qE "MISSED|未命中" "${REPORT}" 2>/dev/null; then
+  NEED_TRANSLATE=1
+elif [ "${RC}" -eq 0 ] && [ -n "${UI_BUNDLE}" ] && { [ "${NEWVER}" != "${CURVER}" ] || [ "${FORCE}" -eq 1 ]; }; then
+  # 纯新增文案不会让构建失败（如 0.0.98 的 "Thread mentions" 引导卡片），
+  # 只按 MISSED 触发就会漏翻直接发布；版本变化或 --force 重建时用
+  # codex-translate 的候选提取探测未入词典的新文案，有候选就进自动翻译。
+  CAND_LOG="$(node tools/codex-translate.js "${UI_BUNDLE}" --extract-only --max 1 2>&1)" || true
+  if printf '%s' "${CAND_LOG}" | grep -qE '候选 [0-9]+ 条'; then
+    log "检测到未入词典的新文案候选，进入自动翻译"
+    NEED_TRANSLATE=1
+  fi
+fi
+while [ "${NEED_TRANSLATE}" -eq 1 ] && [ "${AUTO_TRIES}" -lt 3 ]; do
+  if [ "${RC}" -ne 0 ] && ! grep -qE "MISSED|未命中" "${REPORT}" 2>/dev/null; then
     break  # 构建失败与词典无关（补丁/语法），不自动处理
   fi
   if [ -z "${UI_BUNDLE}" ]; then
@@ -295,6 +308,7 @@ while [ "${RC}" -ne 0 ] && [ "${AUTO_TRIES}" -lt 3 ]; do
   } > "${REPORT}" 2>&1
   RC=$?
   set -e
+  if [ "${RC}" -eq 0 ]; then NEED_TRANSLATE=0; fi
 done
 
 # --- 5.5/6. Codex agent 兜底 ---------------------------------------------------
@@ -346,6 +360,18 @@ git -c user.name="hanhua-bot" -c user.email="bot@users.noreply.github.com" \
 ROLLBACK_ENABLED=0
 git push origin "$(git branch --show-current)"
 
-# 只有确实产生提交（版本/词典变化）才发布 Release；release.sh 自带版本防呆
-bash tools/release.sh
+# 只有确实产生提交（版本/词典变化）才发布 Release；release.sh 自带版本防呆。
+# 同版本修正（远端 packVersion 已等于本次）时 release.sh 默认拒绝，自动加
+# --force 覆盖（客户端对 packVersion <= 已暂存的包会静默跳过，未装包的用户
+# 和新升级用户能拿到修正后的包）。
+REL_ARGS=""
+REMOTE_MURL="$(gh api "repos/Ximmmmmmm/freebuff-zh/releases/latest" --jq '.assets[] | select(.name=="pack-manifest.json") | .browser_download_url' 2>/dev/null || true)"
+if [ -n "${REMOTE_MURL}" ]; then
+  REMOTE_PVER="$(curl -sL --max-time 30 "${REMOTE_MURL}" 2>/dev/null | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{try{console.log(JSON.parse(s).packVersion||"")}catch{console.log("")}})' 2>/dev/null || true)"
+  if [ -n "${REMOTE_PVER}" ] && [ "${REMOTE_PVER}" = "${NEWVER}" ]; then
+    REL_ARGS="--force"
+    log "远端已是 pack-v${NEWVER}（同版本修正），发布时带 --force 覆盖"
+  fi
+fi
+bash tools/release.sh ${REL_ARGS}
 log "✅ Freebuff v${NEWVER} 汉化包已发布。控制器会在 30 分钟内提示用户更新。"
