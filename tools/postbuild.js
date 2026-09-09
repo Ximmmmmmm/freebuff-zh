@@ -10,6 +10,7 @@
 const fs = require('fs')
 const path = require('path')
 const { execFileSync } = require('child_process')
+const { findUnsafeMatches } = require('./semantic_guard')
 
 const REPO = path.join(__dirname, '..')
 
@@ -65,6 +66,32 @@ if (!fs.existsSync(idxPath)) {
     } else {
       bundleText = fs.readFileSync(bp, 'utf8')
       ok(`主 bundle ${m[1]} (${(bundleText.length / 1048576).toFixed(1)} MB)`)
+      try {
+        // Vite 产物是 ES module（包含 import.meta）。复制为带唯一名称的 .mjs
+        // 后再 --check，让 Node 按模块语法解析，而不尝试执行或解析依赖。
+        const os = require('os')
+        const checkPath = path.join(os.tmpdir(), `freebuff-ui-check-${process.pid}-${Date.now()}.mjs`)
+        fs.copyFileSync(bp, checkPath)
+        try {
+          execFileSync(process.execPath, ['--check', checkPath], { stdio: 'pipe' })
+        } finally {
+          try { fs.unlinkSync(checkPath) } catch { /* 文件可能已被系统清理 */ }
+        }
+        ok('主 bundle JavaScript 语法校验通过')
+      } catch (e) {
+        bad(`主 bundle node --check 失败 —— UI 产物不是合法 JavaScript：\\n${String(e.stderr || e)}`)
+      }
+
+      const unsafe = findUnsafeMatches(bundleText)
+      if (unsafe.length) {
+        const unique = [...new Map(unsafe.map((x) => [`${x.value}\\u0000${x.reason}`, x])).values()]
+        for (const item of unique.slice(0, 30)) {
+          bad(`主 bundle 在${item.reason}中出现中文字面量「${item.value}」`)
+        }
+        if (unique.length > 30) bad(`主 bundle 另有 ${unique.length - 30} 个代码语义中文字面量，详见 semantic_guard 扫描`)
+      } else {
+        ok('主 bundle 代码语义常量未发现中文')
+      }
     }
   }
 }

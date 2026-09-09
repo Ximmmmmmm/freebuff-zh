@@ -1,14 +1,13 @@
 #!/usr/bin/env node
 // Apply hanhua/dict.json to a file:
-//   exact    -> replaces "English" literals globally (double-quoted)
-//   pattern  -> replaces only in UI-attribute contexts:
-//               children:"X", label:"X", title:"X", placeholder:"X",
-//               "data-tooltip":"X", "aria-label":"X", confirmLabel:"X"
-//   template -> replaces `English ${...}` template literals (backtick-quoted)
+//   exact    -> replaces "English" literals globally, except semantic/code contexts
+//   pattern  -> replaces only in UI-attribute contexts
+//   template -> replaces `English ${...}` template literals
 // Usage: node apply.js <file> [--write]
 // Without --write, prints what WOULD change and reports keys with 0 matches.
 const fs = require('fs')
 const path = require('path')
+const { contextReason } = require('./semantic_guard')
 
 const file = process.argv[2]
 const write = process.argv.includes('--write')
@@ -43,35 +42,50 @@ let src = fs.readFileSync(file, 'utf8')
 const before = src
 let totalReplaced = 0
 const missed = []
+const semanticBlocked = []
 
-const applyExact = (src, dictSection) => {
-  for (const [en, zh] of Object.entries(dictSection)) {
+const applyExact = (source, dictSection) => {
+  for (const [en, zh] of Object.entries(dictSection || {})) {
     const re = new RegExp('"' + esc(en) + '"', 'g')
-    const n = countOf(src, re)
+    const n = countOf(source, re)
     if (n === 0) {
-      // idempotent: already translated if the Chinese value is present
+      // 幂等检查必须限定在完整的双引号字面量，不能用“译文在文件任意位置
+      // 出现”掩盖一个真正漏翻的 key。
       const reZh = new RegExp('"' + esc(zh) + '"', 'g')
-      if (countOf(src, reZh) === 0) missed.push(en)
+      if (countOf(source, reZh) === 0) missed.push(en)
       continue
     }
-    src = src.replace(re, '"' + zh + '"')
-    totalReplaced += n
+    source = source.replace(re, (match, offset, whole) => {
+      const reason = contextReason(whole, offset, offset + match.length)
+      if (reason) {
+        semanticBlocked.push({ en, reason })
+        return match
+      }
+      totalReplaced++
+      // 使用 replace callback，zh 中的 $&、$1、反斜杠都按普通文本写入，
+      // 不会被 String.replace 的 replacement 语法再次解释。
+      return '"' + zh + '"'
+    })
   }
-  return src
+  return source
 }
 
 // pattern first so children:"X" gets the same translation before exact runs
-for (const [en, zh] of Object.entries(dict.pattern)) {
-  for (const [k, tmpl] of attrKeys) {
+for (const [en, zh] of Object.entries(dict.pattern || {})) {
+  for (const [, tmpl] of attrKeys) {
     const re = new RegExp(tmpl.replace('%s', esc(en)), 'g')
     const n = countOf(src, re)
     if (n === 0) continue
-    src = src.replace(re, tmpl.replace('%s', esc(zh)))
+    // callback replacement avoids treating $&/$1 in a future translation as
+    // String.replace metacharacters.
+    src = src.replace(re, () => tmpl.replace('%s', zh))
     totalReplaced += n
   }
 }
 
-// code: exact multi-token fragments (e.g. pluralization), replaced verbatim
+// code: exact multi-token fragments (e.g. pluralization), replaced verbatim.
+// These entries are intentionally opt-in and are not passed through the UI
+// semantic-context filter used by exact literals.
 for (const [en, zh] of Object.entries(dict.code || {})) {
   const re = new RegExp(esc(en), 'g')
   const n = countOf(src, re)
@@ -80,11 +94,11 @@ for (const [en, zh] of Object.entries(dict.code || {})) {
     if (countOf(src, reZh) === 0) missed.push('[code] ' + en)
     continue
   }
-  src = src.replace(re, zh)
+  src = src.replace(re, () => zh)
   totalReplaced += n
 }
 
-for (const [en, zh] of Object.entries(dict.template)) {
+for (const [en, zh] of Object.entries(dict.template || {})) {
   const re = new RegExp('`' + esc(en) + '`', 'g')
   const n = countOf(src, re)
   if (n === 0) {
@@ -92,7 +106,7 @@ for (const [en, zh] of Object.entries(dict.template)) {
     if (countOf(src, reZh) === 0) missed.push('`' + en + '`')
     continue
   }
-  src = src.replace(re, '`' + zh + '`')
+  src = src.replace(re, () => '`' + zh + '`')
   totalReplaced += n
 }
 
@@ -112,6 +126,16 @@ if (missed.length) {
   }
 } else {
   console.log('all keys matched')
+}
+if (semanticBlocked.length) {
+  const unique = [...new Map(semanticBlocked.map((x) => [`${x.en}\u0000${x.reason}`, x])).values()]
+  console.error(`semantic-blocked ${semanticBlocked.length} occurrences（代码语义位置禁止翻译）:`)
+  for (const item of unique.slice(0, 30)) {
+    console.error(`  - ${JSON.stringify(item.en)} ← ${item.reason}`)
+  }
+  if (unique.length > 30) console.error(`  … 其余 ${unique.length - 30} 项略`)
+  console.error('ERROR: 为避免破坏运行时协议常量，本文件未写入任何修改。')
+  process.exit(1)
 }
 
 if (write) {

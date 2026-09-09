@@ -51,7 +51,14 @@ const bundleHash = () =>
 function loadFailedCache() {
   try {
     const p = JSON.parse(fs.readFileSync(PENDING_FILE, 'utf8'))
-    if (p.bundle === bundleHash() && Array.isArray(p.failed)) return new Map(p.failed)
+    if (p.bundle !== bundleHash() || !Array.isArray(p.failed)) return new Map()
+    const updated = Date.parse(p.updatedAt || '')
+    if (!Number.isFinite(updated) || Date.now() - updated >= FAILED_CACHE_TTL_MS) {
+      // 不能让一次短暂的 API 故障永久阻塞同一版本；过期后自动允许重试。
+      clearFailedCache()
+      return new Map()
+    }
+    return new Map(p.failed)
   } catch { /* 无缓存或格式不对 */ }
   return new Map()
 }
@@ -80,6 +87,7 @@ const apiKey = process.env.HANHUA_LLM_KEY || cfg.apiKey || ''
 const model = process.env.HANHUA_LLM_MODEL || cfg.model || ''
 const maxBatch = Number(process.env.HANHUA_MAX_BATCH || cfg.maxBatch || 20)
 const timeoutMs = Number(process.env.HANHUA_TIMEOUT_MS || cfg.timeoutMs || 300000)
+const FAILED_CACHE_TTL_MS = 60 * 60 * 1000 // 失败缓存最多阻塞一小时，之后自动重试
 
 const dict = JSON.parse(fs.readFileSync(DICT, 'utf8'))
 const src = fs.readFileSync(bundlePath, 'utf8')
@@ -206,14 +214,20 @@ if (resetCache) {
   console.log('--reset-cache:已清除续翻缓存，全部候选重新翻译')
 }
 const failedCache = loadFailedCache()
+let cachedSkipped = 0
 if (failedCache.size > 0) {
   const before = list.length
   list = list.filter(([en]) => !failedCache.has(en))
-  const skipped = before - list.length
-  if (skipped > 0) console.log(`续翻:跳过上次失败的 ${skipped} 条候选（缓存 work/autotranslate-pending.json，加 --reset-cache 可重试）`)
+  cachedSkipped = before - list.length
+  if (cachedSkipped > 0) console.log(`续翻:跳过上次失败的 ${cachedSkipped} 条候选（缓存 work/autotranslate-pending.json，缓存一小时后自动重试，也可加 --reset-cache 立即重试）`)
 }
 
 if (list.length === 0) {
+  if (cachedSkipped > 0) {
+    console.error(`当前候选全部处于失败冷却期（${cachedSkipped} 条），没有调用 LLM；缓存过期后会自动重试。`)
+    console.log('AUTOTRANSLATE_BLOCKED_CACHE')
+    process.exit(2)
+  }
   console.log('没有发现新的未翻译 UI 文案，无需自动翻译')
   process.exit(0)
 }
@@ -291,7 +305,8 @@ const rejected = []  // reasons
 const sleeps = (ms) => new Promise((r) => setTimeout(r, ms))
 
 // 翻译一个批次;失败时若超过 1 条则拆半递归重试(超时通常是批量太大),
-// 直到单条仍失败才记录放弃——尽量不漏翻。返回 {ok, parsed, failedEn}。
+// 直到单条仍失败才记录放弃——尽量不漏翻。ok 表示该批次是否完整成功，
+// 不能把“部分批次成功”伪装成成功，否则调用方会误以为可以发布。
 async function translateBatch(batch, depth) {
   try {
     return { ok: true, parsed: await callLLM(batch), failedEn: [] }
@@ -305,8 +320,8 @@ async function translateBatch(batch, depth) {
       await sleeps(300)
       const b = await translateBatch(right, depth + 1)
       return {
-        ok: true,
-        parsed: [...(a.ok ? a.parsed : []), ...(b.ok ? b.parsed : [])],
+        ok: a.ok && b.ok,
+        parsed: [...a.parsed, ...b.parsed],
         failedEn: [...a.failedEn, ...b.failedEn],
       }
     }
@@ -326,20 +341,68 @@ async function main() {
   for (let gi = 0; gi < groups.length; gi++) {
     const batch = groups[gi]
     const { parsed, failedEn } = await translateBatch(batch, 0)
+    const failedSet = new Set(failedEn)
     for (const en of failedEn) newFailed.set(en, 'LLM 单条调用失败(超时/网络)')
+
+    // 严格按本批候选核对返回值：模型漏回一条也必须进入失败缓存，不能
+    // 静默丢失后以 AUTOTRANSLATE_OK 结束。
+    const byKey = new Map()
     for (const item of parsed) {
       const en = item && typeof item.key === 'string' ? item.key : null
-      const zh = item && typeof item.value === 'string' ? item.value : null
-      if (!en) continue
-      if (!zh) { rejected.push(`跳过（模型判定不可译）: ${en.slice(0, 80)}`); newFailed.set(en, '模型判定不可译'); continue }
+      if (!en || !candidates.has(en)) {
+        if (en) rejected.push(`跳过（模型返回了不在候选中的 key）: ${en.slice(0, 80)}`)
+        continue
+      }
+      if (byKey.has(en)) {
+        rejected.push(`重复返回 key: ${en.slice(0, 80)}`)
+        newFailed.set(en, '模型重复返回')
+        continue
+      }
+      byKey.set(en, item)
+    }
+
+    for (const [en] of batch) {
+      const item = byKey.get(en)
+      if (!item) {
+        if (!failedSet.has(en)) {
+          rejected.push(`模型漏回: ${en.slice(0, 80)}`)
+          newFailed.set(en, '模型漏回')
+        }
+        continue
+      }
+      const zh = typeof item.value === 'string' ? item.value : null
+      if (!zh) {
+        rejected.push(`跳过（模型判定不可译）: ${en.slice(0, 80)}`)
+        newFailed.set(en, '模型判定不可译')
+        continue
+      }
       const cand = candidates.get(en)
-      if (!cand) continue // model invented a key
+      if (!cand) continue
+      if (!/[\u3400-\u9fff]/.test(zh)) {
+        rejected.push(`译文无中文: ${en.slice(0, 80)}`)
+        newFailed.set(en, '译文无中文')
+        continue
+      }
+      if (zh.trim() === en.trim()) {
+        rejected.push(`译文原样回显英文: ${en.slice(0, 80)}`)
+        newFailed.set(en, '译文原样回显英文')
+        continue
+      }
+      if (/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(zh) || /<\/?[a-z][^>]*>/i.test(zh)) {
+        rejected.push(`译文含控制字符或 HTML: ${en.slice(0, 80)}`)
+        newFailed.set(en, '译文含控制字符或 HTML')
+        continue
+      }
+      if (zh.length > Math.max(2000, en.length * 20)) {
+        rejected.push(`译文异常过长: ${en.slice(0, 80)}`)
+        newFailed.set(en, '译文异常过长')
+        continue
+      }
       if (placeholderSet(en).join('|') !== placeholderSet(zh).join('|')) {
         rejected.push(`占位符不一致: ${en.slice(0, 60)}`)
         newFailed.set(en, '占位符不一致')
         continue
       }
-      if (/[\u4e00-\u9fff]/.test(en)) { rejected.push(`源已是中文: ${en.slice(0, 60)}`); continue }
       merged.push({ kind: cand.kind, en, zh })
     }
     // 增量写 dict:每批完成后立即落盘,进程被杀也不丢已翻条目
@@ -393,7 +456,13 @@ async function main() {
     console.log(`\n被拒/失败 ${rejected.length} 条：`)
     for (const r of rejected.slice(0, 20)) console.log(`  - ${r}`)
   }
-  console.log(final.length > 0 ? 'AUTOTRANSLATE_OK' : 'AUTOTRANSLATE_NONE')
+  if (newFailed.size > 0) {
+    console.error(`\n自动翻译未完整成功：${newFailed.size} 条候选未通过校验或调用失败。`)
+    console.log('AUTOTRANSLATE_PARTIAL')
+    process.exitCode = 2
+  } else {
+    console.log(final.length > 0 ? 'AUTOTRANSLATE_OK' : 'AUTOTRANSLATE_NONE')
+  }
 }
 
 main().catch((e) => {

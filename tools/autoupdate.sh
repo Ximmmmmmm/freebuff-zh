@@ -69,6 +69,24 @@ if [ "${NEWVER}" = "${CURVER}" ] && [ "${FORCE}" -eq 0 ]; then
   exit 0
 fi
 
+# 从这里开始 manifest/dict 可能被 remap 或自动翻译修改。保存精确的运行前快照，
+# 失败时恢复快照而不是 git checkout，避免误删用户在工作树里的既有未提交编辑。
+ROLLBACK_DIR="$(mktemp -d "${HERE}/work/.autoupdate-state.XXXXXX")"
+cp manifest.json "${ROLLBACK_DIR}/manifest.json"
+cp dict.json "${ROLLBACK_DIR}/dict.json"
+ROLLBACK_ENABLED=1
+rollback_on_exit() {
+  local rc=$?
+  if [ "${ROLLBACK_ENABLED}" -eq 1 ]; then
+    cp "${ROLLBACK_DIR}/manifest.json" manifest.json 2>/dev/null || true
+    cp "${ROLLBACK_DIR}/dict.json" dict.json 2>/dev/null || true
+    log "任务失败，已恢复 manifest.json 与 dict.json 的运行前状态"
+  fi
+  rm -rf "${ROLLBACK_DIR}" 2>/dev/null || true
+  exit "${rc}"
+}
+trap rollback_on_exit EXIT
+
 # --- 2. 下载官方安装包（win-x64）与 latest.yml --------------------------------
 ASSET_EXE="Freebuff-${NEWVER}-win-x64.exe"
 ASSET_YML="Freebuff-${NEWVER}-win-x64.yml"
@@ -238,8 +256,11 @@ while [ "${RC}" -ne 0 ] && [ "${AUTO_TRIES}" -lt 2 ]; do
   fi
   AUTO_TRIES=$((AUTO_TRIES + 1))
   log "检测到新增未翻译文案（第 ${AUTO_TRIES} 轮自动翻译，源: ${UI_BUNDLE}）..."
-  TR_OUT="$(node tools/autotranslate.js "${UI_BUNDLE}" --max 300 2>&1)"
-  TR_RC=$?
+  # set -e 下不能直接写 TR_OUT="$(...)"：翻译器的 2/3/4 退出码会
+  # 让整个 autoupdate 在这里提前退出，后面的降级判断与回滚永远执行不到。
+  TR_OUT=""
+  TR_RC=0
+  TR_OUT="$(node tools/autotranslate.js "${UI_BUNDLE}" --max 300 2>&1)" || TR_RC=$?
   printf '%s\n' "${TR_OUT}" | tail -20 | sed 's/^/  /'
   if [ "${TR_RC}" -ne 0 ]; then
     log "自动翻译未生效（检查 .translator.json 配置/LLM 可达性），转人工"
@@ -262,22 +283,23 @@ done
 if [ "${RC}" -ne 0 ]; then
   if grep -qE "MISSED|未命中" "${REPORT}"; then
     log "自动翻译后仍有新增未翻译文案——不发布半成品。请人工补翻 dict.json 后重跑（--force）。报告: ${REPORT}"
-    git checkout -- manifest.json dict.json 2>/dev/null || true
     exit 2
   fi
   log "ERROR: 构建/自检失败（退出码 ${RC}），不发布。报告: ${REPORT}"
-  git checkout -- manifest.json dict.json 2>/dev/null || true
   exit 1
 fi
 
 # --- 7. 提交 + 发布 Release ---------------------------------------------------
 git add manifest.json dict.json
 if git diff --cached --quiet; then
+  ROLLBACK_ENABLED=0
   log "无词典/版本变更（同版本 --force 重建？），跳过提交与发布"
   exit 0
 fi
 git -c user.name="hanhua-bot" -c user.email="bot@users.noreply.github.com" \
   commit -m "适配 Freebuff v${NEWVER}（autoupdate）"
+# 提交成功后快照已不再需要回滚；push/release 失败也不应撤销已提交的适配。
+ROLLBACK_ENABLED=0
 git push origin "$(git branch --show-current)"
 
 # 只有确实产生提交（版本/词典变化）才发布 Release；release.sh 自带版本防呆
