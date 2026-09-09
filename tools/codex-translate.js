@@ -93,17 +93,47 @@ const isUIFacing = (s) => {
   return false;
 };
 
+// 正则字面量跳过：正则字符类里的引号（如 /[!'()*]/g 的 '）会被误当成字符串
+// 开头，一路配对到远处导致中间的真实 UI 文案被吞掉（0.0.98 的
+// "Thread mentions" 卡片就是这样漏掉的）。遇 `/` 且前面不是可除对象时
+// 按正则扫描到未转义的结束 `/`，字符类内 `/` 不结束正则。
+function trySkipRegex(s, i) {
+  const prev = s[i - 1];
+  if (prev && /[A-Za-z0-9_$)\]}\.'"`]/.test(prev)) return -1; // 除法/模板尾
+  let j = i + 1;
+  let inClass = false;
+  while (j < s.length) {
+    const c = s[j];
+    if (c === '\\') { j += 2; continue; }
+    if (c === '[') { inClass = true; j++; continue; }
+    if (c === ']') { inClass = false; j++; continue; }
+    if (c === '/' && !inClass) return j + 1;
+    if (c === '\n') return -1; // 正则不能跨行
+    j++;
+  }
+  return -1;
+}
+
 // 健壮的字面量扫描：压缩代码里的 `\"`/`\\` 转义序列会让全局正则的引号配对
 // 错位，把后续真实字面量吞进超长匹配（0.0.98 的 "Thread mentions" 因此漏提取、
 // 以英文发布）。逐字符配对，遇 `\` 跳过下一字符，保证每个字面量独立切出。
 // 单引号字符串必须一并配对：Lezer 语法数据等超长字符串里常嵌单引号，而
 // 单引号字符串内部的 `"` 若不配对会被误当成双引号字面量的开头，一路吞并
-// 到后面的真实 UI 文案（"Thread mentions" 卡片就是这样漏掉的）。
+// 到后面的真实 UI 文案。正则字面量与 `//` 注释也要整体跳过，避免字符类
+// 里的引号破坏配对。
 function scanLiterals(src) {
   const out = [];
   let i = 0;
   while (i < src.length) {
-    const q = src[i];
+    const c0 = src[i];
+    if (c0 === '/') {
+      if (src[i + 1] === '/') { let j = i + 2; while (j < src.length && src[j] !== '\n') j++; i = j; continue; }
+      if (src[i + 1] === '*') { const j = src.indexOf('*/', i + 2); i = j === -1 ? src.length : j + 2; continue; }
+      const reEnd = trySkipRegex(src, i);
+      if (reEnd > i) { i = reEnd; continue; }
+      i++; continue;
+    }
+    const q = c0;
     if (q !== '"' && q !== "'" && q !== '`') { i++; continue; }
     let j = i + 1;
     let raw = '';
