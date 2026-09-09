@@ -1038,7 +1038,9 @@
     "frees in ${Math.max(1,Math.ceil((M-Date.now())/6e4))}m": "${Math.max(1,Math.ceil((M-Date.now())/6e4))} 分钟后释放",
     "Remove comment on ${GD(J)}": "删除 ${GD(J)} 上的评论",
     "Out of ${Py(e,t)} ${yX(e)} · resets in ${Ds(e.resetAt,n)}": "今日 ${Py(e,t)} 已用完 · ${Ds(e.resetAt,n)} 后重置",
-    "${n.todos.filter(bze).length}/${n.todos.length} done": "${n.todos.filter(bze).length}/${n.todos.length} 已完成"
+    "${n.todos.filter(bze).length}/${n.todos.length} done": "${n.todos.filter(bze).length}/${n.todos.length} 已完成",
+    "Do you want to navigate to ${t}?\n\nWARNING: This link could potentially be dangerous": "是否要导航到 ${t}？\n\n警告：此链接可能存在危险",
+    "Freebuff has ${e.questions.length} questions": "Freebuff 有 ${e.questions.length} 个问题"
   },
   "code": {
     ",\" code comment\",o.length===1?\"\":\"s\"": ",\" 条代码评论\"",
