@@ -278,9 +278,19 @@ for (const lit of scanLiterals(src)) {
   if (drop.length) console.log(`语义守卫剔除 ${drop.length} 条候选：${drop.slice(0, 10).map(JSON.stringify).join(', ')}`)
 }
 
+// UI 优先排序：多词完整句子 > 大写开头双词标题 > 单令牌噪音。候选常远超
+// MAX_CANDIDATES 配额(count==1 的海量噪音)，纯按字母序会把 T 开头的真文案
+// (0.0.98 的 "Thread mentions" 卡片)挤出配额，先按句子特征排序保证
+// 界面文案不丢。
+const uiPriority = (en) => {
+  const words = en.split(/\s+/).filter(Boolean)
+  if (words.length >= 3) return 3                        // 完整句子
+  if (words.length === 2 && /^[A-Z]/.test(words[0])) return 2 // 双词标题
+  return 1
+}
 let list = [...candidates.entries()]
-  .filter(([en, v]) => !/[“”‘’]/.test(en) && !/already|translated/i.test(en))
-  .sort((a, b) => b[1].count - a[1].count || a[0].localeCompare(b[0]))
+  .filter(([en, v]) => !/[“”‘’]/.test(en) && !/already|translated/i.test(en) && !/\b\d[\d.]{2,}\b/.test(en)) // 数字坐标/SVG path 数据噪音
+  .sort((a, b) => b[1].count - a[1].count || uiPriority(b[0]) - uiPriority(a[0]) || a[0].localeCompare(b[0]))
   .slice(0, MAX_CANDIDATES)
 
 // 续翻:跳过上次已记录为失败的条目(避免重复烧 token 重试同一批超时条目)

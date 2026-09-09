@@ -209,11 +209,22 @@ const noiseFilter = ([en]) => {
   if (/[^A-Za-z0-9\s.,!?'"()\-:;%@$\{\}]/.test(en)) return false; // 异常字符(反斜杠/反引号/等号等；@ 是 thread mention 合法字符)
   if (/\.jsx\(|=>|===|!==|\?\?|&&|\|\||\bnew\s+\w+\(/.test(en)) return false; // JS 表达式
   if (/[,:;]$/.test(en)) return false;                   // 代码符号结尾
+  if (/\b\d[\d.]{2,}\b/.test(en)) return false;        // 数字坐标/SVG path 数据(如 "M11.503.131 1.891")
   return true;
+};
+// UI 优先排序：多词完整句子 > 大写开头双词标题 > 单令牌噪音。候选常远超
+// MAX_BATCH 配额(count==1 的海量噪音)，纯按字母序会把 T 开头的真文案
+// (0.0.98 的 "Thread mentions" 卡片)挤出配额，先按句子特征排序保证
+// 界面文案不丢。
+const uiPriority = (en) => {
+  const words = en.split(/\s+/).filter(Boolean);
+  if (words.length >= 3) return 3;                       // 完整句子
+  if (words.length === 2 && /^[A-Z]/.test(words[0])) return 2; // 双词标题
+  return 1;
 };
 let list = [...candidates.entries()]
   .filter(([en]) => !/[“”‘’]/.test(en) && !/already|translated/i.test(en))
-  .sort((a, b) => b[1].count - a[1].count || a[0].localeCompare(b[0]));
+  .sort((a, b) => b[1].count - a[1].count || uiPriority(b[0]) - uiPriority(a[0]) || a[0].localeCompare(b[0]));
 const rawCount = list.length;
 list = list.filter(noiseFilter);
 if (rawCount - list.length > 0) log(`候选预筛：${rawCount} → ${list.length} 条（过滤 ${rawCount - list.length} 条疑似代码噪音）`);
