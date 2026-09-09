@@ -259,6 +259,30 @@ while [ "${RC}" -ne 0 ] && [ "${AUTO_TRIES}" -lt 2 ]; do
   set -e
 done
 
+# --- 5.5/6. Codex agent 兜底 ---------------------------------------------------
+# 自动翻译两轮后仍有 MISSED 时，让 Codex agent（deepseek-v4-flash，经净化代理）
+# 产出迁移方案；agent-migrate.js 自带确定性校验（key 真实存在/占位符一致/代码
+# 语义黑名单），一条不过全不落库。agent 失败不阻塞，照旧转人工。
+if [ "${RC}" -ne 0 ] && [ -n "${UI_BUNDLE}" ] && grep -qE "MISSED|未命中" "${REPORT}" \
+   && [ -f "tools/agent-migrate.js" ]; then
+  log "自动翻译未解决的残留，尝试 Codex agent 修复..."
+  AG_OUT="$(node tools/agent-migrate.js "${REPORT}" "${UI_BUNDLE}" 2>&1)"
+  AG_RC=$?
+  printf '%s\n' "${AG_OUT}" | tail -12 | sed 's/^/  /'
+  if [ "${AG_RC}" -eq 0 ]; then
+    log "agent 修复已落库，重新构建验证..."
+    set +e
+    {
+      echo "=== autoupdate ${NEWVER} 构建 + 残留扫描（agent 修复后）==="
+      bash tools/update.sh "${PRISTINE_ASAR}" "${PRISTINE_UI}"
+    } > "${REPORT}" 2>&1
+    RC=$?
+    set -e
+  else
+    log "agent 修复未通过（退出码 ${AG_RC}），转人工"
+  fi
+fi
+
 if [ "${RC}" -ne 0 ]; then
   if grep -qE "MISSED|未命中" "${REPORT}"; then
     log "自动翻译后仍有新增未翻译文案——不发布半成品。请人工补翻 dict.json 后重跑（--force）。报告: ${REPORT}"
