@@ -188,14 +188,15 @@ if (list.length === 0) {
 log(`候选 ${list.length} 条：new=${list.filter(([, v]) => v.src === 'new').length} missed=${list.filter(([, v]) => v.src === 'missed').length}（exact=${list.filter(([, v]) => v.kind === 'exact').length} template=${list.filter(([, v]) => v.kind === 'template').length}）`);
 log(`count>=2: ${list.filter(([, v]) => v.count >= 2).length} / count==1: ${list.filter(([, v]) => v.count === 1).length}`);
 
-if (extractOnly || DRY) {
-  for (const [k, v] of list.slice(0, 15)) log(`  [${v.src}/${v.kind}] ${JSON.stringify(k.slice(0, 90))}`);
-  if (list.length > 15) log(`  … 其余 ${list.length - 15} 条省略`);
-}
 if (extractOnly) {
-  log('[extract-only] 未调用 codex，以上为待翻译候选');
+  for (const [k, v] of list) log(`  [${v.src}/${v.kind}] x${v.count} ${JSON.stringify(k.slice(0, 120))}`);
+  log('[extract-only] 未调用 codex，以上为全部待翻译候选');
   console.log('CODEX_TRANSLATE_NONE');
   process.exit(0);
+}
+if (DRY) {
+  for (const [k, v] of list.slice(0, 15)) log(`  [${v.src}/${v.kind}] x${v.count} ${JSON.stringify(k.slice(0, 90))}`);
+  if (list.length > 15) log(`  … 其余 ${list.length - 15} 条省略`);
 }
 
 // ---- 2. 上下文卡片 --------------------------------------------------------------
