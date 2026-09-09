@@ -158,14 +158,30 @@ for (const lit of scanLiterals(bundleSrc)) {
   if (codeProp.test(before) || /[=!]==?\s*$/.test(before) || /case\s*$/.test(before)) blockedStr.add(lit.raw);
 }
 
-// 候选集:Map<key, {kind: 'exact'|'template', src: 'new'|'missed', count}>
+// UI 属性上下文标记:出现在 children:/label:/title:/placeholder:/aria-label:
+// 等 JSX/属性值位置的字面量是确定无疑的界面文案，排序时优先保证进批次
+// (候选总量常超配额,0.0.98 的 "Thread mentions" 卡片就被噪音挤出前 150)。
+const uiPropRe = /(?:children|label|title|placeholder|aria-label|data-tooltip|confirmLabel|description|heading|subtitle|tooltip|alt)\s*:\s*["']?$/;
+const isUIAttr = (start) => uiPropRe.test(bundleSrc.slice(Math.max(0, start - 60), start));
+
+// 候选集:Map<key, {kind: 'exact'|'template', src: 'new'|'missed', count, ui}>
 const candidates = new Map();
-function addCandidate(key, kind, src) {
+function addCandidate(key, kind, src, ui) {
   if (!key) return;
   const exist = candidates.get(key);
-  if (exist) { exist.count++; if (src === 'missed') exist.src = 'missed'; return; }
-  candidates.set(key, { kind, src, count: 1 });
+  if (exist) { exist.count++; if (src === 'missed') exist.src = 'missed'; if (ui) exist.ui = true; return; }
+  candidates.set(key, { kind, src, count: 1, ui: !!ui });
 }
+// 噪音词条不提取：`new XxxError("…")` 异常消息与纯类名组合(全小写含连字符
+// 的多词，如 "modal modal-panel")不是 UI 文案，且会挤占批量配额把真实
+// 界面文案(如 0.0.98 的 "Thread mentions" 卡片)挤出候选列表。
+const isNoiseLiteral = (start, en) => {
+  const before = bundleSrc.slice(Math.max(0, start - 80), start);
+  if (/\bnew\s+\w*Error\s*\(\s*["']?$/.test(before)) return true; // 异常消息
+  const words = en.split(/\s+/).filter(Boolean);
+  if (words.length >= 2 && words.every((w) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(w))) return true; // 纯类名组合
+  return false;
+};
 for (const lit of scanLiterals(bundleSrc)) {
   if (lit.quote !== '"') continue;
   const raw = lit.raw;
@@ -176,7 +192,8 @@ for (const lit of scanLiterals(bundleSrc)) {
   if (knownKeys.has(en)) continue;
   if (dict.exact && dict.exact[en]) continue;
   if (dict.template && dict.template[en]) continue;
-  addCandidate(en, 'exact', 'new');
+  if (isNoiseLiteral(lit.start, en)) continue;
+  addCandidate(en, 'exact', 'new', isUIAttr(lit.start));
 }
 for (const lit of scanLiterals(bundleSrc)) {
   if (lit.quote !== '`') continue;
@@ -186,7 +203,8 @@ for (const lit of scanLiterals(bundleSrc)) {
   if (blockedStr.has(t)) continue;
   if (knownKeys.has(t)) continue;
   if (dict.template && dict.template[t]) continue;
-  addCandidate(t, 'template', 'new');
+  if (isNoiseLiteral(lit.start, t)) continue;
+  addCandidate(t, 'template', 'new', isUIAttr(lit.start));
 }
 
 // 1b. 从构建报告解析 MISSED(词典 key 在新 bundle 未命中 → rewrite/delete/skip 候选)
@@ -257,7 +275,7 @@ const uiPriority = (en) => {
 };
 let list = [...candidates.entries()]
   .filter(([en]) => !/[“”‘’]/.test(en) && !/already|translated/i.test(en))
-  .sort((a, b) => b[1].count - a[1].count || uiPriority(b[0]) - uiPriority(a[0]) || a[0].localeCompare(b[0]));
+  .sort((a, b) => b[1].count - a[1].count || (b[1].ui ? 1 : 0) - (a[1].ui ? 1 : 0) || uiPriority(b[0]) - uiPriority(a[0]) || a[0].localeCompare(b[0]));
 const rawCount = list.length;
 list = list.filter(noiseFilter);
 if (rawCount - list.length > 0) log(`候选预筛：${rawCount} → ${list.length} 条（过滤 ${rawCount - list.length} 条疑似代码噪音）`);

@@ -257,8 +257,25 @@ for (const lit of scanLiterals(src)) {
   if (codeProp.test(before) || /[=!]==?\s*$/.test(before) || /case\s*$/.test(before)) blockedStr.add(lit.raw)
 }
 
-const candidates = new Map() // en -> {kind, count}
-function consider(en, kind) {
+// 噪音词条不提取：`new XxxError("…")` 异常消息与纯类名组合(全小写含连字符
+// 的多词，如 "modal modal-panel")不是 UI 文案，且会挤占批量配额把真实
+// 界面文案(如 0.0.98 的 "Thread mentions" 卡片)挤出候选列表。
+const isNoiseLiteral = (start, en) => {
+  const before = src.slice(Math.max(0, start - 80), start)
+  if (/\bnew\s+\w*Error\s*\(\s*["']?$/.test(before)) return true // 异常消息
+  const words = en.split(/\s+/).filter(Boolean)
+  if (words.length >= 2 && words.every((w) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(w))) return true // 纯类名组合
+  return false
+}
+
+// UI 属性上下文标记:出现在 children:/label:/title:/placeholder:/aria-label:
+// 等 JSX/属性值位置的字面量是确定无疑的界面文案,排序时优先保证进批次
+// (候选总量常超配额,0.0.98 的 "Thread mentions" 卡片就被噪音挤出前 200)。
+const uiPropRe = /(?:children|label|title|placeholder|aria-label|data-tooltip|confirmLabel|description|heading|subtitle|tooltip|alt)\s*:\s*["']?$/
+const isUIAttr = (start) => uiPropRe.test(src.slice(Math.max(0, start - 60), start))
+
+const candidates = new Map() // en -> {kind, count, ui}
+function consider(en, kind, start) {
   if (!en) return
   let raw = en
   try { raw = JSON.parse('"' + en.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"') } catch { raw = en }
@@ -267,14 +284,15 @@ function consider(en, kind) {
   if (knownKeys.has(raw)) return
   if (dict.exact && dict.exact[raw]) return
   if (dict.template && dict.template[raw]) return
+  if (isNoiseLiteral(start, raw)) return
   const prev = candidates.get(raw)
-  if (prev) prev.count++
-  else candidates.set(raw, { kind, count: 1 })
+  if (prev) { prev.count++; if (isUIAttr(start)) prev.ui = true; return }
+  candidates.set(raw, { kind, count: 1, ui: isUIAttr(start) })
 }
 
 for (const lit of scanLiterals(src)) {
   if (lit.quote !== '"') continue
-  consider(lit.raw, 'exact')
+  consider(lit.raw, 'exact', lit.start)
 }
 
 for (const lit of scanLiterals(src)) {
@@ -286,7 +304,7 @@ for (const lit of scanLiterals(src)) {
   // 一律按 template（反引号整串）入典：apply.js 的 exact 匹配只认 "…" 双引号，
   // 反引号内容当 exact 会永远 MISSED（0.0.97 构建中断的根因）。apply 的模板
   // 匹配器按 `key` 替换，扫出的片段天然带这对反引号，必然命中。
-  consider(t, 'template')
+  consider(t, 'template', lit.start)
 }
 
 // 语义守卫后置扫描(黑屏教训的完整版)：对每个候选词条在 bundle 中扫全部出现
@@ -323,7 +341,7 @@ const uiPriority = (en) => {
 }
 let list = [...candidates.entries()]
   .filter(([en, v]) => !/[“”‘’]/.test(en) && !/already|translated/i.test(en) && !/\b\d[\d.]{2,}\b/.test(en)) // 数字坐标/SVG path 数据噪音
-  .sort((a, b) => b[1].count - a[1].count || uiPriority(b[0]) - uiPriority(a[0]) || a[0].localeCompare(b[0]))
+  .sort((a, b) => b[1].count - a[1].count || (b[1].ui ? 1 : 0) - (a[1].ui ? 1 : 0) || uiPriority(b[0]) - uiPriority(a[0]) || a[0].localeCompare(b[0]))
   .slice(0, MAX_CANDIDATES)
 
 // 续翻:跳过上次已记录为失败的条目(避免重复烧 token 重试同一批超时条目)
