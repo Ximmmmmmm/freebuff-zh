@@ -203,19 +203,6 @@ const blockedStr = new Set()
     if (codeProp.test(before) || /[=!]==?\s*$/.test(before) || /case\s*$/.test(before)) blockedStr.add(mm[1])
   }
 }
-// semantic_guard 语义上下文(黑屏教训的完整版)：createEvent/phrase/endsWith/
-// startsWith/types.includes/configure 调用参数、平台 API 参数、比较/switch/语义
-// 属性值位置的字符串是运行时协议常量，翻译会破坏程序行为。对每个字面量的每次
-// 出现都检查，任一处命中即整条拒翻（apply 是全局替换，词典里绝不能收这类词条）。
-{
-  const re = /"((?:[^"\\]|\\.)*)"|`((?:[^`\\]|\\.)*?)`/g
-  let mm
-  while ((mm = re.exec(src)) !== null) {
-    const raw = mm[1] !== undefined ? mm[1] : mm[2]
-    if (blockedStr.has(raw)) continue
-    if (contextReason(src, mm.index, mm.index + mm[0].length)) blockedStr.add(raw)
-  }
-}
 
 const candidates = new Map() // en -> {kind, count}
 function consider(en, kind) {
@@ -246,6 +233,28 @@ while ((m = tplRe.exec(src)) !== null) {
   // 反引号内容当 exact 会永远 MISSED（0.0.97 构建中断的根因）。apply 的模板
   // 匹配器按 `key` 替换，tplRe 截出的片段天然带这对反引号，必然命中。
   consider(t, 'template')
+}
+
+// 语义守卫后置扫描(黑屏教训的完整版)：对每个候选词条在 bundle 中扫全部出现
+// 位置，任一处位于代码语义上下文(createEvent/phrase/endsWith/types.includes/
+// configure 调用参数、平台 API 参数、比较/switch/语义属性值)即整条剔除——
+// apply 是全局替换，词典里绝不能收这类词条。用 indexOf 逐位置检查而非正则
+// 遍历字面量，避免压缩代码的转义序列干扰字面量切分。
+{
+  const semanticHit = (needle) => {
+    let from = 0, idx
+    while ((idx = src.indexOf(needle, from)) !== -1) {
+      if (contextReason(src, idx, idx + needle.length)) return true
+      from = idx + needle.length
+    }
+    return false
+  }
+  const drop = []
+  for (const [key] of candidates) {
+    if (semanticHit('"' + key + '"') || semanticHit('`' + key + '`')) drop.push(key)
+  }
+  for (const k of drop) candidates.delete(k)
+  if (drop.length) console.log(`语义守卫剔除 ${drop.length} 条候选：${drop.slice(0, 10).map(JSON.stringify).join(', ')}`)
 }
 
 let list = [...candidates.entries()]
