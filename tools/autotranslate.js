@@ -147,12 +147,30 @@ const isUIFacing = (s) => {
   return false
 }
 
+// ---- code-semantic blacklist --------------------------------------------
+// Strings whose ANY occurrence sits in an identifier position (property value
+// like name:"…", a comparison like =="…", or a switch case) are grammar/engine
+// data, not UI copy. Translating them corrupts program behavior — the 0.0.97
+// build shipped "Styles"→"样式" and the renderer died with
+// "RangeError: Invalid top rule name" (CodeMirror Lezer parser.configure).
+const codeProp = /\b(name|top|role|kind|type|tag|parser|token|node|term|grammar|lang|mode|match|rule|alias|ext|id|key|icon|scope|selector|extension|value|format|style|prop|state|event|source|context)\s*:\s*$/
+const blockedStr = new Set()
+{
+  const re = /"((?:[^"\\]|\\.)*)"/g
+  let mm
+  while ((mm = re.exec(src)) !== null) {
+    const before = src.slice(Math.max(0, mm.index - 40), mm.index)
+    if (codeProp.test(before) || /[=!]==?\s*$/.test(before) || /case\s*$/.test(before)) blockedStr.add(mm[1])
+  }
+}
+
 const candidates = new Map() // en -> {kind, count}
 function consider(en, kind) {
   if (!en) return
   let raw = en
   try { raw = JSON.parse('"' + en.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"') } catch { raw = en }
   if (!isUIFacing(raw)) return
+  if (blockedStr.has(en)) return // 出现在代码语义位置的字符串(见上方 blacklist),拒翻
   if (knownKeys.has(raw)) return
   if (dict.exact && dict.exact[raw]) return
   if (dict.template && dict.template[raw]) return
