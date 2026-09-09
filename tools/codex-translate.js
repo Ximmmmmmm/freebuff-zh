@@ -162,16 +162,31 @@ if (REPORT && fs.existsSync(REPORT)) {
 
 // 与 autotranslate.js 对齐：剔除含中文引号/"already|translated" 字样噪音，
 // 按出现次数降序(真 UI 文案多处引用,噪音通常只出现 1 次)取前 MAX_BATCH。
-const list = [...candidates.entries()]
+// 候选预筛：按内容特征剔除明显的代码噪音(CSS/JSX/正则/拼接碎片)。
+// 实测 0.0.97 bundle 150 条候选里 90%+ 是 isUIFacing 误判的噪音，全部喂给
+// Codex 会浪费大量 token。预筛误杀的候选会被 LLM 批量翻译降级兜底，不会丢。
+const noiseFilter = ([en]) => {
+  if (!/^[A-Za-z]/.test(en)) return false;               // 非字母开头(空格/标点/符号残留)
+  if (/!important/i.test(en)) return false;              // CSS 关键值
+  if (/[^A-Za-z0-9\s.,!?'"()\-:;%$\{\}]/.test(en)) return false; // 异常字符(反斜杠/反引号/等号等)
+  if (/\.jsx\(|=>|===|!==|\?\?|&&|\|\||\bnew\s+\w+\(/.test(en)) return false; // JS 表达式
+  if (/[,:;]$/.test(en)) return false;                   // 代码符号结尾
+  return true;
+};
+let list = [...candidates.entries()]
   .filter(([en]) => !/[“”‘’]/.test(en) && !/already|translated/i.test(en))
-  .sort((a, b) => b[1].count - a[1].count || a[0].localeCompare(b[0]))
-  .slice(0, MAX_BATCH);
+  .sort((a, b) => b[1].count - a[1].count || a[0].localeCompare(b[0]));
+const rawCount = list.length;
+list = list.filter(noiseFilter);
+if (rawCount - list.length > 0) log(`候选预筛：${rawCount} → ${list.length} 条（过滤 ${rawCount - list.length} 条疑似代码噪音）`);
+list = list.slice(0, MAX_BATCH);
 if (list.length === 0) {
   log('没有发现新文案候选，无需翻译');
   console.log('CODEX_TRANSLATE_NONE');
   process.exit(0);
 }
 log(`候选 ${list.length} 条：new=${list.filter(([, v]) => v.src === 'new').length} missed=${list.filter(([, v]) => v.src === 'missed').length}（exact=${list.filter(([, v]) => v.kind === 'exact').length} template=${list.filter(([, v]) => v.kind === 'template').length}）`);
+log(`count>=2: ${list.filter(([, v]) => v.count >= 2).length} / count==1: ${list.filter(([, v]) => v.count === 1).length}`);
 
 if (extractOnly || DRY) {
   for (const [k, v] of list.slice(0, 15)) log(`  [${v.src}/${v.kind}] ${JSON.stringify(k.slice(0, 90))}`);
