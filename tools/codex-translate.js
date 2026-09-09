@@ -93,16 +93,36 @@ const isUIFacing = (s) => {
   return false;
 };
 
+// 健壮的字面量扫描：压缩代码里的 `\"`/`\\` 转义序列会让全局正则的引号配对
+// 错位，把后续真实字面量吞进超长匹配（0.0.98 的 "Thread mentions" 因此漏提取、
+// 以英文发布）。逐字符配对，遇 `\` 跳过下一字符，保证每个字面量独立切出。
+function scanLiterals(src) {
+  const out = [];
+  let i = 0;
+  while (i < src.length) {
+    const q = src[i];
+    if (q !== '"' && q !== '`') { i++; continue; }
+    let j = i + 1;
+    let raw = '';
+    let closed = false;
+    while (j < src.length) {
+      const c = src[j];
+      if (c === '\\') { raw += c + (src[j + 1] || ''); j += 2; continue; }
+      if (c === q) { closed = true; break; }
+      raw += c; j++;
+    }
+    if (closed) out.push({ raw, quote: q, start: i, end: j + 1 });
+    i = (closed ? j : i) + 1;
+  }
+  return out;
+}
+
 // 代码语义位置黑名单(与 autotranslate.js 一致)
 const codeProp = /\b(name|top|role|kind|type|tag|parser|token|node|term|grammar|lang|mode|match|rule|alias|ext|id|key|icon|scope|selector|extension|value|format|style|prop|state|event|source|context)\s*:\s*$/;
 const blockedStr = new Set();
-{
-  const re = /"((?:[^"\\]|\\.)*)"/g;
-  let mm;
-  while ((mm = re.exec(bundleSrc)) !== null) {
-    const before = bundleSrc.slice(Math.max(0, mm.index - 40), mm.index);
-    if (codeProp.test(before) || /[=!]==?\s*$/.test(before) || /case\s*$/.test(before)) blockedStr.add(mm[1]);
-  }
+for (const lit of scanLiterals(bundleSrc)) {
+  const before = bundleSrc.slice(Math.max(0, lit.start - 40), lit.start);
+  if (codeProp.test(before) || /[=!]==?\s*$/.test(before) || /case\s*$/.test(before)) blockedStr.add(lit.raw);
 }
 
 // 候选集:Map<key, {kind: 'exact'|'template', src: 'new'|'missed', count}>
@@ -113,33 +133,27 @@ function addCandidate(key, kind, src) {
   if (exist) { exist.count++; if (src === 'missed') exist.src = 'missed'; return; }
   candidates.set(key, { kind, src, count: 1 });
 }
-{
-  const dqRe = /"((?:[^"\\]|\\.)*)"/g;
-  let m;
-  while ((m = dqRe.exec(bundleSrc)) !== null) {
-    const raw = m[1];
-    let en = raw;
-    try { en = JSON.parse('"' + raw.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"'); } catch { en = raw; }
-    if (!isUIFacing(en)) continue;
-    if (blockedStr.has(raw)) continue;
-    if (knownKeys.has(en)) continue;
-    if (dict.exact && dict.exact[en]) continue;
-    if (dict.template && dict.template[en]) continue;
-    addCandidate(en, 'exact', 'new');
-  }
+for (const lit of scanLiterals(bundleSrc)) {
+  if (lit.quote !== '"') continue;
+  const raw = lit.raw;
+  let en = raw;
+  try { en = JSON.parse('"' + raw.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"'); } catch { en = raw; }
+  if (!isUIFacing(en)) continue;
+  if (blockedStr.has(raw)) continue;
+  if (knownKeys.has(en)) continue;
+  if (dict.exact && dict.exact[en]) continue;
+  if (dict.template && dict.template[en]) continue;
+  addCandidate(en, 'exact', 'new');
 }
-{
-  const tplRe = /`((?:[^`\\]|\\.)*?)`/g;
-  let m;
-  while ((m = tplRe.exec(bundleSrc)) !== null) {
-    const t = m[1];
-    if (/\$\{[^}]*$/.test(t)) continue;
-    if (!isUIFacing(t)) continue;
-    if (blockedStr.has(t)) continue;
-    if (knownKeys.has(t)) continue;
-    if (dict.template && dict.template[t]) continue;
-    addCandidate(t, 'template', 'new');
-  }
+for (const lit of scanLiterals(bundleSrc)) {
+  if (lit.quote !== '`') continue;
+  const t = lit.raw;
+  if (/\$\{[^}]*$/.test(t)) continue;
+  if (!isUIFacing(t)) continue;
+  if (blockedStr.has(t)) continue;
+  if (knownKeys.has(t)) continue;
+  if (dict.template && dict.template[t]) continue;
+  addCandidate(t, 'template', 'new');
 }
 
 // 1b. 从构建报告解析 MISSED(词典 key 在新 bundle 未命中 → rewrite/delete/skip 候选)
@@ -192,7 +206,7 @@ if (REPORT && fs.existsSync(REPORT)) {
 const noiseFilter = ([en]) => {
   if (!/^[A-Za-z]/.test(en)) return false;               // 非字母开头(空格/标点/符号残留)
   if (/!important/i.test(en)) return false;              // CSS 关键值
-  if (/[^A-Za-z0-9\s.,!?'"()\-:;%$\{\}]/.test(en)) return false; // 异常字符(反斜杠/反引号/等号等)
+  if (/[^A-Za-z0-9\s.,!?'"()\-:;%@$\{\}]/.test(en)) return false; // 异常字符(反斜杠/反引号/等号等；@ 是 thread mention 合法字符)
   if (/\.jsx\(|=>|===|!==|\?\?|&&|\|\||\bnew\s+\w+\(/.test(en)) return false; // JS 表达式
   if (/[,:;]$/.test(en)) return false;                   // 代码符号结尾
   return true;

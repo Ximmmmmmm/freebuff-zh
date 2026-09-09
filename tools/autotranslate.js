@@ -187,6 +187,30 @@ const isUIFacing = (s) => {
   return false
 }
 
+// 健壮的字面量扫描:压缩代码里的 `\"`/`\\` 转义序列会让全局正则的引号配对
+// 错位,把后续真实字面量吞进超长匹配(0.0.98 的 "Thread mentions" 因此漏提取、
+// 以英文发布)。逐字符配对,遇 `\` 跳过下一字符,保证每个字面量独立切出。
+function scanLiterals(s) {
+  const out = []
+  let i = 0
+  while (i < s.length) {
+    const q = s[i]
+    if (q !== '"' && q !== '`') { i++; continue }
+    let j = i + 1
+    let raw = ''
+    let closed = false
+    while (j < s.length) {
+      const c = s[j]
+      if (c === '\\') { raw += c + (s[j + 1] || ''); j += 2; continue }
+      if (c === q) { closed = true; break }
+      raw += c; j++
+    }
+    if (closed) out.push({ raw, quote: q, start: i, end: j + 1 })
+    i = (closed ? j : i) + 1
+  }
+  return out
+}
+
 // ---- code-semantic blacklist --------------------------------------------
 // Strings whose ANY occurrence sits in an identifier position (property value
 // like name:"…", a comparison like =="…", or a switch case) are grammar/engine
@@ -195,13 +219,9 @@ const isUIFacing = (s) => {
 // "RangeError: Invalid top rule name" (CodeMirror Lezer parser.configure).
 const codeProp = /\b(name|top|role|kind|type|tag|parser|token|node|term|grammar|lang|mode|match|rule|alias|ext|id|key|icon|scope|selector|extension|value|format|style|prop|state|event|source|context)\s*:\s*$/
 const blockedStr = new Set()
-{
-  const re = /"((?:[^"\\]|\\.)*)"/g
-  let mm
-  while ((mm = re.exec(src)) !== null) {
-    const before = src.slice(Math.max(0, mm.index - 40), mm.index)
-    if (codeProp.test(before) || /[=!]==?\s*$/.test(before) || /case\s*$/.test(before)) blockedStr.add(mm[1])
-  }
+for (const lit of scanLiterals(src)) {
+  const before = src.slice(Math.max(0, lit.start - 40), lit.start)
+  if (codeProp.test(before) || /[=!]==?\s*$/.test(before) || /case\s*$/.test(before)) blockedStr.add(lit.raw)
 }
 
 const candidates = new Map() // en -> {kind, count}
@@ -219,19 +239,20 @@ function consider(en, kind) {
   else candidates.set(raw, { kind, count: 1 })
 }
 
-const dqRe = /"((?:[^"\\]|\\.)*)"/g
-let m
-while ((m = dqRe.exec(src)) !== null) consider(m[1], 'exact')
+for (const lit of scanLiterals(src)) {
+  if (lit.quote !== '"') continue
+  consider(lit.raw, 'exact')
+}
 
-const tplRe = /`((?:[^`\\]|\\.)*?)`/g
-while ((m = tplRe.exec(src)) !== null) {
-  const t = m[1]
-  // 嵌套模板（${cond?`…`:""}）会让这个非贪婪正则停在嵌套反引号上，截出一段
-  // 以未闭合 "${" 结尾的半截词条——按整条字面量做 key 的词典会因此错配。跳过。
+for (const lit of scanLiterals(src)) {
+  if (lit.quote !== '`') continue
+  const t = lit.raw
+  // 嵌套模板（${cond?`…`:""}）会截出一段以未闭合 "${" 结尾的半截词条——
+  // 按整条字面量做 key 的词典会因此错配。跳过。
   if (/\$\{[^}]*$/.test(t)) continue
   // 一律按 template（反引号整串）入典：apply.js 的 exact 匹配只认 "…" 双引号，
   // 反引号内容当 exact 会永远 MISSED（0.0.97 构建中断的根因）。apply 的模板
-  // 匹配器按 `key` 替换，tplRe 截出的片段天然带这对反引号，必然命中。
+  // 匹配器按 `key` 替换，扫出的片段天然带这对反引号，必然命中。
   consider(t, 'template')
 }
 

@@ -102,7 +102,24 @@ if ! command -v gh >/dev/null 2>&1; then
   exit 1
 fi
 
-gh release create "pack-v${VER}" "${ZIP}" "${MANIFEST}" -R "${REPO}" \
-  --title "汉化包 v${VER}（适配 Freebuff v${TARGET}）" \
-  --notes "词典/补丁适配 Freebuff Desktop v${TARGET}。控制器会自动检查并下载，点「应用汉化」生效。"
-echo "已发布 Release pack-v${VER}。控制器下次检查即可拉到新包。"
+# 同 packVersion 重发时 tag 已存在：gh release create 会拒绝。此时用
+# upload --clobber 覆盖两个资产并 edit 更新标题/备注（autoupdate 同版本修正
+# 自动带 --force 走这条路径）。
+REL_TAG="pack-v${VER}"
+if gh release view "${REL_TAG}" -R "${REPO}" >/dev/null 2>&1; then
+  if [ "${FORCE}" -eq 0 ]; then
+    echo "ERROR: Release ${REL_TAG} 已存在。重新发布同一 packVersion 会覆盖线上包，" >&2
+    echo "  确认无误请追加 --force。" >&2
+    exit 1
+  fi
+  echo "Release ${REL_TAG} 已存在（--force），覆盖资产并更新标题/备注…"
+  gh release upload "${REL_TAG}" "${ZIP}" "${MANIFEST}" -R "${REPO}" --clobber
+  gh release edit "${REL_TAG}" -R "${REPO}" \
+    --title "汉化包 v${VER}（适配 Freebuff v${TARGET}）" \
+    --notes "词典/补丁适配 Freebuff Desktop v${TARGET}。控制器会自动检查并下载，点「应用汉化」生效。"
+else
+  gh release create "${REL_TAG}" "${ZIP}" "${MANIFEST}" -R "${REPO}" \
+    --title "汉化包 v${VER}（适配 Freebuff v${TARGET}）" \
+    --notes "词典/补丁适配 Freebuff Desktop v${TARGET}。控制器会自动检查并下载，点「应用汉化」生效。"
+fi
+echo "已发布 Release ${REL_TAG}。控制器下次检查即可拉到新包。"
