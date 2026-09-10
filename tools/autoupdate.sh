@@ -23,6 +23,13 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${HERE}"
 
+# cron 环境的 PATH 不含 /usr/local/bin（gh 装在那里），显式补上（与 notify.js 一致）；
+# release.sh 作为子进程继承本 PATH，单独跑 release.sh 时它自己也补
+case ":${PATH}:" in
+  *:/usr/local/bin:*) ;;
+  *) export PATH="/usr/local/bin:${PATH}" ;;
+esac
+
 FORCE=0
 DRY=0
 for a in "$@"; do

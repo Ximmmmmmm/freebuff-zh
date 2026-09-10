@@ -13,6 +13,11 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# cron 环境的 PATH 不含 /usr/local/bin（gh 装在那里），显式补上（与 notify.js 一致）
+case ":${PATH}:" in
+  *:/usr/local/bin:*) ;;
+  *) export PATH="/usr/local/bin:${PATH}" ;;
+esac
 REPO="Ximmmmmmm/freebuff-zh"
 UPLOAD=1
 FORCE=0
