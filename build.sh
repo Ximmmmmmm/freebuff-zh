@@ -117,8 +117,14 @@ if [ -n "${PRISTINE_UI}" ]; then
     fi
     MISSED="$(printf '%s' "${APPLY_LOG}" | sed -n 's/^MISSED (\([0-9][0-9]*\) keys.*/\1/p')"
     if [ -n "${MISSED}" ] && [ "${MISSED}" -gt 0 ]; then
-      echo "ERROR: 词典有 ${MISSED} 条未命中（MISSED 明细见上方日志）——原文可能随版本改写，请核对 dict.json 后重试，已中止构建" >&2
-      exit 1
+      if [ "${ALLOW_MISSED:-0}" = "1" ]; then
+        # 缺口发布模式（autoupdate 终局策略）：词典锚文本在新版失效但其余校验
+        # （补丁/语法/自检）照常执行——未翻文案保持英文，功能无损。
+        echo "WARN: 词典有 ${MISSED} 条未命中（ALLOW_MISSED=1 缺口发布模式，对应文案保持英文）"
+      else
+        echo "ERROR: 词典有 ${MISSED} 条未命中（MISSED 明细见上方日志）——原文可能随版本改写，请核对 dict.json 后重试，已中止构建" >&2
+        exit 1
+      fi
     fi
   else
     echo "  ! 未在 index.html 中找到主 bundle，跳过词典应用" >&2

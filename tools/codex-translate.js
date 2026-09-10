@@ -249,6 +249,29 @@ if (REPORT && fs.existsSync(REPORT)) {
   if (drop.length) log(`语义守卫剔除 ${drop.length} 条候选：${drop.slice(0, 10).map(JSON.stringify).join(', ')}`);
 }
 
+// ---- 1c. seen 记忆：同版本内 agent 已评估且未落库的候选不再重复评估 ------
+// 背景：候选池常远大于 MAX_BATCH，agent 每批只落库少数、其余判定为噪音不翻；
+// 不记忆的话 autoupdate 的多轮循环会对同一批候选反复调用 codex 烧预算。
+// 版本变化时 seen 整体失效（新 bundle 重新评估）。
+const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'manifest.json'), 'utf8'));
+const SEEN_FILE = path.join(ROOT, 'work', '.codex-seen.json');
+const seen = (() => {
+  try {
+    const s = JSON.parse(fs.readFileSync(SEEN_FILE, 'utf8'));
+    if (s.version === manifest.targetVersion && Array.isArray(s.keys)) return new Set(s.keys);
+  } catch { /* 无记忆文件或版本不符 */ }
+  return new Set();
+})();
+let seenDropped = 0;
+for (const [k] of [...candidates]) {
+  if (seen.has(k)) { candidates.delete(k); seenDropped++; }
+}
+const persistSeen = () => {
+  if (!seen.size) return;
+  fs.mkdirSync(path.dirname(SEEN_FILE), { recursive: true });
+  fs.writeFileSync(SEEN_FILE, JSON.stringify({ version: manifest.targetVersion, keys: [...seen] }) + '\n');
+};
+
 // 与 autotranslate.js 对齐：剔除含中文引号/"already|translated" 字样噪音，
 // 按出现次数降序(真 UI 文案多处引用,噪音通常只出现 1 次)取前 MAX_BATCH。
 // 候选预筛：按内容特征剔除明显的代码噪音(CSS/JSX/正则/拼接碎片)。
@@ -285,6 +308,7 @@ if (list.length === 0) {
   console.log('CODEX_TRANSLATE_NONE');
   process.exit(0);
 }
+if (seenDropped > 0) log(`seen 记忆跳过 ${seenDropped} 条已评估未落库候选（v${manifest.targetVersion}）`);
 log(`候选 ${list.length} 条：new=${list.filter(([, v]) => v.src === 'new').length} missed=${list.filter(([, v]) => v.src === 'missed').length}（exact=${list.filter(([, v]) => v.kind === 'exact').length} template=${list.filter(([, v]) => v.kind === 'template').length}）`);
 log(`count>=2: ${list.filter(([, v]) => v.count >= 2).length} / count==1: ${list.filter(([, v]) => v.count === 1).length}`);
 
@@ -561,6 +585,18 @@ async function main() {
       for (const e of errors.slice(0, 20)) log(`  ✗ ${e}`);
       allErrors.push(...errors);
       continue; // 本批放弃，继续下一批
+    }
+    // 方案有效（无校验错误）才记忆：本批评估过但未落库的候选（显式 skip +
+    // agent 未输出）记入 seen，下轮不再重复评估；校验作废的批次不记忆，
+    // 留待下轮 agent 重新给方案。
+    if (!DRY) {
+      const handled = new Set();
+      for (const op of applicable) { if (op.key) handled.add(op.key); if (op.old) handled.add(op.old); }
+      let newlySeen = 0;
+      for (const [k] of groups[gi]) {
+        if (!handled.has(k) && !seen.has(k)) { seen.add(k); newlySeen++; }
+      }
+      if (newlySeen) persistSeen();
     }
     for (const op of applicable) {
       applied[op.action]++;

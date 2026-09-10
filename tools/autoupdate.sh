@@ -2,7 +2,9 @@
 # Freebuff 汉化包全自动更新流水线（Linux 服务器版）
 #
 # 监测 Freebuff Desktop 新版本 → 下载官方安装包 → 解出原版 → remap → 构建 → 发布 Release
-# 有新增未翻译文案时自动中止，只发通知，不发半成品。
+# 百分百无人值守：翻译缺口由 Codex/LLM 多轮自动消化；流水线自身故障由 codex-fix
+# 让 Codex 直接修本仓库代码；预算内仍收敛不了的翻译缺口按「缺口发布」上线
+# （未翻文案保持英文、功能无损）并通知——只有构建链路损坏才中止不发。
 #
 # 依赖：bash / curl / unzip / node 20+ / npx（拉 @electron/asar）/ gh CLI（已登录）
 # 告警：失败/卡死/需人工时经 tools/notify.js 通知（.notify.json 配 webhook 多渠道；
@@ -10,6 +12,10 @@
 # 用法：
 #   bash tools/autoupdate.sh                 # 单次检查
 #   bash tools/autoupdate.sh --force         # 跳过"版本未变"短路，强制重建
+#   bash tools/autoupdate.sh --force --dry   # 演练：走完整流水线但不提交不发布
+# 环境变量：
+#   HANHUA_FIX_BUDGET_SEC  自主修复总预算秒数（默认 3600）
+#   HANHUA_STRICT=1        严格模式：翻译不完整时不缺口发布，恢复"绝不发半成品"
 # 配合 cron（每 30 分钟）：
 #   */30 * * * * cd /opt/freebuff-zh && bash tools/autoupdate.sh >> work/autoupdate.log 2>&1
 set -euo pipefail
@@ -18,9 +24,11 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${HERE}"
 
 FORCE=0
+DRY=0
 for a in "$@"; do
   case "$a" in
     --force) FORCE=1 ;;
+    --dry) DRY=1 ;;
     *) echo "未知参数：$a" >&2; exit 1 ;;
   esac
 done
@@ -255,134 +263,255 @@ if [ -n "${BUNDLE}" ]; then
   node tools/remap.js "${BUNDLE}" --write || true
 fi
 
-# --- 5/6. 构建 + 残留扫描（tools/update.sh 内建构建与防呆自检）---------------
-# 有未翻译新增文案或构建失败就不发布，只留报告。新增文案先自动翻译一轮（配置了
-# .translator.json / HANHUA_LLM_* 时），仍有残留才中止人工。
+# --- 5/6. 构建 + 自主修复循环 --------------------------------------------------
+# 目标：百分百无人值守。构建失败或发现未翻译文案时按问题类别多轮迭代：
+#   翻译类（词典未命中/新文案）：codex-translate → autotranslate → agent-migrate
+#   代码类（补丁/扫描器/构建脚本）：codex-fix（Codex 直接修本仓库流水线代码）
+# 连续两轮无进展或预算耗尽才走终局策略：
+#   翻译缺口 → 放宽 MISSED 断言带缺口发布（未翻文案保持英文）+ 通知
+#   构建损坏 → 不发布 + 告警（HANHUA_STRICT=1 时翻译缺口也不发布）
 REPORT="work/update-${NEWVER}.txt"
-log "构建 + 残留扫描（日志: ${REPORT}）..."
-set +e
-{
-  echo "=== autoupdate ${NEWVER} 构建 + 残留扫描 ==="
-  bash tools/update.sh "${PRISTINE_ASAR}" "${PRISTINE_UI}"
-} > "${REPORT}" 2>&1
-RC=$?
-set -e
-
-# 主 bundle（自动翻译输入：英文原版，提取未入词典的新文案）
 UI_BUNDLE="$(ls "${PRISTINE_UI}"/assets/index-*.js 2>/dev/null | head -1 || true)"
 
-# 新版本文案的自动翻译（Codex 全程驱动）：优先 Codex agent 翻译，不可用时
-# 降级 LLM 批量翻译（.translator.json 三模型链），最多三轮。每轮把新翻词条
-# 合入 dict 后重建验证；仍 MISSED 才转人工。
-AUTO_TRIES=0
-NEED_TRANSLATE=0
-if [ "${RC}" -ne 0 ] && grep -qE "MISSED|未命中" "${REPORT}" 2>/dev/null; then
-  NEED_TRANSLATE=1
-elif [ "${RC}" -eq 0 ] && [ -n "${UI_BUNDLE}" ] && { [ "${NEWVER}" != "${CURVER}" ] || [ "${FORCE}" -eq 1 ]; }; then
-  # 纯新增文案不会让构建失败（如 0.0.98 的 "Thread mentions" 引导卡片），
-  # 只按 MISSED 触发就会漏翻直接发布；版本变化或 --force 重建时用
-  # codex-translate 的候选提取探测未入词典的新文案，有候选就进自动翻译。
-  CAND_LOG="$(node tools/codex-translate.js "${UI_BUNDLE}" --extract-only --max 1 2>&1)" || true
-  if printf '%s' "${CAND_LOG}" | grep -qE '候选 [0-9]+ 条'; then
-    log "检测到未入词典的新文案候选，进入自动翻译"
-    NEED_TRANSLATE=1
-  fi
-fi
-while [ "${NEED_TRANSLATE}" -eq 1 ] && [ "${AUTO_TRIES}" -lt 3 ]; do
-  if [ "${RC}" -ne 0 ] && ! grep -qE "MISSED|未命中" "${REPORT}" 2>/dev/null; then
-    break  # 构建失败与词典无关（补丁/语法），不自动处理
-  fi
-  if [ -z "${UI_BUNDLE}" ]; then
-    log "主 bundle 缺失——不能自动翻译，转人工"
-    break
-  fi
-  AUTO_TRIES=$((AUTO_TRIES + 1))
-  log "检测到新增未翻译文案（第 ${AUTO_TRIES} 轮自动翻译，源: ${UI_BUNDLE}）..."
-  TR_OUT=""
-  TR_RC=99
-  # 第一优先：Codex agent 全程翻译（read-only sandbox + 确定性校验，见 codex-translate.js）
-  if [ -f "tools/codex-translate.js" ] && command -v codex >/dev/null 2>&1; then
-    log "Codex agent 翻译（第 ${AUTO_TRIES} 轮，源: ${UI_BUNDLE}）..."
-    TR_RC=0
-    TR_OUT="$(node tools/codex-translate.js "${UI_BUNDLE}" --report "${REPORT}" --max 150 2>&1)" || TR_RC=$?
-  else
-    log "codex CLI 不可用，跳过 Codex 翻译"
-  fi
-  # Codex 不可用/未产出时，降级 LLM 批量翻译（三模型链故障切换）
-  if [ "${TR_RC}" -ne 0 ] || ! printf '%s' "${TR_OUT}" | grep -qE 'CODEX_TRANSLATE_OK'; then
-    if { [ ! -s ".translator.json" ] && [ -z "${HANHUA_LLM_BASE:-}" ]; }; then
-      log "无 .translator.json（或主 bundle 缺失）——不能自动翻译，转人工"
-      break
-    fi
-    log "Codex 未生效（rc=${TR_RC}），降级 LLM 批量翻译..."
-    TR_OUT=""
-    TR_RC=0
-    TR_OUT="$(node tools/autotranslate.js "${UI_BUNDLE}" --max 300 2>&1)" || TR_RC=$?
-  fi
-  printf '%s\n' "${TR_OUT}" | tail -20 | sed 's/^/  /'
-  if [ "${TR_RC}" -ne 0 ]; then
-    log "自动翻译未生效（检查 .translator.json 配置/LLM 可达性），转人工"
-    break
-  fi
-  if printf '%s' "${TR_OUT}" | grep -qE '没有发现新的未翻译|AUTOTRANSLATE_NONE|CODEX_TRANSLATE_NONE|新增 0 条'; then
-    log "自动翻译未发现可补词条（或全部被拒），转人工"
-    break
-  fi
-  log "自动翻译完成，重新构建验证..."
+build_stage() { # $1 = 阶段标签；结果写 RC 与 REPORT
   set +e
   {
-    echo "=== autoupdate ${NEWVER} 构建 + 残留扫描（自动翻译后第 ${AUTO_TRIES} 轮）==="
+    echo "=== autoupdate ${NEWVER} 构建 + 残留扫描（${1}）==="
     bash tools/update.sh "${PRISTINE_ASAR}" "${PRISTINE_UI}"
   } > "${REPORT}" 2>&1
   RC=$?
   set -e
-  if [ "${RC}" -eq 0 ]; then NEED_TRANSLATE=0; fi
-done
+}
 
-# --- 5.5/6. Codex agent 兜底 ---------------------------------------------------
-# 自动翻译两轮后仍有 MISSED 时，让 Codex agent（deepseek-v4-flash，经净化代理）
-# 产出迁移方案；agent-migrate.js 自带确定性校验（key 真实存在/占位符一致/代码
-# 语义黑名单），一条不过全不落库。agent 失败不阻塞，照旧转人工。
-if [ "${RC}" -ne 0 ] && [ -n "${UI_BUNDLE}" ] && grep -qE "MISSED|未命中" "${REPORT}" \
-   && [ -f "tools/agent-migrate.js" ]; then
-  log "自动翻译未解决的残留，尝试 Codex agent 修复..."
-  AG_OUT=""
-  AG_RC=0
-  # set -e 下捕获 agent 的非零退出码，不能让失败直接跳出而绕过后续
-  # 降级/回滚与人工提示。
-  AG_OUT="$(node tools/agent-migrate.js "${REPORT}" "${UI_BUNDLE}" 2>&1)" || AG_RC=$?
-  printf '%s\n' "${AG_OUT}" | tail -12 | sed 's/^/  /'
-  if [ "${AG_RC}" -eq 0 ]; then
-    log "agent 修复已落库，重新构建验证..."
-    set +e
-    {
-      echo "=== autoupdate ${NEWVER} 构建 + 残留扫描（agent 修复后）==="
-      bash tools/update.sh "${PRISTINE_ASAR}" "${PRISTINE_UI}"
-    } > "${REPORT}" 2>&1
-    RC=$?
-    set -e
-  else
-    log "agent 修复未通过（退出码 ${AG_RC}），转人工"
-  fi
+# 词典未命中（build.sh 的 MISSED 断言触发：词典 key 在新 bundle 里找不到）
+gaps_in_report() { grep -qE "MISSED|未命中" "${REPORT}" 2>/dev/null; }
+
+# 构建通过但 bundle 有未入词典的新文案（纯新增文案不会让构建失败）
+fresh_candidates() {
+  [ -n "${UI_BUNDLE}" ] || return 1
+  local out
+  out="$(node tools/codex-translate.js "${UI_BUNDLE}" --extract-only --max 1 2>&1)" || true
+  if printf '%s' "${out}" | grep -qE '候选 [0-9]+ 条'; then return 0; fi
+  out="$(node tools/autotranslate.js "${UI_BUNDLE}" --extract-only 2>&1)" || true
+  printf '%s' "${out}" | grep -qE '候选 [0-9]+ 条'
+}
+
+dict_sum() { sha256sum dict.json 2>/dev/null | cut -d' ' -f1; }
+
+CODE_PATHS=(tools patches build.sh package.json)
+
+# codex-fix 安全前置：流水线代码区在本轮任务开始时必须干净（有未知来源的
+# 未提交改动时绝不让 agent 动代码，避免误伤人工 WIP）
+CODE_PRE_DIRTY=0
+if [ -n "$(git status --porcelain -- "${CODE_PATHS[@]}" 2>/dev/null)" ]; then
+  CODE_PRE_DIRTY=1
+  log "注意：流水线代码区有未提交改动，本轮禁用 codex-fix（保护现场）"
 fi
 
-if [ "${RC}" -ne 0 ]; then
-  if grep -qE "MISSED|未命中" "${REPORT}"; then
-    log "自动翻译后仍有新增未翻译文案——不发布半成品。请人工补翻 dict.json 后重跑（--force）。报告: ${REPORT}"
-    fail 2 "自动翻译（Codex/LLM 多轮）后仍有新增未翻译文案，已停止发布。请人工补翻 dict.json 后 bash tools/autoupdate.sh --force 重跑。报告: ${REPORT}" "[freebuff-zh] v${NEWVER} 需人工补翻新文案"
+# 语法自检 codex-fix 改过的文件（改坏的东西下轮重建也会炸，这里提前拦下回滚）
+syntax_check_dirty() {
+  local bad=0 f
+  while IFS= read -r f; do
+    case "$f" in
+      *.sh)          bash -n "$f" 2>/dev/null || { log "  语法错误: $f"; bad=1; } ;;
+      *.js|*.cjs|*.mjs) node --check "$f" 2>/dev/null || { log "  语法错误: $f"; bad=1; } ;;
+    esac
+  done < <( { git diff --name-only HEAD -- "${CODE_PATHS[@]}"; git ls-files --others --exclude-standard "${CODE_PATHS[@]}"; } 2>/dev/null | sort -u )
+  if [ "${bad}" -eq 0 ]; then return 0; else return 1; fi
+}
+
+revert_code_fixes() {
+  git checkout -- "${CODE_PATHS[@]}" 2>/dev/null || true
+  git clean -fdq -- "${CODE_PATHS[@]}" 2>/dev/null || true
+  FIX_DIRTY=0
+  log "已回滚 codex-fix 对流水线代码的全部修改"
+}
+
+run_codex_fix() { # $1 = 失败背景提示；返回 0 = 代码有合法改动
+  if [ "${CODE_PRE_DIRTY}" -eq 1 ]; then return 2; fi
+  if [ ! -f "tools/codex-fix.js" ] || ! command -v codex >/dev/null 2>&1; then
+    log "codex-fix 不可用（缺 tools/codex-fix.js 或 codex CLI）"
+    return 2
   fi
-  fail 1 "构建/自检失败（退出码 ${RC}），不发布。报告: ${REPORT}"
+  if [ "$(date +%s)" -ge "${DEADLINE}" ]; then return 2; fi
+  local out
+  out="$(node tools/codex-fix.js "${REPORT}" "$1" "${PRISTINE_ASAR}" "${PRISTINE_UI}" 2>&1)" || true
+  printf '%s\n' "${out}" | tail -8 | sed 's/^/  /'
+  if syntax_check_dirty; then
+    if [ -n "$(git status --porcelain -- "${CODE_PATHS[@]}" 2>/dev/null)" ]; then
+      FIX_DIRTY=1
+      return 0
+    fi
+  else
+    log "codex-fix 产物语法不过，回滚"
+    revert_code_fixes
+  fi
+  return 1
+}
+
+DEADLINE=$(( $(date +%s) + ${HANHUA_FIX_BUDGET_SEC:-3600} ))
+MAX_ROUNDS=6
+ROUND=0
+STALL=0
+FIX_DIRTY=0
+GAP_PUBLISH=0
+LOOP_REASON="done"
+
+log "构建 + 残留扫描（日志: ${REPORT}）..."
+build_stage "首轮"
+
+while true; do
+  if [ "${RC}" -eq 0 ]; then
+    if fresh_candidates; then :; else break; fi
+  fi
+  ROUND=$((ROUND + 1))
+  if [ "${ROUND}" -gt "${MAX_ROUNDS}" ] || [ "$(date +%s)" -ge "${DEADLINE}" ]; then
+    LOOP_REASON="budget"
+    log "自主修复达轮次/时间预算上限（已 ${ROUND} 轮），进入终局策略"
+    break
+  fi
+  log "── 自主修复第 ${ROUND} 轮（构建 rc=${RC}，锁内任务请勿手动干预）──"
+  PROGRESS=0
+  DSUM="$(dict_sum)"
+
+  if [ "${RC}" -ne 0 ] && gaps_in_report && [ -n "${UI_BUNDLE}" ]; then
+    # 翻译类：codex-translate（Codex agent 全程翻译，自带确定性校验）
+    TR_RC=2
+    if [ -f "tools/codex-translate.js" ] && command -v codex >/dev/null 2>&1; then
+      TR_RC=0
+      TR_OUT="$(node tools/codex-translate.js "${UI_BUNDLE}" --report "${REPORT}" --max 150 2>&1)" || TR_RC=$?
+      printf '%s\n' "${TR_OUT}" | tail -6 | sed 's/^/  /'
+    fi
+    if [ "$(dict_sum)" = "${DSUM}" ] && [ "${TR_RC}" -ne 0 ]; then
+      # Codex 真正不可用（2）/输出异常（3/4）→ LLM 批量翻译兜底（三模型链故障切换）。
+      # 注意 TR_RC=0 且无落库不算：agent 已评估完并判定不翻（seen 记忆防重复评估），
+      # 弱过滤的 LLM 批量翻译硬翻这些词条有黑屏风险，不再降级。
+      if [ -s ".translator.json" ] || [ -n "${HANHUA_LLM_BASE:-}" ]; then
+        log "Codex 评估未完成（rc=${TR_RC}），降级 LLM 批量翻译..."
+        AT_OUT="$(node tools/autotranslate.js "${UI_BUNDLE}" --max 300 2>&1)" || true
+        printf '%s\n' "${AT_OUT}" | tail -6 | sed 's/^/  /'
+      else
+        log "无 .translator.json，LLM 兜底不可用"
+      fi
+    fi
+    if [ "$(dict_sum)" != "${DSUM}" ]; then
+      PROGRESS=1
+      log "词典已更新，重新构建验证..."
+      build_stage "自主修复第 ${ROUND} 轮后"
+    fi
+    if [ "${RC}" -ne 0 ] && gaps_in_report && [ -f "tools/agent-migrate.js" ]; then
+      # 此刻构建仍失败且仍有失配 → 迁移专家专攻（不管前面是否落库：翻译工具
+      # 落了库却没接住失配，正说明需要 old→new 迁移；工具幂等，不会重复劳动）
+      log "尝试 agent-migrate 迁移失配词条..."
+      AG_OUT="$(node tools/agent-migrate.js "${REPORT}" "${UI_BUNDLE}" 2>&1)" || true
+      printf '%s\n' "${AG_OUT}" | tail -8 | sed 's/^/  /'
+      if [ "$(dict_sum)" != "${DSUM}" ]; then
+        PROGRESS=1
+        log "迁移已落库，重新构建验证..."
+        build_stage "agent-migrate 后"
+      fi
+    fi
+    if [ "${PROGRESS}" -eq 0 ]; then
+      # 三级翻译全部无进展 → 怀疑翻译工具自身 bug，让 Codex 修工具
+      if run_codex_fix "词典翻译链路（codex-translate/autotranslate/agent-migrate）连续无落库。重点怀疑候选提取或确定性校验在当前 minified bundle 上失灵（引号误配对/正则误吞等），请修复 tools/ 下相关工具。"; then
+        PROGRESS=1
+        build_stage "codex-fix 翻译工具后"
+      fi
+    fi
+  elif [ "${RC}" -eq 0 ]; then
+    # 构建通过但有新文案：codex-translate（评估完不翻的由 seen 记忆收敛）
+    if [ -n "${UI_BUNDLE}" ]; then
+      TR_RC=2
+      if [ -f "tools/codex-translate.js" ] && command -v codex >/dev/null 2>&1; then
+        TR_RC=0
+        TR_OUT="$(node tools/codex-translate.js "${UI_BUNDLE}" --report "${REPORT}" --max 150 2>&1)" || TR_RC=$?
+        printf '%s\n' "${TR_OUT}" | tail -6 | sed 's/^/  /'
+      fi
+      if [ "$(dict_sum)" = "${DSUM}" ] && [ "${TR_RC}" -ne 0 ] && { [ -s ".translator.json" ] || [ -n "${HANHUA_LLM_BASE:-}" ]; }; then
+        # 仅 codex 真正没跑成（2/3/4）才降级 LLM 批量翻译；agent 评估完判定
+        # 不翻的（TR_RC=0）由 seen 记忆去重，不硬翻（黑屏风险）
+        log "Codex 评估未完成（rc=${TR_RC}），降级 LLM 批量翻译..."
+        AT_OUT="$(node tools/autotranslate.js "${UI_BUNDLE}" --max 300 2>&1)" || true
+        printf '%s\n' "${AT_OUT}" | tail -6 | sed 's/^/  /'
+      fi
+      if [ "$(dict_sum)" != "${DSUM}" ]; then
+        PROGRESS=1
+        log "新文案已落库，重新构建验证..."
+        build_stage "新文案翻译后"
+      fi
+      if [ "${PROGRESS}" -eq 0 ]; then
+        if run_codex_fix "bundle 中存在翻译工具始终不肯落库的新文案候选。若属提取器漏提真实 UI 文案（而非代码噪音），请修 tools/ 的候选提取。"; then
+          PROGRESS=1
+          build_stage "codex-fix 后"
+        fi
+      fi
+    fi
+  else
+    # 代码类失败（补丁不匹配/语法错误/自检失败）：直接让 Codex 修流水线
+    if run_codex_fix "构建失败（补丁与官方新版不符请按新原版重新生成 patches/；语法/自检失败请修 build.sh 与 tools/）。"; then
+      PROGRESS=1
+      build_stage "codex-fix 后"
+    fi
+  fi
+
+  if [ "${PROGRESS}" -eq 0 ]; then
+    STALL=$((STALL + 1))
+    log "本轮无进展（连续 ${STALL} 轮）"
+    if [ "${STALL}" -ge 2 ]; then
+      LOOP_REASON="stall"
+      log "连续两轮无进展，停止自主修复"
+      break
+    fi
+  else
+    STALL=0
+  fi
+done
+
+# --- 终局策略 -------------------------------------------------------------------
+if [ "${RC}" -ne 0 ]; then
+  if gaps_in_report && [ "${HANHUA_STRICT:-0}" != "1" ]; then
+    # 翻译缺口但构建链路本身有效：放宽 MISSED 断言带缺口发布。
+    # 未翻文案保持英文原样（功能无损），通知列明缺口，下个版本自然收敛。
+    log "自主修复后仍有词典未命中——按缺口发布策略放宽 MISSED 断言重建（HANHUA_STRICT=1 恢复严格模式）"
+    GAP_PUBLISH=1
+    ALLOW_MISSED=1 build_stage "缺口发布"
+    if [ "${RC}" -ne 0 ]; then
+      if [ "${FIX_DIRTY}" -eq 1 ]; then revert_code_fixes; fi
+      fail 1 "缺口发布模式构建仍失败（构建链路自身损坏），不发布。报告: ${REPORT}"
+    fi
+  else
+    if [ "${FIX_DIRTY}" -eq 1 ]; then revert_code_fixes; fi
+    if gaps_in_report; then
+      fail 2 "严格模式（HANHUA_STRICT=1）：自主修复后仍有未翻译文案，不发布。请人工补翻 dict.json 后 bash tools/autoupdate.sh --force 重跑。报告: ${REPORT}" "[freebuff-zh] v${NEWVER} 需人工补翻新文案（严格模式）"
+    fi
+    fail 1 "构建/自检失败（退出码 ${RC}），自主修复未解决，不发布。报告: ${REPORT}"
+  fi
+elif [ "${LOOP_REASON}" != "done" ]; then
+  # 构建通过但循环因预算/无进展退出：构建通过 = 词典全命中，没有 MISSED
+  # 缺口，正常发布即可。剩余候选是 agent 评估后不肯落库的（多为代码噪音；
+  # seen 记忆已持久化，下轮 --force 不会重复烧预算），随版本迭代自然收敛。
+  log "循环退出（${LOOP_REASON}）：构建已通过，剩余候选均为 agent 评估后不落库项，正常发布"
 fi
 
 # --- 7. 提交 + 发布 Release ---------------------------------------------------
+if [ "${DRY}" -eq 1 ]; then
+  ROLLBACK_ENABLED=0
+  log "[dry] 演练结束（rc=${RC}，缺口发布=${GAP_PUBLISH}，流水线自修=${FIX_DIRTY}）：改动留在工作树供检查，未提交未发布"
+  git --no-pager diff --stat | sed 's/^/  /' || true
+  exit 0
+fi
 git add manifest.json dict.json
+if [ "${FIX_DIRTY}" -eq 1 ]; then
+  # codex-fix 修过的流水线代码一并入库（语法已过自检、构建已验证）
+  git add -A -- tools patches build.sh package.json docs
+fi
 if git diff --cached --quiet; then
   ROLLBACK_ENABLED=0
   log "无词典/版本变更（同版本 --force 重建？），跳过提交与发布"
   exit 0
 fi
 git -c user.name="hanhua-bot" -c user.email="bot@users.noreply.github.com" \
-  commit -m "适配 Freebuff v${NEWVER}（autoupdate）"
+  commit -m "适配 Freebuff v${NEWVER}（autoupdate）$( [ "${FIX_DIRTY}" -eq 1 ] && echo '，含流水线自修' )"
 # 提交成功后快照已不再需要回滚；push/release 失败也不应撤销已提交的适配。
 ROLLBACK_ENABLED=0
 git push origin "$(git branch --show-current)" || fail 1 "git push 失败（远端不可达/凭据问题）；适配已本地提交，网络恢复后手动 git push 即可"
@@ -405,7 +534,14 @@ log "✅ Freebuff v${NEWVER} 汉化包已发布。控制器会在 30 分钟内�
 
 # --- 8. 成功通知 + 磁盘清理 ----------------------------------------------------
 # 发布成功 = 全链路恢复：发恢复通知（清告警状态、自动关闭此前兜底的 issue）。
-notify_ok "[freebuff-zh] v${NEWVER} 汉化包已发布" "全自动适配成功：探测 → 下载（SHA512 校验）→ 自动翻译 → 构建 → 提交 → 发布。控制器会在 30 分钟内提示用户更新。"
+if [ "${GAP_PUBLISH}" -eq 1 ]; then
+  GAPN="$(sed -n 's/.*词典有 \([0-9][0-9]*\) 条未命中.*/\1/p' "${REPORT}" 2>/dev/null | tail -1)"
+  GAP_DESC="若干"
+  if [ -n "${GAPN}" ]; then GAP_DESC="${GAPN} 条"; fi
+  notify_ok "[freebuff-zh] v${NEWVER} 已发布（含 ${GAP_DESC} 未翻译文案）" "版本已按缺口发布策略上线：自主修复未能在预算内消化全部新文案，未翻部分保持英文（功能无损）。可择期人工补翻 dict.json 后 bash tools/autoupdate.sh --force 重发。报告: ${REPORT}"
+else
+  notify_ok "[freebuff-zh] v${NEWVER} 汉化包已发布" "全自动适配成功：探测 → 下载（SHA512 校验）→ 自主修复循环 → 构建 → 提交 → 发布。控制器会在 30 分钟内提示用户更新。"
+fi
 
 # work/ 每个版本会累积 ~650MB 的 pristine 解包目录，downloads/ 每个版本 ~150MB
 # 安装包，磁盘 84% 告急。保守清理：只删「非当前版本且 48h 前改动」的 pristine 与
