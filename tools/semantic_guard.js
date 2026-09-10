@@ -5,6 +5,14 @@
 // wrong (for example document.createEvent("Event") or
 // dataTransfer.types.includes("Files")). Keep this list deliberately narrow:
 // normal UI attributes such as title/label remain translatable.
+//
+// 0.0.100 事故教训：LLM 批量翻译把 Lezer 节点名 "Emphasis" 翻成 "强调"，
+// resolve:"Emphasis" / after:"Emphasis" / t[t.Emphasis=25]="Emphasis" 四处
+// 代码位置被污染，应用启动即崩（RangeError: unknown parser）。以下新增：
+//   - resolve/mark/after：Lezer 语法扩展配置属性
+//   - displayName：主题/套餐等标识符式展示名（比较风险高，保持英文）
+//   - backgroundColor/fill/stroke：CSS 系统色关键字（如 "Highlight"）
+//   - 枚举赋值 ]="X"：TS 枚举自映射（t[t.Always=0]="Always"）
 const SEMANTIC_PROPERTIES = new Set([
   'top',
   'parser',
@@ -19,6 +27,13 @@ const SEMANTIC_PROPERTIES = new Set([
   'scope',
   'selector',
   'extension',
+  'resolve',
+  'mark',
+  'after',
+  'displayName',
+  'backgroundColor',
+  'fill',
+  'stroke',
 ])
 
 const SEMANTIC_CALLS = [
@@ -48,6 +63,11 @@ function contextReason(source, start, end) {
   const property = before.match(/(?:^|[,{;])\s*([A-Za-z_$][\w$]*)\s*:\s*$/)
   if (property && SEMANTIC_PROPERTIES.has(property[1])) {
     return `semantic property ${property[1]}`
+  }
+  if (/\]\s*=\s*$/.test(before)) {
+    // TS 枚举自映射：t[t.Emphasis=25]="Emphasis"。普通 UI 字符串不会以
+    // 索引赋值形式出现在压缩产物里，误伤面极小。
+    return 'enum member assignment'
   }
   if (/(?:===|!==|==|!=)\s*$/.test(before) || /\bcase\s*$/.test(before)) {
     return 'comparison or switch case'
