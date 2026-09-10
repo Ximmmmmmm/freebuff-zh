@@ -118,7 +118,7 @@ cat <<TIP
 
 接下来的人工步骤：
   1) 打开上方报告，把 MISSED 列表里的**新版本改写过的文案**补进 dict.json
-     （少量直接编辑；批量可用 node tools/addl10n.js <bundle> --dry 参考 docs/汉化流程.md）
+     （少量直接编辑；批量可用 node tools/addl10n.js <bundle> --dry 参考 docs/更新维护.md）
   2) 重新构建验证全命中：bash build.sh
   3) 安装生效：bash apply.sh
 TIP

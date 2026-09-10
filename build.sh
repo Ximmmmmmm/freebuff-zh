@@ -140,24 +140,6 @@ node "${HERE}/tools/postbuild.js" "${HERE}/output" --main-src "${WORK}/main" || 
 }
 
 echo
-echo "== 5/5 浏览器冒烟（拦翻译污染运行时）=="
-SMOKE_ROUND="${HANHUA_SMOKE_ROUND:-0}"
-SMOKE_MAX="${HANHUA_SMOKE_MAX:-2}"
-export HANHUA_SMOKE_LOG="${HERE}/work/smoke-last.log"
-if bash "${HERE}/tools/smoke-gate.sh" "${HERE}/output/ui"; then
-  echo "冒烟通过（第 $((SMOKE_ROUND + 1)) 次构建）"
-elif [ "${HANHUA_SMOKE_HEAL:-1}" = "1" ] && [ "${SMOKE_ROUND}" -lt "${SMOKE_MAX}" ] \
-     && node "${HERE}/tools/smoke-heal.js" < "${HANHUA_SMOKE_LOG}"; then
-  echo "已删除污染词条，重建（自愈第 $((SMOKE_ROUND + 1))/${SMOKE_MAX} 轮）…"
-  rm -rf "${WORK}"
-  HANHUA_SMOKE_ROUND="$((SMOKE_ROUND + 1))" exec bash "${HERE}/build.sh" "$@"
-else
-  echo "ERROR: 冒烟未通过且无法自愈——output/ 有启动崩溃风险，已中止构建" >&2
-  echo "  冒烟输出：${HANHUA_SMOKE_LOG}" >&2
-  exit 1
-fi
-
-echo
 echo "完成：output/app.asar 与 output/ui/ 已生成。"
 echo "安装：bash apply.sh"
 echo "注意：asar 内容与 Release 产物一致；容器头部可能因 @electron/asar 版本不同有细微差异，不影响运行。"

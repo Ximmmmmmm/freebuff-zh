@@ -102,7 +102,7 @@ bash build.sh <app.asar> <ui-dir>   # 或显式指定原版文件
 ├── dict.json          # 翻译词典（exact / template / code / pattern 四类）
 ├── manifest.json      # 词典适配的 Freebuff 版本（多开控制器读取做兼容检查）
 ├── patches/           # 人工补丁：词典覆盖不到的手工修改（主进程 6 个文件；index.html 由 tools/apply_ui_patch.js 直改）
-├── tools/             # 提取/翻译/核查脚本（见 docs/汉化流程.md）
+├── tools/             # 构建 / 版本迁移 / 找漏翻脚本（见 docs/更新维护.md）
 │   ├── update.sh      # 一键版本迁移：重映射 → 构建 → 残留扫描 → 待办汇总
 │   ├── remap.js       # template 词典条目随 minifier 改名自动迁移
 │   ├── postbuild.js   # 构建产物自检（index.html 标记 / 主进程语法与译文哨兵）
@@ -114,7 +114,7 @@ bash build.sh <app.asar> <ui-dir>   # 或显式指定原版文件
 ├── build.sh           # 可复现构建：原版 + 词典 + 补丁 → output/（含防呆自检）
 ├── apply.sh           # 安装汉化到应用（自动备份）
 ├── restore.sh         # 从备份还原英文原版
-├── docs/              # 汉化流程 / 更新维护说明
+├── docs/              # 汉化维护说明（日常恢复 / 版本适配 / 发布）
 └── work/              # 扫描中间产物（gitignore，不入库）
 ```
 

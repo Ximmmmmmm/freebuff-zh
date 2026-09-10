@@ -23,11 +23,15 @@
   `tools/notify.js` + `.notify.json.example`（失败告警）与 `tools/codex-fix.js`（流水线自修复）。
   版本适配起改走本地手动流程：`tools/update.sh`（重映射 → 构建 → 残留扫描）→ 补 `dict.json`
   → `bash build.sh` → `bash apply.sh`，发布用 `bash tools/release.sh`。
-- **保留的质量门禁**：`build.sh` / `release.sh` 仍调用 `tools/smoke-gate.sh`（真实浏览器加载产物，
-  拦「译文污染运行时」这类启动崩溃）与 `tools/smoke-heal.js`；词典审计工具
-  `tools/audit-bad-entries.js` / `tools/remove-bad-entries.js` 同样保留，可手动使用。
-- 翻译工具（`tools/codex-translate.js` / `tools/autotranslate.js` / `tools/agent-migrate.js`）
-  不再挂在流水线上，改为按需手动调用。
+- **精简 `tools/`（44 → 16 个）**：砍掉服务器自动化时代遗留的脚本——
+  冒烟闸门（`smoke-gate.sh` / `smoke-test.js` / `smoke-heal.js`，本来也要装 playwright 才真跑）、
+  词典审计（`audit-bad-entries.js` / `remove-bad-entries.js` / `audit.js`）、翻译链路
+  （`codex-translate.js` / `autotranslate.js` / `codex-proxy.js` / `agent-migrate.js`）
+  与一次性排查脚本（`attrs` / `context` / `context2` / `exact` / `count` / `filter` /
+  `mainscan` / `menuscan` / `remaining` / `show` / `tctx` / `tpls` 等）。
+  只留构建、版本迁移、找漏翻所需的那几个；`semantic_guard.js` 被 `apply.js` 依赖，保留。
+  `build.sh` / `release.sh` 不再调用冒烟闸门；`docs/` 两篇合并为 `docs/更新维护.md` 一篇；
+  根目录一次性的 `migrate-dict-97.js` 一并删除。
 - **词典对齐装机 v0.0.100（36 条失配词条）**：本地 `build.sh` 之前会被自带的全命中防呆拦住
   （36 条 MISSED）。处理结果：
   - 14 条模板词条只是 minifier 变量改名（`${e.paths…}`→`${t.paths…}`、`${Qs(O)}`→`${xs(O)}` 等），
