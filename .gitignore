@@ -1,12 +1,12 @@
 # Build artifacts — publish these via GitHub Releases instead of committing them
 output/
+output-*/
 backup/
 work/
 downloads/
 
 # Local secrets — never commit API keys
 .translator.json
-.notify.json
 
 # Node / misc
 node_modules/

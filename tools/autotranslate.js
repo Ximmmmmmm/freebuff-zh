@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // Auto-translate newly appeared UI strings for a new Freebuff bundle.
 //
-// Pipeline used by tools/autoupdate.sh when a fresh release introduces copy the
-// dictionary does not cover yet:
+// Use when a fresh Freebuff release introduces copy the dictionary does not
+// cover yet (manual run; also the fallback when Codex is unavailable):
 //   1. scan the pristine (English) UI bundle for user-facing strings that are
 //      NOT already a dict key (exact / template)
 //   2. batch them to an OpenAI-compatible chat-completions endpoint

@@ -13,11 +13,6 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-# cron 环境的 PATH 不含 /usr/local/bin（gh 装在那里），显式补上（与 notify.js 一致）
-case ":${PATH}:" in
-  *:/usr/local/bin:*) ;;
-  *) export PATH="/usr/local/bin:${PATH}" ;;
-esac
 REPO="Ximmmmmmm/freebuff-zh"
 UPLOAD=1
 FORCE=0
@@ -118,8 +113,7 @@ if ! command -v gh >/dev/null 2>&1; then
 fi
 
 # 同 packVersion 重发时 tag 已存在：gh release create 会拒绝。此时用
-# upload --clobber 覆盖两个资产并 edit 更新标题/备注（autoupdate 同版本修正
-# 自动带 --force 走这条路径）。
+# upload --clobber 覆盖两个资产并 edit 更新标题/备注（同版本修正重发走这条路径）。
 REL_TAG="pack-v${VER}"
 if gh release view "${REL_TAG}" -R "${REPO}" >/dev/null 2>&1; then
   if [ "${FORCE}" -eq 0 ]; then

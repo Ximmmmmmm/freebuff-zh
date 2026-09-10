@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // agent-migrate.js — MISSED 词条的 Codex agent 兜底修复
 //
-// 流水线位置：autoupdate.sh 在自动翻译两轮后仍有 MISSED 时调用，转人工前最后兜底。
+// 使用场景：构建后仍有 MISSED 词条时调用，转人工前最后兜底。
 // 设计红线：agent 只产出结构化迁移方案（JSON），落库前必须全部通过本脚本的
 // 确定性校验；校验不过一条都不写。agent 运行在隔离目录 + read-only sandbox，
 // 无法触碰 dict.json / .translator.json。

@@ -2,8 +2,7 @@
 // codex-translate.js — Codex agent 全权翻译器(汉化"Codex 全程驱动"的核心)
 //
 // 职责:Freebuff 出新版本时,新文案的翻译/改写/删除/跳过判定全部交给 Codex agent。
-// 它替代 autotranslate.js(批量 LLM)成为自动翻译的主力;LLM 批量翻译降级为
-// Codex 不可用时的备胎(autoupdate.sh 里处理)。
+// 它替代 autotranslate.js(批量 LLM)成为翻译主力;LLM 批量翻译作为 Codex 不可用时的备胎。
 //
 // 输入:
 //   <bundle.js>            英文原版主 bundle(必须)
@@ -11,7 +10,7 @@
 //   --dry                  只输出方案,不落库
 //   --max N                单批候选上限(默认 150,超出分多批,每批一次 codex 调用)
 //
-// 输出协议(供 autoupdate.sh 解析):
+// 输出协议(供调用方解析):
 //   退出码 0 = 有落库(或 dry 有方案)  2 = codex/代理不可用  3 = 输出非 JSON
 //   4 = 校验失败  5 = 无候选  1 = 其他错误
 //   最后一行的标记:CODEX_TRANSLATE_OK / CODEX_TRANSLATE_NONE / CODEX_TRANSLATE_FAIL
@@ -251,7 +250,7 @@ if (REPORT && fs.existsSync(REPORT)) {
 
 // ---- 1c. seen 记忆：同版本内 agent 已评估且未落库的候选不再重复评估 ------
 // 背景：候选池常远大于 MAX_BATCH，agent 每批只落库少数、其余判定为噪音不翻；
-// 不记忆的话 autoupdate 的多轮循环会对同一批候选反复调用 codex 烧预算。
+// 不记忆的话多轮重跑会对同一批候选反复调用 codex 烧预算。
 // 版本变化时 seen 整体失效（新 bundle 重新评估）。
 const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'manifest.json'), 'utf8'));
 const SEEN_FILE = path.join(ROOT, 'work', '.codex-seen.json');

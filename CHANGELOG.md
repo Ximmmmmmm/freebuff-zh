@@ -1,5 +1,17 @@
 # 更新日志
 
+## [工程] · 2026-09-10
+
+- **下线服务器自动更新**：删除 `tools/autoupdate.sh`（无人值守流水线）、`docs/服务器自动更新.md`、
+  `tools/notify.js` + `.notify.json.example`（失败告警）与 `tools/codex-fix.js`（流水线自修复）。
+  版本适配起改走本地手动流程：`tools/update.sh`（重映射 → 构建 → 残留扫描）→ 补 `dict.json`
+  → `bash build.sh` → `bash apply.sh`，发布用 `bash tools/release.sh`。
+- **保留的质量门禁**：`build.sh` / `release.sh` 仍调用 `tools/smoke-gate.sh`（真实浏览器加载产物，
+  拦「译文污染运行时」这类启动崩溃）与 `tools/smoke-heal.js`；词典审计工具
+  `tools/audit-bad-entries.js` / `tools/remove-bad-entries.js` 同样保留，可手动使用。
+- 翻译工具（`tools/codex-translate.js` / `tools/autotranslate.js` / `tools/agent-migrate.js`）
+  不再挂在流水线上，改为按需手动调用。
+
 ## [0.0.92] · 2026-09-05
 
 - **适配 Freebuff v0.0.92**：targetVersion / packVersion 升至 0.0.92；渲染 bundle

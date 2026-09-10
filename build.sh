@@ -118,7 +118,7 @@ if [ -n "${PRISTINE_UI}" ]; then
     MISSED="$(printf '%s' "${APPLY_LOG}" | sed -n 's/^MISSED (\([0-9][0-9]*\) keys.*/\1/p')"
     if [ -n "${MISSED}" ] && [ "${MISSED}" -gt 0 ]; then
       if [ "${ALLOW_MISSED:-0}" = "1" ]; then
-        # 缺口发布模式（autoupdate 终局策略）：词典锚文本在新版失效但其余校验
+        # 缺口发布模式（手动可选）：词典锚文本在新版失效但其余校验
         # （补丁/语法/自检）照常执行——未翻文案保持英文，功能无损。
         echo "WARN: 词典有 ${MISSED} 条未命中（ALLOW_MISSED=1 缺口发布模式，对应文案保持英文）"
       else
