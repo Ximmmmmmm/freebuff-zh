@@ -5,6 +5,8 @@
 # 有新增未翻译文案时自动中止，只发通知，不发半成品。
 #
 # 依赖：bash / curl / unzip / node 20+ / npx（拉 @electron/asar）/ gh CLI（已登录）
+# 告警：失败/卡死/需人工时经 tools/notify.js 通知（.notify.json 配 webhook 多渠道；
+#       未配置时用 gh 在仓库开 issue 兜底，同标题去重防刷屏，详见 docs/服务器自动更新.md）
 # 用法：
 #   bash tools/autoupdate.sh                 # 单次检查
 #   bash tools/autoupdate.sh --force         # 跳过"版本未变"短路，强制重建
@@ -27,6 +29,25 @@ mkdir -p work downloads
 
 log() { echo "[$(date '+%F %T')] $*"; }
 
+# --- 失败告警 ------------------------------------------------------------------
+# 渠道与去重逻辑见 tools/notify.js：.notify.json 配 webhook（feishu/wecom/bark/
+# serverchan/generic）优先；未配置时用 gh 在仓库开 issue 兜底（复用发布用的登录）。
+# 同标题只发一次（work/.notify-state），避免 30 分钟一次的 cron 对同一故障刷屏；
+# 版本探测恢复或成功发布时自动清状态/关 issue。通知自身失败绝不阻塞主流程。
+notify() { # $1=标题 $2=正文（可省略）
+  node tools/notify.js "$1" "${2:-}" || true
+}
+notify_ok() { # $1=标题 $2=正文：恢复/成功通知（总是发送，并清告警状态、关兜底 issue）
+  node tools/notify.js --ok "$1" "${2:-}" || true
+}
+fail() { # $1=退出码 $2=消息 $3=可选自定义告警标题
+  log "ERROR: ${2}"
+  notify "${3:-[freebuff-zh] 自动更新失败（v${NEWVER:-?}）}" "版本: ${NEWVER:-未知}
+${2}
+报告: ${REPORT:-（尚未生成）}"
+  exit "${1}"
+}
+
 # --- 任务互斥锁 --------------------------------------------------------------
 # 使用 Linux 原生 flock；锁由文件描述符持有，进程退出或异常终止时内核自动释放。
 # 不删除锁文件，避免清理动作误删下一次任务刚获取的锁。
@@ -37,6 +58,11 @@ if ! command -v flock >/dev/null 2>&1; then
 fi
 exec 9>"${LOCK_FILE}"
 if ! flock -n 9; then
+  # 锁长时间不释放 = 任务疑似卡死（正常最长一轮含 Codex 翻译约 15-20 分钟，留 90 分钟余量）
+  LOCK_AGE=$(( $(date +%s) - $(stat -c %Y "${LOCK_FILE}" 2>/dev/null || echo 0) ))
+  if [ "${LOCK_AGE}" -gt 5400 ]; then
+    notify "[freebuff-zh] 自动更新任务疑似卡死" "更新锁已持有 ${LOCK_AGE} 秒（超过 90 分钟），请上服务器检查进程与 work/autoupdate.log，必要时清理卡死进程。"
+  fi
   log "已有更新任务运行中，本次跳过"
   exit 0
 fi
@@ -57,6 +83,8 @@ LATEST_TAG="$(echo "${LOC}" | grep -oE 'freebuff-desktop-v[0-9.]+')"
 
 if [ -z "${LATEST_TAG}" ]; then
   log "无法从官方下载直链解析最新版本（location=${LOC:-空}），退出"
+  # 此前是静默退出——官方改下载页/302 结构时会永远查不到新版本且无人知晓，必须告警
+  notify "[freebuff-zh] 官方版本探测失败" "无法从 freebuff.com 下载直链解析最新版本（location=${LOC:-空}）。官方可能调整了下载页或 302 结构，autoupdate 已失明，需人工检查探测逻辑。"
   exit 0
 fi
 
@@ -66,6 +94,8 @@ log "官方最新: ${NEWVER} / 当前适配: ${CURVER}"
 
 if [ "${NEWVER}" = "${CURVER}" ] && [ "${FORCE}" -eq 0 ]; then
   log "版本未变，无需更新"
+  # 探测链路正常工作 = 此前若有告警，此刻视为已恢复（清状态/关兜底 issue，不发通知）
+  [ -f work/.notify-state ] && node tools/notify.js --reset >/dev/null 2>&1 || true
   exit 0
 fi
 
@@ -126,12 +156,11 @@ for i in $(seq 1 10); do
   log "latest.yml 下载失败（第 ${i} 次），5 秒后重试"
   sleep 5
 done
-[ "${YML_OK}" -eq 1 ] && [ -s "${YML_PATH}" ] || { log "ERROR: latest.yml 下载失败"; exit 1; }
+[ "${YML_OK}" -eq 1 ] && [ -s "${YML_PATH}" ] || fail 1 "latest.yml 下载失败（镜像与直连 10 轮重试均不可用）"
 
 EXPECT_B64="$(grep -m1 '^sha512:' "${YML_PATH}" | awk '{print $2}')"
 if [ -z "${EXPECT_B64}" ]; then
-  log "ERROR: latest.yml 里没有 sha512，无法校验"
-  exit 1
+  fail 1 "latest.yml 里没有 sha512，无法校验（官方发布产物异常）"
 fi
 EXPECT_HEX="$(node -e "console.log(Buffer.from('${EXPECT_B64}','base64').toString('hex'))")"
 
@@ -166,24 +195,23 @@ for round in $(seq 1 60); do
 done
 ACTUAL_HEX="$(sha512sum "${EXE_PATH}" 2>/dev/null | awk '{print $1}')" || ACTUAL_HEX=""
 if [ "${EXPECT_HEX}" != "${ACTUAL_HEX:-}" ]; then
-  log "ERROR: 多次尝试后 SHA512 仍不匹配（官方包下载不完整或被篡改）"
-  exit 1
+  fail 1 "多次尝试后 SHA512 仍不匹配（官方包下载不完整或被篡改）"
 fi
 
 # --- 3. 从安装包解出原版 app.asar 与 ui/ --------------------------------------
 # NSIS 安装包用 7z 解出的是外壳（$PLUGINSDIR/app-64.7z 内嵌真正的应用 payload，
 # Electron 多文件结构），需二次解压 app-*.7z 才能拿到 resources/。
-command -v 7z >/dev/null || { log "ERROR: 需要 7z（apt install p7zip-full）"; exit 1; }
+command -v 7z >/dev/null || fail 1 "缺少 7z（Alibaba Cloud Linux: yum install -y p7zip p7zip-plugins；Debian: apt install p7zip-full）"
 
 STAGE="work/pristine-${NEWVER}"
 rm -rf "${STAGE}"; mkdir -p "${STAGE}/installer"
-7z x -y -o"${STAGE}/installer" "${EXE_PATH}" >/dev/null 2>&1 || { log "ERROR: 7z 解外层 NSIS 失败"; exit 1; }
+7z x -y -o"${STAGE}/installer" "${EXE_PATH}" >/dev/null 2>&1 || fail 1 "7z 解外层 NSIS 失败（${ASSET_EXE}）"
 
 # 二次解压内嵌 payload（app-*.7z / archive 等命名，全局找最大的 .7z）
 INNER_7Z="$(find "${STAGE}/installer" -name '*.7z' -printf '%s %p\n' 2>/dev/null | sort -rn | head -1 | awk '{print $2}')"
 if [ -n "${INNER_7Z}" ]; then
   log "内嵌 payload: ${INNER_7Z}，二次解压..."
-  7z x -y -o"${STAGE}/app" "${INNER_7Z}" >/dev/null 2>&1 || { log "ERROR: 7z 二次解压失败"; exit 1; }
+  7z x -y -o"${STAGE}/app" "${INNER_7Z}" >/dev/null 2>&1 || fail 1 "7z 二次解压失败（${INNER_7Z}）"
 else
   # 无内嵌压缩包：外层即应用目录（老版本/其他打包方式兑底）
   mkdir -p "${STAGE}/app"
@@ -198,7 +226,7 @@ if [ ! -f "${PRISTINE_ASAR}" ] || [ ! -d "${PRISTINE_UI}" ]; then
   PRISTINE_ASAR="$(find "${STAGE}" -name app.asar | head -1)"
   PRISTINE_UI="$(find "${STAGE}" -type d -name ui | grep orchestrator | head -1)"
 fi
-[ -f "${PRISTINE_ASAR}" ] && [ -d "${PRISTINE_UI}" ] || { log "ERROR: 安装包里找不到 app.asar / ui"; exit 1; }
+[ -f "${PRISTINE_ASAR}" ] && [ -d "${PRISTINE_UI}" ] || fail 1 "安装包里找不到 app.asar / ui（官方打包布局可能变更，需适配解包逻辑）"
 log "原版就绪: ${PRISTINE_ASAR}"
 
 # --- 4. 版本变化时才更新 manifest（同版本 --force 重建会留下假 diff）---------
@@ -341,10 +369,9 @@ fi
 if [ "${RC}" -ne 0 ]; then
   if grep -qE "MISSED|未命中" "${REPORT}"; then
     log "自动翻译后仍有新增未翻译文案——不发布半成品。请人工补翻 dict.json 后重跑（--force）。报告: ${REPORT}"
-    exit 2
+    fail 2 "自动翻译（Codex/LLM 多轮）后仍有新增未翻译文案，已停止发布。请人工补翻 dict.json 后 bash tools/autoupdate.sh --force 重跑。报告: ${REPORT}" "[freebuff-zh] v${NEWVER} 需人工补翻新文案"
   fi
-  log "ERROR: 构建/自检失败（退出码 ${RC}），不发布。报告: ${REPORT}"
-  exit 1
+  fail 1 "构建/自检失败（退出码 ${RC}），不发布。报告: ${REPORT}"
 fi
 
 # --- 7. 提交 + 发布 Release ---------------------------------------------------
@@ -358,7 +385,7 @@ git -c user.name="hanhua-bot" -c user.email="bot@users.noreply.github.com" \
   commit -m "适配 Freebuff v${NEWVER}（autoupdate）"
 # 提交成功后快照已不再需要回滚；push/release 失败也不应撤销已提交的适配。
 ROLLBACK_ENABLED=0
-git push origin "$(git branch --show-current)"
+git push origin "$(git branch --show-current)" || fail 1 "git push 失败（远端不可达/凭据问题）；适配已本地提交，网络恢复后手动 git push 即可"
 
 # 只有确实产生提交（版本/词典变化）才发布 Release；release.sh 自带版本防呆。
 # 同版本修正（远端 packVersion 已等于本次）时 release.sh 默认拒绝，自动加
@@ -373,5 +400,21 @@ if [ -n "${REMOTE_MURL}" ]; then
     log "远端已是 pack-v${NEWVER}（同版本修正），发布时带 --force 覆盖"
   fi
 fi
-bash tools/release.sh ${REL_ARGS}
+bash tools/release.sh ${REL_ARGS} || fail 1 "release.sh 发布失败（gh 凭据/网络问题）；适配已提交推送，修复后可 bash tools/release.sh --force 单独补发"
 log "✅ Freebuff v${NEWVER} 汉化包已发布。控制器会在 30 分钟内提示用户更新。"
+
+# --- 8. 成功通知 + 磁盘清理 ----------------------------------------------------
+# 发布成功 = 全链路恢复：发恢复通知（清告警状态、自动关闭此前兜底的 issue）。
+notify_ok "[freebuff-zh] v${NEWVER} 汉化包已发布" "全自动适配成功：探测 → 下载（SHA512 校验）→ 自动翻译 → 构建 → 提交 → 发布。控制器会在 30 分钟内提示用户更新。"
+
+# work/ 每个版本会累积 ~650MB 的 pristine 解包目录，downloads/ 每个版本 ~150MB
+# 安装包，磁盘 84% 告急。保守清理：只删「非当前版本且 48h 前改动」的 pristine 与
+# 安装包（宽限期避免误删正在排障的现场），报告与翻译前备份保留最近 15 份。
+cleanup_old() {
+  find work -maxdepth 1 -type d -name 'pristine-*' ! -name "pristine-${NEWVER}" -mtime +1 -exec rm -rf {} + 2>/dev/null || true
+  find downloads -maxdepth 1 -type f \( -name 'Freebuff-*.exe' -o -name 'Freebuff-*.yml' \) ! -name "Freebuff-${NEWVER}-*" -mtime +1 -delete 2>/dev/null || true
+  ls -1t work/update-*.txt 2>/dev/null | tail -n +16 | xargs -r rm -f 2>/dev/null || true
+  ls -1t work/dict-before-*.json 2>/dev/null | tail -n +16 | xargs -r rm -f 2>/dev/null || true
+}
+CLEANED="$(cleanup_old && du -sh work downloads 2>/dev/null | tr '\n' ' ')"
+log "清理完成，当前占用: ${CLEANED}"

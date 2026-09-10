@@ -6,6 +6,7 @@ downloads/
 
 # Local secrets — never commit API keys
 .translator.json
+.notify.json
 
 # Node / misc
 node_modules/

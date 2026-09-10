@@ -1,0 +1,11 @@
+{
+  "_说明": "复制为 .notify.json（已被 .gitignore 排除，不会进版本库）后按需填写。不配置 webhooks 时，告警自动降级为用 gh CLI 在 githubRepo 指定的仓库开 issue（复用发布流程的 gh 登录，零配置可用）。webhooks 按数组顺序尝试，任一送达即算成功；全部失败也开 issue 兜底。",
+  "webhooks": [
+    { "format": "feishu",     "url": "https://open.feishu.cn/open-apis/bot/v2/hook/替换为你的机器人token" },
+    { "format": "wecom",      "url": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=替换为你的key" },
+    { "format": "bark",       "url": "https://api.day.app/替换为你的Key" },
+    { "format": "serverchan", "url": "https://sctapi.ftqq.com/替换为你的SendKey.send" },
+    { "format": "generic",    "url": "https://你的自建服务/hook" }
+  ],
+  "githubRepo": "Ximmmmmmm/freebuff-zh"
+}
