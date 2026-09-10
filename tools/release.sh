@@ -78,6 +78,16 @@ make_zip() {
     exit 1
   fi
 }
+echo
+echo "== 发布前冒烟闸门（产物运行时校验）=="
+export HANHUA_SMOKE_LOG="${HERE}/work/smoke-last.log"
+if ! bash "${HERE}/tools/smoke-gate.sh" "${HERE}/output/ui"; then
+  echo "ERROR: 发布前冒烟未通过——产物有启动崩溃风险，拒绝发布（--force 也不例外）" >&2
+  echo "  排查: bash tools/smoke-test.js output/ui" >&2
+  echo "  自愈: node tools/smoke-heal.js < work/smoke-last.log 后 bash build.sh 重建" >&2
+  exit 1
+fi
+
 make_zip "${ZIP}"
 
 SHA="$(node -e 'const c = require("crypto"); console.log(c.createHash("sha512").update(require("fs").readFileSync(process.argv[1])).digest("base64"))' "${ZIP}")"

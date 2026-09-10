@@ -3,6 +3,17 @@
   "description": "Freebuff Desktop 简体中文汉化包 / Chinese localization pack for the free AI coding agent",
   "private": true,
   "type": "commonjs",
-  "keywords": ["freebuff", "localization", "chinese", "hanhua", "translation", "electron", "zh-cn"],
-  "author": "Ximmmmmmm"
+  "keywords": [
+    "freebuff",
+    "localization",
+    "chinese",
+    "hanhua",
+    "translation",
+    "electron",
+    "zh-cn"
+  ],
+  "author": "Ximmmmmmm",
+  "devDependencies": {
+    "playwright": "^1.63.0"
+  }
 }

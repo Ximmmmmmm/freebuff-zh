@@ -510,7 +510,7 @@ fi
 git add manifest.json dict.json
 if [ "${FIX_DIRTY}" -eq 1 ]; then
   # codex-fix 修过的流水线代码一并入库（语法已过自检、构建已验证）
-  git add -A -- tools patches build.sh package.json docs
+  git add -A -- tools patches build.sh package.json package-lock.json docs
 fi
 if git diff --cached --quiet; then
   ROLLBACK_ENABLED=0
