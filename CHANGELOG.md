@@ -1,5 +1,22 @@
 # 更新日志
 
+## [0.0.101] · 2026-09-10
+
+- **适配 Freebuff v0.0.101**：targetVersion / packVersion 升至 0.0.101；渲染 bundle
+  `index-CNlYwGfw.js` → `index-Cxze7PZU.js`。
+- **模板变量自动重映射 62 条**（`tools/remap.js`）：`vo(O)` → `bo(O)` 等，新版模板全部命中。
+- **新增 MCP 连接器界面文案**：`Add connector` / `Connect and choose tools` /
+  `Search connectors` 收进 `exact`；`Connected` / `Choose tools` / `Needs approval` /
+  `Needs sign-in` 收进 `pattern`。
+- **`Connected` 从 exact 挪到 pattern（重要）**：0.0.101 新增了把 `"Connected"` 用作
+  `l.label==="Connected"` 比较的代码，全局 exact 会命中代码位置、被语义守卫拦下并直接让构建
+  失败（`semantic-blocked`）。pattern 只作用于 `label:`/`children:` 等界面属性位置，界面标签
+  照常翻译，代码比较不受影响。
+- **移除 19 条原文已不在 0.0.101 的词条**（` — the same file the CLI uses.`、
+  `Runs on this computer`、`No servers configured yet. Add one to ` 等）——它们本来就没匹配上，
+  产物内容不变；删除后防呆全命中才恢复有效。
+- **验证**：UI bundle `all keys matched`（1424 处替换），`lint_dict` 通过，postbuild 自检通过。
+
 ## [工程] · 2026-09-10
 
 - **下线服务器自动更新**：删除 `tools/autoupdate.sh`（无人值守流水线）、`docs/服务器自动更新.md`、
