@@ -11,6 +11,15 @@
   `tools/audit-bad-entries.js` / `tools/remove-bad-entries.js` 同样保留，可手动使用。
 - 翻译工具（`tools/codex-translate.js` / `tools/autotranslate.js` / `tools/agent-migrate.js`）
   不再挂在流水线上，改为按需手动调用。
+- **词典对齐装机 v0.0.100（36 条失配词条）**：本地 `build.sh` 之前会被自带的全命中防呆拦住
+  （36 条 MISSED）。处理结果：
+  - 14 条模板词条只是 minifier 变量改名（`${e.paths…}`→`${t.paths…}`、`${Qs(O)}`→`${xs(O)}` 等），
+    从产物 bundle 里重新提取真实模板字面量、按位置回填，新 key 逐字自验证通过才写入；
+  - 22 条原文已不在该版本产物里（库内部报错如 `Unrecognized key:`、agent 提示词
+    `Use when the trace shows…`、已被官方改写的钱包文案等）→ 移除；这些词条本来就没生效，
+    产物内容不变，明细留档 `work/missed-0.0.100.json` 以便日后重新翻译。
+  - 结果：`bash build.sh` 不再需要 `ALLOW_MISSED=1`，UI bundle `all keys matched`（1436 处替换），
+    产物自检通过。
 
 ## [0.0.92] · 2026-09-05
 
