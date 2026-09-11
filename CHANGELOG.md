@@ -1,5 +1,36 @@
 # 更新日志
 
+## [0.0.103] · 2026-09-11
+
+- **适配 Freebuff v0.0.103**（装机从 0.0.101 直升，无 0.0.102 包）：targetVersion / packVersion
+  升至 0.0.103；渲染 bundle `index-Cxze7PZU.js` → `index-D6WDQXYJ.js`。
+- **模板变量自动重映射 56 条**（`tools/remap.js`）；2 条歧义模板人工核对：
+  `Open ${y} in ${b.label}` 与 `Open ${e??"workspace"} in ${b.label}` 的 `${b.label}`
+  随 minifier 改名为 `${v.label}`，按新 bundle 逐字回填。
+- **补翻新增模型文案 11 条**（0.0.103 的模型选择器从 10 个模型扩到 21 个，新增 9 个）：
+  tagline 收 `Smart & Fast` / `Fastest` / `Strong all-around` / `1M context` /
+  `Unlock by referring friends` / `Novita route — evaluation only` / `Via CrofAI` /
+  `Queues, then falls back`；数据使用与限速提示收 `May use data for AI training` /
+  `Anonymous provider retains prompts` / `Rate limited and shared by all users: queues when busy,
+  then answers on DeepSeek V4.1 Flash.`。模型名（DeepSeek V4.1 Flash / MiniMax M3 /
+  GPT-5.6 Luna / Gemini 3.8 Flash / GLM 5.2 / Muse Spark 1.3 / Ox Alpha / Kimi K3 等）
+  按约定保留英文。
+- **补翻 Freebucks 钱包 / paywall 文案 8 条**（其中 5 条是本次版本变更引入的）：
+  - **回归修复**：`${ve} ${as} an hour, more than the …` 这条付费时长提示被 minifier 改名后
+    只剩一条词条，新版把两种变体合到了同一句，`remap.js` 迁移时只覆盖到其中一种（另一种
+    后面多了 `${fe?…}` 尾巴），导致该句变回英文——按新版逐字重塑词条后已翻译。
+  - **新增文案**：套餐升级文案 `Get ${a}x usage for $…` / `${t.displayName} raises your
+    daily ${as} from …` 与模型套餐提示 `${u} drops` / `… on a plan — … a day instead of …`
+    （嵌套模板，逐段词条）。
+  - **顺带补齐**同一界面历史上就未翻的三条：`${C} costs … for an hour of unlimited messages …`、
+    `${ve} ${as} buys one hour of unlimited messages …`、`${Ki(d.balance)} ${as} in your
+    wallet. Used after today's pool. …`。
+- **残留扫描与 0.0.101 持平**：界面属性位置英文仍为 54 项（语言关键字、主题名、模型名等
+  有意保留项），未出现新的漏翻位置；英文自然语言片段比对（剔出 ${...} 变量后）
+  确认新版已无新增漏译。
+- **验证**：UI bundle `all keys matched`（1449 处替换，较 0.0.101 的 1429 增加 20 处）；
+  `lint_dict` 通过；postbuild 自检通过（纯字面量词条覆盖 920/920）。
+
 ## [0.0.101] · 2026-09-10
 
 - **适配 Freebuff v0.0.101**：targetVersion / packVersion 升至 0.0.101；渲染 bundle
