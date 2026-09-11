@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # 一键版本迁移：应用自动更新到新版本后跑一次，把能自动的都自动掉。
 #
-#   1/4 模板变量重映射：tools/remap.js 把 template 词典条目的 ${...} 变量名迁移到新 bundle
-#   2/4 可复现构建：bash build.sh（内含语法校验 + 构建产物自检）
-#   3/4 残留扫描：leftover / prose / uipos 扫描构建出的主 bundle
-#   4/4 汇总：打印剩余人工事项清单，扫描全文归档到 work/
+#   1/5 模板变量重映射：tools/remap.js 把 template 词典条目的 ${...} 变量名迁移到新 bundle
+#   2/5 可复现构建：bash build.sh（内含语法校验 + 构建产物自检）
+#   3/5 残留扫描：leftover / prose / uipos 扫描构建出的主 bundle
+#   4/5 回归闸门：tools/regress.js 对比上一版汉化包，揪出「变回英文」的静默回归
+#   5/5 汇总：打印剩余人工事项清单，扫描全文归档到 work/
 #
 # 之后只差两步：把报告里的新增文案补进 dict.json（重跑 build），再 bash apply.sh 安装。
 #
@@ -64,7 +65,7 @@ fi
 
 # --- 1/4 重映射 -----------------------------------------------------------------
 echo
-echo "== 1/4 模板变量重映射 =="
+echo "== 1/5 模板变量重映射 =="
 REMAPPED=0
 if [ -n "${UI_BUNDLE}" ]; then
   # remap.js --write only needs to inspect the pristine bundle. The installed
@@ -80,7 +81,7 @@ fi
 
 # --- 2/4 构建 --------------------------------------------------------------------
 echo
-echo "== 2/4 构建（含防呆自检）=="
+echo "== 2/5 构建（含防呆自检）=="
 if ! bash "${HERE}/build.sh" "${PRISTINE_ASAR}" "${PRISTINE_UI}" 2>&1 | tee -a "${REPORT}"; then
   echo "ERROR: build.sh 失败（详情见上方日志），中止。" >&2
   exit 1
@@ -88,7 +89,7 @@ fi
 
 # --- 3/4 残留扫描 ------------------------------------------------------------------
 echo
-echo "== 3/4 残留扫描 =="
+echo "== 3/5 残留扫描 =="
 FINAL_BUNDLE="${HERE}/output/ui/assets/$(basename "${UI_BUNDLE:-__none__}")"
 {
   echo
@@ -109,10 +110,48 @@ else
   echo "(未找到 output 主 bundle，跳过)" | tee -a "${REPORT}"
 fi
 
-# --- 4/4 汇总 ----------------------------------------------------------------------
+# --- 4/5 回归闸门 ------------------------------------------------------------------
+# 迁移的静默失败模式：remap 按「去变量的文字骨架」找对应位置，同一句话若有多种变体，
+# 两条词条可能被指到同一处互相覆盖，剩下那处就变回英文而 build.sh 依旧全绿。
 echo
-echo "== 4/4 本次更新小结 =="
+echo "== 4/5 回归闸门（对比上一版汉化包）=="
+CUR_VER="$(node -e 'const m = require(process.argv[1]); console.log(m.packVersion || m.targetVersion)' "${HERE}/manifest.json")"
+BASE=""
+for z in $(ls -1t "${HERE}"/dist/hanhua-pack-*.zip 2>/dev/null || true); do
+  v="$(basename "$z" | sed 's/^hanhua-pack-//; s/\.zip$//')"
+  [ "$v" = "${CUR_VER}" ] && continue
+  BASE="$z"; break
+done
+if [ -z "${BASE}" ]; then
+  CAND="$(ls -1dt "${HERE}"/output-*/ 2>/dev/null | head -1 || true)"
+  [ -n "${CAND}" ] && BASE="${CAND%/}"
+fi
+{
+  echo
+  echo "## 回归闸门"
+} >> "${REPORT}"
+GATE_RC=2
+if [ -n "${BASE}" ]; then
+  echo "  基线：${BASE}"
+  echo "  基线：${BASE}" >> "${REPORT}"
+  set +e
+  node "${HERE}/tools/regress.js" "${BASE}" "${HERE}/output" 2>&1 | tee -a "${REPORT}"
+  GATE_RC=${PIPESTATUS[0]}
+  set -e
+else
+  echo "  ! 本地没有上一版汉化包（dist/hanhua-pack-*.zip）也没有历史 output-*/，跳过"
+  echo "    发布时 release.sh 会拉 GitHub 上已发布的包再比一次。"
+fi
+
+# --- 5/5 汇总 ----------------------------------------------------------------------
+echo
+echo "== 5/5 本次更新小结 =="
 echo "  · 模板变量自动迁移：${REMAPPED} 条$( [ "${REMAPPED}" -gt 0 ] && echo '  → 建议人工抽查 git diff dict.json 后提交' )"
+case "${GATE_RC}" in
+  0) echo "  · 回归闸门：未发现新增英文片段 ✓" ;;
+  1) echo "  · 回归闸门：⚠ 发现新增英文片段（清单见报告）——补翻 dict.json 后重跑 build.sh" ;;
+  *) echo "  · 回归闸门：跳过（本地缺上一版包，发布时还会再比一次）" ;;
+esac
 echo "  · 报告（MISSED 与残留扫描全文）：${REPORT}"
 cat <<TIP
 

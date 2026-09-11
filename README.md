@@ -24,6 +24,9 @@ Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.103）的**简体中文汉�
 - **版本迁移自动化**：`tools/update.sh` 一键串起重映射 → 构建 → 残留扫描。其中
   `tools/remap.js` 自动把 template 词典条目的 `${...}` 变量名迁移到新 bundle
   （对 v0.0.75→v0.0.76 的 13 条改名全量命中验证），不再逐条手工核对
+- **发布回归闸门**：`tools/regress.js` 把新构建与上一版已发布包对一遍——比对前抹掉 `${...}`
+  插值（变量改名不误报）、模板逐段取（嵌套模板不漏），只要出现新增英文自然语言片段就中止
+  发布，拦住「词典全命中但某句变回英文」这类静默回归（`update.sh` / `release.sh` 自动调用）
 - **构建防呆自检**：`build.sh` 会对补丁后的主进程做 `node --check`、词典替换次数为 0 即中止，
   构建后由 `tools/postbuild.js` 断言 `ui/index.html` 汉化标记与译文哨兵——杜绝历史上出现过的
   「补丁静默跳过」「悬空模板启动崩溃」两类事故
@@ -107,6 +110,7 @@ bash build.sh <app.asar> <ui-dir>   # 或显式指定原版文件
 │   ├── remap.js       # template 词典条目随 minifier 改名自动迁移
 │   ├── postbuild.js   # 构建产物自检（index.html 标记 / 主进程语法与译文哨兵）
 │   ├── lint_dict.js   # 词典质量门禁（结构 / 重复键 / 占位符一致性）
+│   ├── regress.js     # 发布回归闸门（新旧产物英文片段比对，release/update 调用）
 │   ├── status.sh      # 装机 vs 构建 vs 备份状态一览
 │   ├── prune_backups.sh # 清理累积的 hanhua-backup-*（保留最近 N 份）
 │   ├── gen_patches.js # 从原版自动生成主进程补丁（Unicode 转义避免编码问题）

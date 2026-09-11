@@ -6,6 +6,7 @@
 #   bash tools/release.sh               # 打包并上传（需要 gh CLI 已登录）
 #   bash tools/release.sh --no-upload   # 只打包到 dist/，打印手工上传步骤
 #   bash tools/release.sh --force       # 覆盖同 packVersion 发布（默认拒绝不升版本的发布）
+#   bash tools/release.sh --allow-english # 回归闸门只报告不拦截（确认新英文是有意保留时）
 #
 # 发布前确认 output/ 是最新构建（bash build.sh）。packVersion 在 manifest.json
 # 里维护：跟随 targetVersion、与其保持一致；同版本重发需追加 --force（客户端
@@ -16,11 +17,13 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPO="Ximmmmmmm/freebuff-zh"
 UPLOAD=1
 FORCE=0
+ALLOW_ENGLISH=0
 for a in "$@"; do
   case "$a" in
-    --no-upload) UPLOAD=0 ;;
-    --force)     FORCE=1 ;;
-    *) echo "未知参数：$a（支持 --no-upload / --force）" >&2; exit 1 ;;
+    --no-upload)     UPLOAD=0 ;;
+    --force)         FORCE=1 ;;
+    --allow-english) ALLOW_ENGLISH=1 ;;
+    *) echo "未知参数：$a（支持 --no-upload / --force / --allow-english）" >&2; exit 1 ;;
   esac
 done
 
@@ -53,6 +56,54 @@ if [ -n "${REMOTE_VER}" ]; then
   fi
   echo "远端 packVersion: ${REMOTE_VER}；本次发布: ${VER}"
 fi
+
+# --- 回归闸门：新构建 vs 上一版已发布产物 -------------------------------------
+# 版本适配时常出现「词典全命中、但某句因变体合并而变回英文」的静默回归（0.0.103 就中过一次：
+# 两条只有变量名不同的词条被 remap 指到同一处互相覆盖）。这种漏翻 build.sh 拦不住，只有把
+# 新旧两版产物对一遍才看得出来。取不到上一版包（首次发布 / 离线）只警告不拦。
+echo
+echo "== 回归闸门（对比上一版已发布产物）=="
+if [ "${ALLOW_ENGLISH}" -eq 1 ]; then
+  echo "  （--allow-english：只报告不拦截）"
+fi
+PREV_TAG=""
+if command -v gh >/dev/null 2>&1; then
+  PREV_TAG="$(gh release list -R "${REPO}" -L 30 --json tagName \
+    --jq "[.[].tagName] | map(select(. != \"pack-v${VER}\")) | .[0]" 2>/dev/null || true)"
+fi
+GATE_RC=2
+if [ -z "${PREV_TAG}" ]; then
+  echo "  ! 未找到上一版 Release（首次发布或 gh 不可用），跳过"
+else
+  PREV_URL="$(gh release view "${PREV_TAG}" -R "${REPO}" --json assets \
+    --jq '.assets[] | select(.name | startswith("hanhua-pack-")) | .url' 2>/dev/null || true)"
+  GATE_TMP="$(mktemp -d)"
+  if [ -n "${PREV_URL}" ]; then
+    curl -sL -H 'Accept: application/octet-stream' "${PREV_URL}" -o "${GATE_TMP}/prev.zip" || true
+  fi
+  if [ -s "${GATE_TMP}/prev.zip" ]; then
+    set +e
+    node "${HERE}/tools/regress.js" "${GATE_TMP}/prev.zip" "${HERE}/output"
+    GATE_RC=$?
+    set -e
+  else
+    echo "  ! 未能下载 ${PREV_TAG} 的汉化包，跳过"
+  fi
+  rm -rf "${GATE_TMP}"
+fi
+case "${GATE_RC}" in
+  0) echo "  ✓ 相对 ${PREV_TAG} 未发现新增英文片段" ;;
+  1)
+    if [ "${ALLOW_ENGLISH}" -eq 1 ]; then
+      echo "  WARN: 上述英文片段由 --allow-english 放行" >&2
+    else
+      echo "ERROR: 回归闸门拦住本次发布。请先把上面的片段补齐（dict.json → bash build.sh），" >&2
+      echo "  确认确实要保留英文时再用 bash tools/release.sh --allow-english 重跑。" >&2
+      exit 1
+    fi
+    ;;
+  *) echo "  ! 闸门未能完成比对，跳过" ;;
+esac
 
 DIST="${HERE}/dist"
 mkdir -p "${DIST}"
