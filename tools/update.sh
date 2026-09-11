@@ -98,6 +98,10 @@ FINAL_BUNDLE="${HERE}/output/ui/assets/$(basename "${UI_BUNDLE:-__none__}")"
 if [ -f "${FINAL_BUNDLE}" ]; then
   echo "-- uipos（界面属性位置英文）--"           | tee -a "${REPORT}"
   node "${HERE}/tools/uipos.js"    "${FINAL_BUNDLE}" | tee -a "${REPORT}"
+  # 字段级扫描：uipos 只认属性锚点，description/tagline/hint 这类字段整片英文它看不见
+  # （0.0.103.2 的 connectors 目录介绍就是这么藏了 100 条）。
+  echo "-- fieldscan（description/tagline/hint… 字段英文）--" | tee -a "${REPORT}"
+  node "${HERE}/tools/fieldscan.js" "${FINAL_BUNDLE}" | tee -a "${REPORT}" || true
   echo "-- prose（多词英文片段，控制台截前 40 行，全文在报告）--" | tee -a "${REPORT}"
   PROSE_OUT="$(node "${HERE}/tools/prose.js" "${FINAL_BUNDLE}" || true)"
   printf '%s\n' "${PROSE_OUT}" >> "${REPORT}"

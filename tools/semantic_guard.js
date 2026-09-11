@@ -36,6 +36,14 @@ const SEMANTIC_PROPERTIES = new Set([
   'stroke',
 ])
 
+// 界面标签常量白名单：这些中文是词典 code 分区「全局一致替换」的结果。典型例子是
+// Connected——它既是状态标签的生成值（label:cond?"Connected":…），又被同一份代码
+// 用来比较（l.label==="Connected" 过滤已连接列表、判断 sr-only）。只翻其中一处会让
+// 过滤器失配，所以必须整体翻；它属本进程内派生的展示标签，不写盘、不发请求、不跨进程，
+// 整体替换是安全的。这里放行对应的中文常量，避免 findUnsafeMatches 把「比较位置出现
+// 中文」当成污染（其余中文出现在语义位置仍会拦下）。新增条目必须同样满足上面两个前提。
+const CONSISTENT_LABELS = new Set(['已连接'])
+
 const SEMANTIC_CALLS = [
   /(?:document\.)?createEvent\s*\([^()]*$/,
   /new\s+(?:Event|CustomEvent|MouseEvent|KeyboardEvent|PointerEvent)\s*\([^()]*$/,
@@ -98,6 +106,7 @@ function findUnsafeMatches(source) {
     const raw = m[1] !== undefined ? m[1] : m[2]
     const value = m[1] !== undefined ? decodeDoubleQuoted(raw) : raw
     if (!hasCJK(value)) continue
+    if (CONSISTENT_LABELS.has(value)) continue
     const reason = contextReason(source, m.index, re.lastIndex)
     if (reason) out.push({ value, reason, index: m.index })
   }
@@ -106,6 +115,7 @@ function findUnsafeMatches(source) {
 
 module.exports = {
   SEMANTIC_PROPERTIES,
+  CONSISTENT_LABELS,
   contextReason,
   findUnsafeMatches,
   hasCJK,

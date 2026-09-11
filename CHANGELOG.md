@@ -1,5 +1,42 @@
 # 更新日志
 
+## [0.0.103.2] · 2026-09-11
+
+**补齐 connectors / MCP 面板**——0.0.103.1 条目里记的那个「已知未完成」，实际远不止状态标签：
+面板各层文案 + 目录里 100 条第三方连接器介绍，共 **217 处替换**（1454 → 1672）。
+
+- **根因不是「词条忘了加」，而是 pattern 分区的匹配形态太窄**，这次一并改掉：
+  - `pattern` 改成扫描式匹配，值位置认四种形态：字面量 `children:"Delete"`、
+    压缩后的默认参数 `confirmLabel:n="Delete"`、三元分支
+    `label:t.status==="idle"?"Ready when needed":"Disconnected"`、以及模板插值内部
+    （`` `${s?"Collapse":"Expand"} thinking details…` ``）。只取「锚点值表达式第 0 层」的
+    字面量（深层是 class 名/色值/SVG 路径，比较运算符右侧是协议常量，均跳过）；
+    `actionLabel:` 纳入锚点。旧实现是「锚点紧跟字面量」的正则，而 connectors 的状态标签
+    几乎全在三元分支里——所以整片漏翻。
+  - `pattern` 补上 **MISSED 上报**：零命中的词条以前静默放过，实测长期躺着 **31 条死条目**
+    （原文已改版，或只剩代码/协议位置）。现在会像 exact/template 一样列进 MISSED 并让构建
+    失败——要么修匹配形态，要么删掉过期条目。
+- **`Connected` 走 `code` 分区整体一致替换**：它既是状态标签的生成值，又被
+  `l.label==="Connected"` 用于过滤「已连接」列表与判断 `sr-only`，只翻生成处会让过滤器失配。
+  代价是中文常量会出现在比较位置，因此 `semantic_guard` 新增 `CONSISTENT_LABELS` 白名单，
+  只放行「本进程内派生的展示标签、不写盘/不发请求/不跨进程」这一类，其余仍一律拦下。
+- **补翻范围**：connectors 各状态标签与动作（`Available` / `Disabled` / `Reconnect required` /
+  `Manage` / `Review connection` …）、详情面板（`Connection` / `Add MCP configuration` /
+  `Connector views` / `MCP configuration JSON` …）、列表页（`Top connectors` / `Search results` /
+  `Your custom connectors` / `Your tools belong here` …）、iOS 镜像说明、`New thread (…T)`
+  tooltip、`Couldn’t refresh your connectors.`、目录里 100 条 connector 介绍；顺带扫出并补上
+  `Updating…` / `Moving…` / `Exporting…` / `Stopping…`、`ends in ` / `/hr` / `is ready` /
+  `in-memory defaults (file absent)`，以及 `今日/本周/本月套餐会话已用完` 一组映射文案。
+- **残留口径更新**：`tools/uipos.js` 升级到能看见三元分支 / `actionLabel` / JSX 文本节点后，
+  界面属性位置英文 **107 → 14**，剩下 14 条均为有意保留（模型名 8 条、`Freebuff` 品牌、
+  MCP 配置 JSON 示例、`bun install`、CodeMirror 内部的 ` Action: …`）；`description:` 字段英文
+  归零；`regress.js` 的英文自然语言片段 193 → 145（新增 0）。
+- **新增 `tools/fieldscan.js`**：按字段（默认 description / tagline / hint / subtitle / note）
+  列出仍是英文的条目。这次 100 条目录介绍正是因为 `description:` 不在 uipos 的锚点里才长期
+  无人发现，已接进 `tools/update.sh` 的残留扫描。
+- **验证**：`build.sh` `all keys matched`、`lint_dict` 与 postbuild 自检全绿（含代码语义常量
+  扫描）、回归闸门 0 命中；装机产物已核对 connectors 各状态标签与目录介绍均为中文。
+
 ## [0.0.103.1] · 2026-09-11
 
 - **修复两处被用户回报的短标签漏翻**（「files 和 delete 没汉化」）：
@@ -18,10 +55,11 @@
   （`ParseLooseVersion`，第四段只对 packVersion 有意义），因此已装 0.0.103 的机器会看到
   「汉化：已应用 · 有新包 v0.0.103.1 可应用」并自动拉取——首次实践「同一 Freebuff 版本内修正重发」
   的第四段约定（此前同号重发只能 `--force`，且已装机的机器拿不到修复）。
-- **已知未完成**：connectors / MCP 设置面板仍有一整簇英文（状态标签 `Available` / `Disabled` /
-  `Reconnect required`、详情面板 `Connection` / `Add MCP configuration`、目录里 20 余条 connector
-  描述等，合计约 60 条）。该功能在词典里已有 9 条中文（属漏翻，非有意保留），且从 0.0.101 及更早
-  就存在——注意这批字符串大量出现在三元分支与 `actionLabel` 位置上，补齐需要再扩一轮匹配机制。
+- **已知未完成**（已在 0.0.103.2 补齐）：connectors / MCP 设置面板仍有一整簇英文（状态标签
+  `Available` / `Disabled` / `Reconnect required`、详情面板 `Connection` / `Add MCP configuration`、
+  目录里的 connector 描述等）。该功能在词典里已有 9 条中文（属漏翻，非有意保留），且从 0.0.101
+  及更早就存在——注意这批字符串大量出现在三元分支与 `actionLabel` 位置上，补齐需要再扩一轮匹配
+  机制（0.0.103.2 扩的正是这处，另外目录实际是 100 条而非 20 余条）。
 
 ## [工程] · 2026-09-11
 
