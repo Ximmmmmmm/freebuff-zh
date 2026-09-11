@@ -17,8 +17,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: 词典 lint（结构 / 重复键 / 占位符一致性）
+      - name: 词典 lint（结构 / 重复键 / 占位符一致性 / 半截模板键）
         run: node tools/lint_dict.js
+      - name: remap 自测（模板变量迁移 + 半截模板 + lint 负面用例）
+        run: node tools/test_remap.js
       - name: 工具脚本语法冒烟
         run: |
           for f in tools/*.js; do

@@ -21,6 +21,13 @@
 // （0.0.104 适配时就是这么发现的 4 条）。现在尾部残余记成 partial 表达式：匹配时发成
 // `\$\{` + 尾巴捕获（到反引号/右花括号为止）+ 收尾反引号，重建 key 与译文时同样回填，
 // 因此它和普通模板一样能自动跟进 minifier 改名。
+//
+// 译文自己的写法变体：译文允许改写插值内部的字符串常量（`${r.title||"new thread"}` →
+// `${r.title||"新会话"}`，lint_dict 的 E3 按骨架放行），这类插值不在 key 的插值表里。
+// 重建时按**骨架**找到对应的原插值、只把标识符换掉，并补回 `${…}` 外壳——旧实现回退
+// 写回原文本时会把外壳一起丢掉（写坏词典）。另外两道自证：重建后译文的插值槽数不得变化、
+// 每个槽都要能按骨架对应到新 key，否则列为 AMBIGUOUS 拒绝写回。
+// 自测：node tools/test_remap.js（合成变量改名的 bundle，CI 会跑）。
 const fs = require('fs')
 const path = require('path')
 
@@ -90,6 +97,53 @@ function parseTemplate(s) {
 }
 
 const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+// 表达式骨架：抹掉字符串字面量后比较。译文允许改写插值内部的字符串常量
+// （`${r.title||"new thread"}` → `${r.title||"新会话"}`，lint_dict 的 E3 同样按骨架放行），
+// 这种「译文自己的写法变体」不在 key 的插值表里，得靠骨架找到对应位置再改名。
+const skeletonOf = (e) => e.replace(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`/g, '')
+
+// 表达式里的标识符 token（跳过字符串字面量内部，名字不翻）
+function idents(e) {
+  const out = []
+  let i = 0
+  while (i < e.length) {
+    const c = e[i]
+    if (c === '"' || c === "'" || c === '`') {
+      let j = i + 1
+      while (j < e.length) {
+        if (e[j] === '\\') j += 2
+        else if (e[j] === c) {
+          j++
+          break
+        } else j++
+      }
+      i = j
+    } else if (/[A-Za-z_$]/.test(c)) {
+      let j = i
+      while (j < e.length && /[\w$]/.test(e[j])) j++
+      out.push({ start: i, end: j, name: e.slice(i, j) })
+      i = j
+    } else i++
+  }
+  return out
+}
+
+// 把 s 的标识符按位置换成 names（数量必须一致，即骨架相同才成立）；对不上返回 null
+function renameTo(s, names) {
+  const a = idents(s)
+  if (a.length !== names.length) return null
+  let out = ''
+  let last = 0
+  a.forEach((t, i) => {
+    out += s.slice(last, t.start) + names[i]
+    last = t.end
+  })
+  return out + s.slice(last)
+}
+
+// 去掉插值的 `${` / `}` 外壳（半截模板没有收尾花括号）
+const innerOf = (e) => (e.startsWith('${') ? e.slice(2).replace(/\}$/, '') : e)
 
 // 捕获到的表达式必须括号平衡且不含反引号，否则认为边界切错了
 function balancedExpr(e) {
@@ -230,7 +284,22 @@ for (const [key, zh] of Object.entries(dict.template)) {
     continue
   }
 
-  const rebuild = (parts) => parts.map((p) => ({ t: p.t, v: p.t === 'expr' ? mapping.get(p.v) ?? p.v : p.v }))
+  // 已映射的插值直接用捕获到的新表达式（捕获值自带 `${…}` 外壳）；
+  // 没映射上的（译文自己的写法变体）按骨架找到对应插值、只换标识符，并补回外壳——
+  // 旧实现直接原样写回 `p.v`，会把 `${` 与 `}` 一起丢掉，把译文改坏。
+  const rebuild = (parts) =>
+    parts.map((p) => {
+      if (p.t !== 'expr') return { t: 'lit', v: p.v }
+      const hit = mapping.get(p.v)
+      if (hit) return { t: 'expr', v: hit }
+      const sk = skeletonOf(p.v)
+      for (const [o, n] of mapping) {
+        if (skeletonOf(o) !== sk) continue
+        const renamed = renameTo(p.v, idents(innerOf(n)).map((t) => t.name))
+        if (renamed !== null) return { t: 'expr', v: '${' + renamed + (p.partial ? '' : '}') }
+      }
+      return { t: 'expr', v: '${' + p.v + (p.partial ? '' : '}') }
+    })
   const newKey = rebuild(keyParts).map((p) => p.v).join('')
   const newZh = rebuild(zhParts).map((p) => p.v).join('')
   // 落笔前自证：重建的新 key 必须能在 bundle 里逐字节命中，绝不把词典改坏
@@ -247,6 +316,33 @@ for (const [key, zh] of Object.entries(dict.template)) {
       key,
       `重建的新 key 插值槽数与原 key 不一致（${keyExprs.length} → ${nkExprCount}），锚文本疑似命中无关字符串:\n      ↳ ${JSON.stringify(newKey)}`,
     ])
+    continue
+  }
+  // 译文自证：插值槽数不能变（中文吸收复数占位符属正常，增减则一定是重建出错），
+  // 且每个槽都能按骨架对应到新 key 的插值。对不上宁可不写，交人工。
+  const zhSlots = (parseTemplate(newZh) || []).filter((p) => p.t === 'expr')
+  const oldZhSlots = zhParts.filter((p) => p.t === 'expr')
+  if (zhSlots.length !== oldZhSlots.length) {
+    stats.AMBIGUOUS.push([
+      key,
+      `重建的译文插值槽数变化（${oldZhSlots.length} → ${zhSlots.length}），拒绝写回`,
+    ])
+    continue
+  }
+  const nkSkel = (parseTemplate(newKey) || []).filter((p) => p.t === 'expr').map((p) => skeletonOf(p.v))
+  const orphan = zhSlots.find((p) => !nkSkel.includes(skeletonOf(p.v)))
+  if (orphan) {
+    stats.AMBIGUOUS.push([
+      key,
+      `译文的插值 ${JSON.stringify(orphan.v)} 无法与新 key 对齐（骨架不匹配），拒绝写回`,
+    ])
+    continue
+  }
+  if (
+    partialTail &&
+    (newZh.match(/\$\{[^}]*$/) || [])[0] !== (newKey.match(/\$\{[^}]*$/) || [])[0]
+  ) {
+    stats.AMBIGUOUS.push([key, '重建后译文与 key 的半截尾巴不一致（apply.js 会拼断模板），拒绝写回'])
     continue
   }
   stats.RENAMED.push([key, newKey, newZh])

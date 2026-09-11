@@ -31,12 +31,14 @@ Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.104）的**简体中文汉�
 - **发布回归闸门**：`tools/regress.js` 把新构建与上一版已发布包对一遍——比对前抹掉 `${...}`
   插值（变量改名不误报）、模板逐段取（嵌套模板不漏），只要出现新增英文自然语言片段就中止
   发布，拦住「词典全命中但某句变回英文」这类静默回归（`update.sh` / `release.sh` 自动调用）
-- **构建防呆自检**：`build.sh` 会对补丁后的主进程做 `node --check`、词典替换次数为 0 即中止，
+- **构建防呆自检**：`build.sh` 在解包前先跑 `tools/lint_dict.js`（词典结构 / 半截模板键，
+  此前只在 CI 跑、本地流程形同虚设），之后对补丁后的主进程做 `node --check`、词典替换次数为 0 即中止，
   构建后由 `tools/postbuild.js` 断言 `ui/index.html` 汉化标记与译文哨兵——杜绝历史上出现过的
   「补丁静默跳过」「悬空模板启动崩溃」两类事故
 - **词典质量门禁**：`tools/lint_dict.js` 校验结构与 `${...}` 占位符一致性、查重复键，
   并把「半截模板」词条（以未闭合 `${条件?` 结尾）当硬错误拦下——必须未改尾巴、形态可迁移
-  且在 `TRUNCATED_TEMPLATE_ANCHORS` 里登记过；已接入 GitHub Actions（只跑不依赖专有文件的检查）
+  且在 `TRUNCATED_TEMPLATE_ANCHORS` 里登记过；`build.sh` 解包前先跑它，已接入 GitHub Actions
+  （CI 另跑 `tools/test_remap.js`：合成「变量改名」bundle 验证迁移、并覆盖 lint 的三条负面用例）
 
 ## 📦 快速开始（安装）
 
@@ -115,6 +117,7 @@ bash build.sh <app.asar> <ui-dir>   # 或显式指定原版文件
 │   ├── remap.js       # template 词典条目随 minifier 改名自动迁移
 │   ├── postbuild.js   # 构建产物自检（index.html 标记 / 主进程语法与译文哨兵）
 │   ├── lint_dict.js   # 词典质量门禁（结构 / 重复键 / 占位符一致性）
+│   ├── test_remap.js  # remap / lint 自测（合成「变量改名」bundle，CI 跑）
 │   ├── regress.js     # 发布回归闸门（新旧产物英文片段比对，release/update 调用）
 │   ├── status.sh      # 装机 vs 构建 vs 备份状态一览
 │   ├── prune_backups.sh # 清理累积的 hanhua-backup-*（保留最近 N 份）

@@ -75,6 +75,9 @@ if [ -n "${UI_BUNDLE}" ]; then
   printf '%s\n' "${REMAP_LOG}" | tee -a "${REPORT}"
   REMAPPED="$(printf '%s' "${REMAP_LOG}" | sed -n 's/^  RENAMED[[:space:]]*\([0-9][0-9]*\).*/\1/p')"
   REMAPPED="${REMAPPED:-0}"
+  # 歧义条目 = 没自动迁移的（下一版会变回英文），别只埋在报告里
+  AMBIGUOUS="$(printf '%s' "${REMAP_LOG}" | sed -n 's/^  AMBIGUOUS[[:space:]]*\([0-9][0-9]*\).*/\1/p')"
+  AMBIGUOUS="${AMBIGUOUS:-0}"
 else
   echo "(无 ui 目录，跳过)"
 fi
@@ -151,6 +154,11 @@ fi
 echo
 echo "== 5/5 本次更新小结 =="
 echo "  · 模板变量自动迁移：${REMAPPED} 条$( [ "${REMAPPED}" -gt 0 ] && echo '  → 建议人工抽查 git diff dict.json 后提交' )"
+if [ "${AMBIGUOUS:-0}" -gt 0 ]; then
+  echo "  · remap 歧义条目：${AMBIGUOUS} 条 ⚠ 未自动迁移（清单见报告）——不改就会在下个版本变回英文"
+else
+  echo "  · remap 歧义条目：0 条 ✓"
+fi
 case "${GATE_RC}" in
   0) echo "  · 回归闸门：未发现新增英文片段 ✓" ;;
   1) echo "  · 回归闸门：⚠ 发现新增英文片段（清单见报告）——补翻 dict.json 后重跑 build.sh" ;;

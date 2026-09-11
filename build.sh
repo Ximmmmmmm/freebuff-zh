@@ -57,6 +57,17 @@ fi
 echo "Pristine app.asar: ${PRISTINE_ASAR}"
 [ -n "${PRISTINE_UI}" ] && echo "Pristine ui dir:   ${PRISTINE_UI}"
 
+# --- 词典门禁：结构 / 重复键 / 占位符 / 半截模板键 （tools/lint_dict.js）-----------------
+# 以前 lint 只在 CI 跑，本地 build.sh → apply.sh 这条实际用的链路里形同虚设：结构写坏
+# （最阴的是「半截模板」键丢了尾巴）照样能构建、能装，装完才崩。放在解包之前跑，
+# 几秒钟就能发现，不必等整套构建跑完。update.sh / release.sh 走的都是这里。
+echo
+echo "== 0/4 词典门禁（tools/lint_dict.js）=="
+if ! node "${HERE}/tools/lint_dict.js"; then
+  echo "ERROR: 词典未通过门禁（错误明细见上）。半截模板键尾巴不对等结构问题会让产物直接坏掉，已中止构建。" >&2
+  exit 1
+fi
+
 WORK="$(mktemp -d)"
 trap 'rm -rf "${WORK}"' EXIT
 
