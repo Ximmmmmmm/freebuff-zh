@@ -1207,13 +1207,17 @@
   },
   "code": {
     ",\" code comment\",o.length===1?\"\":\"s\"": ",\" 条代码评论\"",
-    "run_file_change_hooks:\"Hooks\"": "run_file_change_hooks:\"文件变更钩子\""
+    "run_file_change_hooks:\"Hooks\"": "run_file_change_hooks:\"文件变更钩子\"",
+    "?\"Delete\":": "?\"删除\":",
+    "?\"Files\":null": "?\"文件\":null",
+    "?\"Threads\":": "?\"会话\":"
   },
   "pattern": {
     "Close this space": "关闭此空间",
     "Context": "上下文",
     "Delete": "删除",
     "disabled": "已禁用",
+    "Files": "文件",
     "failed": "失败",
     "Home": "首页",
     "Locate folder…": "定位文件夹…",

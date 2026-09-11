@@ -28,14 +28,20 @@ const countOf = (src, re) => {
   return n
 }
 
+// UI 属性的锚点（冒号+引号之间的值位置由 pattern 键填入）。
+// 值位置允许压缩后的「解构默认值 / 变量赋值」形态：
+//   children:"Delete"   与   confirmLabel:n="Delete"
+// 后者在压缩产物里等同于前者（n 是默认参数的压缩名），早期只认字面量写法，
+// 导致这类短词漏翻（如删除会话弹窗的确认按钮）。
+const OPT_ASSIGN = '(?:[A-Za-z_$][\\w$]*\\s*=\\s*)?'
 const attrKeys = [
-  ['children', 'children:"%s"'],
-  ['label', 'label:"%s"'],
-  ['title', 'title:"%s"'],
-  ['placeholder', 'placeholder:"%s"'],
-  ['data-tooltip', '"data-tooltip":"%s"'],
-  ['aria-label', '"aria-label":"%s"'],
-  ['confirmLabel', 'confirmLabel:"%s"'],
+  ['children', 'children:'],
+  ['label', 'label:'],
+  ['title', 'title:'],
+  ['placeholder', 'placeholder:'],
+  ['data-tooltip', '"data-tooltip":'],
+  ['aria-label', '"aria-label":'],
+  ['confirmLabel', 'confirmLabel:'],
 ]
 
 let src = fs.readFileSync(file, 'utf8')
@@ -72,13 +78,13 @@ const applyExact = (source, dictSection) => {
 
 // pattern first so children:"X" gets the same translation before exact runs
 for (const [en, zh] of Object.entries(dict.pattern || {})) {
-  for (const [, tmpl] of attrKeys) {
-    const re = new RegExp(tmpl.replace('%s', esc(en)), 'g')
+  for (const [, anchor] of attrKeys) {
+    const re = new RegExp(anchor + '(' + OPT_ASSIGN + ')"' + esc(en) + '"', 'g')
     const n = countOf(src, re)
     if (n === 0) continue
     // callback replacement avoids treating $&/$1 in a future translation as
-    // String.replace metacharacters.
-    src = src.replace(re, () => tmpl.replace('%s', zh))
+    // String.replace metacharacters；捕获组 1 原样带回压缩变量名。
+    src = src.replace(re, (match, assign) => anchor + (assign ?? '') + '"' + zh + '"')
     totalReplaced += n
   }
 }

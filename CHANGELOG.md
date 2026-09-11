@@ -1,5 +1,28 @@
 # 更新日志
 
+## [0.0.103.1] · 2026-09-11
+
+- **修复两处被用户回报的短标签漏翻**（「files 和 delete 没汉化」）：
+  - **资源管理器标签**：`{id:"files",label:"Files"}` 的「Files」此前根本没有词条，补进 `pattern`
+    （`label:"Files"`）→「文件」；
+  - **删除确认按钮**：`Delete` 很早就在 `pattern` 里，但它在产物中以两种形态出现而旧匹配够不着——
+    技能管理弹窗是三元分支 `children:y==="delete"?"Delete":"Restore"`，删除会话的组件是默认参数
+    `confirmLabel:n="Delete"`。为此：`apply.js` 的 `pattern` 值位置改为兼容压缩后的变量赋值形态
+    `ident="X"`（与字面量 `label:"X"` 等价），并补 3 条 `code` 逐字片段（`?"Delete":` /
+    `?"Files":null` / `?"Threads":`，均不含压缩变量名，因此不会随 minifier 改名失效）。
+  - **顺带修掉**同一机制的「@ 提及」菜单分组标题「会话 / 文件」（`sectionLabel` 三元分支）与技能管理
+    弹窗的「删除 / 恢复」按钮。
+  - **验证**：`build.sh` 替换数 1449 → 1454、`all keys matched`、`lint_dict` 与 postbuild 自检
+    全部通过；回归闸门（对比已发布的 pack-v0.0.103）0 命中；装机产物已核对这四处均为中文。
+- **packVersion 升为 `0.0.103.1`**（`targetVersion` 仍 `0.0.103`）：控制器按四段比较版本
+  （`ParseLooseVersion`，第四段只对 packVersion 有意义），因此已装 0.0.103 的机器会看到
+  「汉化：已应用 · 有新包 v0.0.103.1 可应用」并自动拉取——首次实践「同一 Freebuff 版本内修正重发」
+  的第四段约定（此前同号重发只能 `--force`，且已装机的机器拿不到修复）。
+- **已知未完成**：connectors / MCP 设置面板仍有一整簇英文（状态标签 `Available` / `Disabled` /
+  `Reconnect required`、详情面板 `Connection` / `Add MCP configuration`、目录里 20 余条 connector
+  描述等，合计约 60 条）。该功能在词典里已有 9 条中文（属漏翻，非有意保留），且从 0.0.101 及更早
+  就存在——注意这批字符串大量出现在三元分支与 `actionLabel` 位置上，补齐需要再扩一轮匹配机制。
+
 ## [工程] · 2026-09-11
 
 - **新增发布回归闸门 `tools/regress.js`**：0.0.103 适配时踩到一类静默回归——`remap.js` 按

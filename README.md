@@ -70,7 +70,7 @@ bash tools/release.sh --no-upload   # 只打包到 dist/，打印手工上传步
 
 - **发布端**：Release tag `pack-v<packVersion>`，附件为 `hanhua-pack-<版本>.zip`（= `output/` 打包）和 `pack-manifest.json`（packVersion / targetVersion / asset / sha512）
 - **客户端**：控制器每 30 分钟检查一次（与 Freebuff 更新检查共用同一条代理链）。仅当 manifest 的 targetVersion 与本机 Freebuff 版本**完全一致**且 packVersion 更新时才下载，SHA512 校验、解包后落到 `output/`，点「应用汉化」生效
-- **packVersion**：跟随 targetVersion，与所适配的 Freebuff 版本保持一致（不带第四段修复后缀）；同版本只改词典的重发用 `release.sh --force`
+- **packVersion**：跟随 targetVersion；同一 targetVersion 内的修正重发追加第四段（如 `0.0.103.1`，`targetVersion` 不变）。控制器按四段比较，已装旧包的机器会被判定「有新包可应用」并自动拉取；只有回滚线上烂包这类应急场景才用 `release.sh --force` 同号覆盖
 - ⚠️ 汉化产物派生自 Freebuff 专有软件，发布 Release 即公开传播，与文末免责声明的「仅限本机自用」条款冲突——是否发布由你决定，发布前请确认接受并相应调整声明
 
 ### 还原英文原版
@@ -127,9 +127,10 @@ bash build.sh <app.asar> <ui-dir>   # 或显式指定原版文件
 - **自动更新会覆盖汉化**：应用自带 electron-updater，更新后汉化文件会被替换。更新后重新执行
   `apply.sh`（或用 `build.sh` 对新版本重新构建；也可直接在多开控制器里点「应用汉化」）。
   详见 `docs/更新维护.md`。
-- **同版本重发不会自动重拉**：控制器只在 packVersion 变新时才下载。某个 packVersion 的资产若被
-  `release.sh --force` 覆盖重发（例如回退了误译的代码标识符），已装过旧资产的机器版本号相同、
-  不会自动更新——需清掉已装的包版本戳后重新点「应用汉化」手动重应用。
+- **修正重发要升第四段**：控制器只在 packVersion 变新时才下载。同一 Freebuff 版本内又改了词典，
+  请把 `packVersion` 升到 `0.0.103.1` 这样再发布，已装机的机器才会自动拿到修复；若用
+  `release.sh --force` 同号覆盖，已装过旧资产的机器版本号相同、不会自动更新，需清掉包版本戳后
+  重新点「应用汉化」手动重应用。
 - **有意保留英文的部分**：编程语言名（Python、TypeScript…）、主题名（Ayu Dark…）、键盘键名
   （Enter、Delete…）、内部枚举/类型名、库内部错误信息——改动会破坏逻辑，故不翻译。
 - 汉化不涉及任何联网、上传或凭据改动。
