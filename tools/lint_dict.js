@@ -9,6 +9,10 @@
 //   W1 空白不对称 key/译文一侧有首尾空白另一侧没有——常见复制粘贴手误
 //   W2 疑似未翻   非 code 分区里完全不含 CJK 的译文（个别品牌词属有意保留）
 //   E4 pattern    pattern 键必须是纯字面量（不含 ${ ` 换行）
+//   E5 半截模板  以未闭合的 `${条件?` 结尾的 template 键（外层模板里内嵌模板三元的写法）：
+//                 只允许在 template 分区、译文必须逐字节复现同一尾巴、形态要能被 remap 迁移，
+//                 且骨架必须登记在 TRUNCATED_TEMPLATE_ANCHORS 里——这类键是特例，
+//                 0.0.104 适配时正是靠人肉才发现的 4 条，登记后就不再靠人工盯。
 //
 // 用法：node tools/lint_dict.js [dict.json]      # 默认 <repo>/dict.json
 const fs = require('fs')
@@ -22,6 +26,21 @@ const warns = []
 const info = []
 
 const SECTIONS = ['exact', 'template', 'code', 'pattern']
+
+// --- 半截模板键白名单 ---------------------------------------------------------------
+// 「半截模板键」形如 `… wallet.${fe?`——外层模板里内嵌模板三元的写法，apply.js 会把它连着
+// 后面那个反引号一起匹配（不这样写就只能把整段嵌套模板抄进词典）。这类键是**特例**：
+//   · 译文必须逐字节复现同一个半截尾巴，否则替换后模板直接断裂（E5 硬错误）；
+//   · 尾巴形态必须能被 remap.js 捕获迁移（`${` + 非空 + 不含反引号/右花括号）；
+//   · 骨架必须在这里登记——新增的半截键一进来就报错，必须显式登记后才能提交。
+// 登记用「英文骨架里的稳定片段」而不是整条键：minifier 改变量名不动英文文字，
+// 所以 remap 重写键之后这里也不会失效（骨架 = 键去掉所有 `${…}` 与尾部半截后的纯文本）。
+const TRUNCATED_TEMPLATE_ANCHORS = [
+  'an hour, more than the',
+  'for an hour of unlimited messages, charged once when the session starts. You have',
+  'buys one hour of unlimited messages and tool calls.',
+  "in your wallet. Used after today's pool.",
+]
 
 // --- 行级扫描：dict.json 是机器稳定格式（2 空格缩进），可逐行拿行号报错 ------------
 // 形如：  "section": {            /     "key": "value",            /   },
@@ -132,6 +151,37 @@ for (const sec of SECTIONS) {
     // E4 pattern 必须是纯字面量
     if (sec === 'pattern' && (k.includes('${') || k.includes('`') || /\n/.test(k))) {
       errors.push(`E4 ${n}: pattern 键必须为纯字面量（apply.js 只在 children:/label: 等 UI 属性位置做精确替换）`)
+    }
+
+    // E5 半截模板键
+    const trunc = k.match(/\$\{[^}]*$/)
+    if (trunc) {
+      const tail = trunc[0]
+      const skeleton = k.replace(PH, '').replace(/\$\{[^}]*$/, '')
+      const short = JSON.stringify(k.slice(-30))
+      if (sec !== 'template') {
+        errors.push(`E5 ${n}: 半截模板键只能出现在 template 分区（当前在 ${sec}）：${short}`)
+      }
+      const vTail = (v.match(/\$\{[^}]*$/) || [null])[0]
+      if (vTail !== tail) {
+        errors.push(
+          `E5 ${n}: 译文的半截尾巴与 key 不一致（key 结尾 ${JSON.stringify(tail)}，译文结尾 ${JSON.stringify(vTail)}）` +
+            `—— apply.js 是整段替换，尾巴对不上会把模板字符串弄断：${short}`,
+        )
+      }
+      if (!/^\$\{[^`}]{1,200}$/.test(tail)) {
+        errors.push(
+          `E5 ${n}: 半截尾巴 ${JSON.stringify(tail)} 形态 remap.js 无法迁移（要求以美元符号加左花括号开头、` +
+            `条件非空、不含反引号/右花括号、≤200 字符）：${short}`,
+        )
+      }
+      if (!TRUNCATED_TEMPLATE_ANCHORS.some((a) => skeleton.includes(a))) {
+        errors.push(
+          `E5 ${n}: 未登记的半截模板键。这类键是特例，请在 lint_dict.js 的 TRUNCATED_TEMPLATE_ANCHORS 里` +
+            `登记它的英文骨架片段后再提交（否则下个版本只能靠人工重新发现）：${short}`,
+        )
+      }
+      info.push(`  · ${n}: 半截模板键（已登记，remap 可自动迁移）：${JSON.stringify(k.slice(-28))}`)
     }
   }
 }

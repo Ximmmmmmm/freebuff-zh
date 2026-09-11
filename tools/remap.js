@@ -12,6 +12,15 @@
 //   RENAMED    仅插值表达式变化，已按锚文本捕获并回填（--write 时写入）
 //   AMBIGUOUS  锚文本命中多处且形态不一 / 占位符无法可靠对应（保留人工处理）
 //   MISSING    英文锚文本在 bundle 中找不到（词条可能过期；构建后的 MISSED 流程负责）
+//
+// 「半截模板」键：外层模板里内嵌模板的三元写法
+//   `… wallet.${fe?` ${fe.tooltip}`:""}`
+// 为了只翻固定段，词典里会存一条**以未闭合的 `${…` 结尾**的键
+//   `… wallet.${fe?`   （apply.js 把它连着后面那个反引号一起匹配）
+// 这种键没有闭合花括号，旧实现直接判为不可解析→永远 MISSING，只能人工把变量名抄一遍
+// （0.0.104 适配时就是这么发现的 4 条）。现在尾部残余记成 partial 表达式：匹配时发成
+// `\$\{` + 尾巴捕获（到反引号/右花括号为止）+ 收尾反引号，重建 key 与译文时同样回填，
+// 因此它和普通模板一样能自动跟进 minifier 改名。
 const fs = require('fs')
 const path = require('path')
 
@@ -61,7 +70,13 @@ function parseTemplate(s) {
         else if (c === '}') depth--
         j++
       }
-      if (depth !== 0) return null // 花括号不闭合
+      if (depth !== 0) {
+        // 半截模板：`${…` 一直到串尾都没有闭合。把它记成 partial 表达式后收工
+        // （只有末段可能是 partial，因为再往后就没有字符了）。
+        pushLit()
+        parts.push({ t: 'expr', v: s.slice(i + 2), partial: true })
+        return parts
+      }
       pushLit()
       parts.push({ t: 'expr', v: s.slice(i + 2, j - 1) })
       i = j
@@ -121,9 +136,22 @@ for (const [key, zh] of Object.entries(dict.template)) {
   // 构造正则：固定段按字面匹配，插值段用捕获组。先用「点号链 + 可选调用」的严格形态，
   // 整体命不中再退化为惰性捕获。惰性捕获不能含反引号——否则会跨越其它模板字面量
   // 吞进大段无关代码（捕获校验会拦下，但会漏掉真身）。
+  // 末段是半截模板时，尾巴用「`${` + 到反引号/右花括号为止」的宽松捕获：
+  // 半截表达式没有常规的「点号链 + 调用」形态，也不能带右花括号。
+  // `${` 必须包进捕获组：捕获值会直接回填成新 key/译文的插值文本（普通插值同理，
+  // 捕获的本来就是完整的 `${expr}`）。
+  const TAIL_CAP = '[^`}]{1,200}'
   const mk = (cap) =>
     new RegExp(
-      '`' + keyParts.map((p) => (p.t === 'lit' ? escRe(p.v) : '(' + cap + ')')).join('') + '`',
+      '`' +
+        keyParts
+          .map((p) => {
+            if (p.t === 'lit') return escRe(p.v)
+            if (p.partial) return '(\\$\\{' + TAIL_CAP + ')'
+            return '(' + cap + ')'
+          })
+          .join('') +
+        '`',
       'g',
     )
   const STRICT_CAP =
@@ -150,8 +178,20 @@ for (const [key, zh] of Object.entries(dict.template)) {
     continue
   }
   const newExprs = caps[0]
-  if (!newExprs.every(balancedExpr)) {
+  // 半截模板的尾巴是「`${条件?`」这种未闭合形态，不能用 balancedExpr（花括号本来就不合
+  // ），单独按尾巴形态校验；其余插值照旧要求括号平衡。
+  const partialTail = keyParts[keyParts.length - 1].partial === true
+  const headExprs = partialTail ? newExprs.slice(0, -1) : newExprs
+  if (!headExprs.every(balancedExpr)) {
     stats.AMBIGUOUS.push([key, '捕获到的表达式括号不平衡，边界可能切错'])
+    continue
+  }
+  if (partialTail && !/^\$\{[^`}]{1,200}$/.test(newExprs[newExprs.length - 1])) {
+    stats.AMBIGUOUS.push([
+      key,
+      '半截模板尾巴捕获异常（预期形如 "${条件?"）：\n      ↳ ' +
+        JSON.stringify(newExprs[newExprs.length - 1]),
+    ])
     continue
   }
 
@@ -225,12 +265,15 @@ if (stats.RENAMED.length) {
   for (const [k, nk] of stats.RENAMED) {
     const kp = parseTemplate(k).filter((p) => p.t === 'expr').map((p) => p.v)
     const nkp = (parseTemplate(nk) || []).filter((p) => p.t === 'expr').map((p) => p.v)
+    const partial = (parseTemplate(k) || []).some((p) => p.partial)
     const diff = kp
       .map((e, i) =>
         e !== nkp[i] ? `${short(e, 40)} → ${nkp[i] === undefined ? '(插值消失)' : short(nkp[i], 40)}` : null,
       )
       .filter(Boolean)
-    console.log(`  · ${diff.join(' ; ') || '(插值未变，仅修正了其它内容)'}`)
+    console.log(
+      `  · ${diff.join(' ; ') || '(插值未变，仅修正了其它内容)'}${partial ? '  [半截模板]' : ''}`,
+    )
   }
 }
 if (stats.AMBIGUOUS.length) {

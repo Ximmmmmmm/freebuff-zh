@@ -25,8 +25,9 @@ Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.104）的**简体中文汉�
   残留扫描分两层：`uipos.js` 扫界面属性位置（含三元分支、`actionLabel`、JSX 文本节点），
   `fieldscan.js` 扫 `description:` / `tagline:` / `hint:` 这类属性锚点之外的字段
 - **版本迁移自动化**：`tools/update.sh` 一键串起重映射 → 构建 → 残留扫描。其中
-  `tools/remap.js` 自动把 template 词典条目的 `${...}` 变量名迁移到新 bundle
-  （对 v0.0.75→v0.0.76 的 13 条改名全量命中验证），不再逐条手工核对
+  `tools/remap.js` 自动把 template 词典条目的 `${...}` 变量名迁移到新 bundle，也包括以未闭合
+  `${条件?` 结尾的「半截模板」嵌套词条（对 v0.0.75→v0.0.76 的 13 条改名全量命中验证），
+  不再逐条手工核对
 - **发布回归闸门**：`tools/regress.js` 把新构建与上一版已发布包对一遍——比对前抹掉 `${...}`
   插值（变量改名不误报）、模板逐段取（嵌套模板不漏），只要出现新增英文自然语言片段就中止
   发布，拦住「词典全命中但某句变回英文」这类静默回归（`update.sh` / `release.sh` 自动调用）
@@ -34,7 +35,8 @@ Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.104）的**简体中文汉�
   构建后由 `tools/postbuild.js` 断言 `ui/index.html` 汉化标记与译文哨兵——杜绝历史上出现过的
   「补丁静默跳过」「悬空模板启动崩溃」两类事故
 - **词典质量门禁**：`tools/lint_dict.js` 校验结构与 `${...}` 占位符一致性、查重复键，
-  已接入 GitHub Actions（只跑不依赖专有文件的检查）
+  并把「半截模板」词条（以未闭合 `${条件?` 结尾）当硬错误拦下——必须未改尾巴、形态可迁移
+  且在 `TRUNCATED_TEMPLATE_ANCHORS` 里登记过；已接入 GitHub Actions（只跑不依赖专有文件的检查）
 
 ## 📦 快速开始（安装）
 
