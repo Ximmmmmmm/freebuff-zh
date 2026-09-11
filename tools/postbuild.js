@@ -132,7 +132,7 @@ if (bundleText) {
 }
 
 // --- 3. 主进程检查（可选，--main-src 指向已解包/尚未打包的 asar 内容目录） -----
-// 各补丁注入的稳定中文哨兵；gen_patches 重生成时这些词不变，若改了措辞需同步这里。
+// 各补丁注入的稳定中文哨兵；补丁中的这些词不变；若改了措辞需同步这里。
 const MAIN_SENTINELS = {
   'electron/main.cjs': ['退出 Freebuff？', '仍要退出'],
   'electron/orchestrator-failure.cjs': ['编排器未能在规定时间内就绪。'],

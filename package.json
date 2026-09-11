@@ -12,8 +12,5 @@
     "electron",
     "zh-cn"
   ],
-  "author": "Ximmmmmmm",
-  "devDependencies": {
-    "playwright": "^1.63.0"
-  }
+  "author": "Ximmmmmmm"
 }

@@ -22,7 +22,7 @@ Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.105）的**简体中文汉�
 - **v0.0.104 适配**：新增「自带密钥（BYOK）API 提供商」整块界面中文化（设置页入口、提供商管理弹窗、模型选择器分组、表单与全部 aria-label 共 75 条），并补齐 3 处 0.0.103 就存在的历史漏翻（额度环 `resets in …` 标签、`Dismiss notification: …`、`Remove ${…}`）；v0.0.104 的主进程文件与 0.0.103 逐字节一致，补丁无需改动
 - **v0.0.103 适配**：自动重映射 56 条模板变量；补齐模型选择器新增 9 个模型的标签与数据使用 / 限速提示，以及 Freebucks 钱包 / paywall 的套餐升级与付费时长文案（模型名按约定保留英文）；v0.0.88 起 Freebucks 钱包额度系统（每日额度 + 钱包 + 按小时计价的会话购买）全新界面全套中文化
 - **一键安装/还原**：`apply.sh` / `restore.sh`，自动备份，随时回退英文原版
-- **工具链完整**：`tools/` 提供提取、翻译、核查、残留扫描等脚本，便于随版本更新补翻。
+- **工具链完整**：`tools/` 提供版本迁移、构建核查、残留扫描和发布脚本。
   残留扫描分两层：`uipos.js` 扫界面属性位置（含三元分支、`actionLabel`、JSX 文本节点），
   `fieldscan.js` 扫 `description:` / `tagline:` / `hint:` 这类属性锚点之外的字段
 - **版本迁移自动化**：`tools/update.sh` 一键串起重映射 → 构建 → 残留扫描。其中
@@ -120,9 +120,6 @@ bash build.sh <app.asar> <ui-dir>   # 或显式指定原版文件
 │   ├── lint_dict.js   # 词典质量门禁（结构 / 重复键 / 占位符一致性）
 │   ├── test_remap.js  # remap / lint 自测（合成「变量改名」bundle，CI 跑）
 │   ├── regress.js     # 发布回归闸门（新旧产物英文片段比对，release/update 调用）
-│   ├── status.sh      # 装机 vs 构建 vs 备份状态一览
-│   ├── prune_backups.sh # 清理累积的 hanhua-backup-*（保留最近 N 份）
-│   ├── gen_patches.js # 从原版自动生成主进程补丁（Unicode 转义避免编码问题）
 │   └── apply_ui_patch.js # 直接替换 UI index.html 翻译（替代 git apply）
 ├── build.sh           # 可复现构建：原版 + 词典 + 补丁 → output/（含防呆自检）
 ├── apply.sh           # 安装汉化到应用（自动备份）

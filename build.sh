@@ -87,7 +87,7 @@ echo "== 3/4 套用人工补丁 (patches/) =="
 find "${WORK}/main" -type f \( -name '*.cjs' -o -name '*.html' -o -name '*.js' -o -name '*.json' -o -name '*.ts' \) -exec sed -i 's/\r$//' {} +
 (cd "${WORK}/main" && for p in "${HERE}"/patches/electron-*.patch; do
   if ! git apply -p1 "$p"; then
-    echo "ERROR: 补丁未干净套用：$(basename "$p")（原版文件与补丁预期不符？需重新 gen_patches）" >&2
+    echo "ERROR: 补丁未干净套用：$(basename "$p")（原版文件与补丁预期不符？需重新维护 patches）" >&2
     exit 1
   fi
 done)
