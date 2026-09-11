@@ -1,5 +1,71 @@
 # 更新日志
 
+## [0.0.104] · 2026-09-11
+
+**适配 0.0.104：新增「自带密钥（BYOK）API 提供商」整块界面中文化**，共 75 条新词条（替换数
+1672 → 1762）。
+
+- **适配 Freebuff v0.0.104**：targetVersion / packVersion 升至 0.0.104；渲染 bundle
+  `index-D6WDQXYJ.js` → `index-BE7fL8LQ.js`。主进程 asar 里的 6 个 electron 文件与 0.0.103
+  **逐字节一致**（本轮变更集中在渲染进程与 SDK：新增 BYOK），`patches/` 与主进程词典无需改动；
+  `ui/index.html` 也只差版本戳与资源哈希，无新增文案。
+- **模板变量自动重映射 54 条**（`tools/remap.js`）：`bo(…)→qi(…)`、`pc(…)→gc(…)`、
+  `Es(…)→Ps(…)`、`kn(…)→wn(…)`、`Ki(…)→er(…)`、`as→us`、`ce→de` 等。
+- **新增 BYOK（自带密钥）界面全量中文化**——v0.0.104 的新功能（设置页入口 + 提供商管理弹窗 +
+  模型选择器里的分组）：
+  - 设置页与弹窗骨架：`Your API providers` / `Connect a provider to use your own API key.
+    Available across projects on this computer.` / `Manage providers ` / `THIS COMPUTER` /
+    `Connect a provider` / `Close API providers` / `Changes are saved immediately.` /
+    `Shared by Desktop and CLI on this computer.` / `Back` / `Save provider` /
+    `About privacy and supported features` 及其隐私说明整段；
+  - 表单：`Provider` / `One key, many models` / `OpenAI-compatible API` / `Custom endpoint` /
+    `Base URL` / `Model ID` / `API key` / `Hide` `Show` / `Advanced settings ` /
+    `Name and model limits` / `Connection name` / `Optional` / `For example, Personal` /
+    `Context window tokens` / `Maximum output tokens`，以及全部 aria-label
+    （`Provider base URL` / `Provider model ID` / `Provider API key` / `Provider connection name` /
+    `Configured context window` / `Configured maximum output tokens` / `Hide`·`Show API key`）
+    与说明文案（`Use HTTPS, or HTTP for a server on this computer.` /
+    `Copy the exact ID from your provider. Coding support is untested.` /
+    `Saved in your OS credential store. Never in project files.` /
+    `Use limits supported by your model. These are budgets, not detected capabilities.`）；
+  - 列表与操作：`CONNECTED PROVIDERS` / `Add provider` / `Connect your first provider` /
+    `Bring an OpenRouter key, or connect another OpenAI-compatible service.` / `Coding untested` /
+    `Check connection` / `Checking…` / `Replace key` / `Remove provider` / `Removing…` /
+    `Keep provider` / `Save replacement key` / `Cancel replacement` / `New API key` / `Loading providers…` /
+    `? Tasks using it will stop before its next model request.`；
+  - 模型选择器分组：`Your models. Your provider account.` /
+    `Model requests go directly to your provider and use its billing. BYOK tasks are ad-free.` /
+    `Direct to your provider. Billed to your account.` /
+    `OpenRouter or an OpenAI-compatible endpoint` / `Connect a provider…` / `Manage providers…` /
+    ` · Unverified` / `Your API key` / `Start a new task to change API providers.`；
+  - 反馈与模板：`Credential verified. Coding support is still untested.` /
+    `Endpoint reachable. Authentication and coding support still need an inference test.` /
+    `Provider added. Select it in the model picker of a new task.` /
+    `Key replaced. Select this updated connection in a new task.` /
+    `Existing tasks keep their old connection revision. Use the replacement in a new task.` /
+    `To use a connection, select it in the model picker of a new task.`；template 分区收
+    `` `New API key for ${ie.name}` `` 与 `` `Could not select ${oe.name}: ${He}` ``。
+- **补齐三处 0.0.103 就存在的历史漏翻**（本次重映射时暴露）：
+  - 额度环 label 的 `` `resets in ${Ps(u.resetAt,o)}` ``——0.0.103 产物里这一处仍是英文（旧词典只有
+    `resets in ${m}` / `resets in ${a}` 两条，覆盖不到环 label），本次按新版拆条补上；
+  - `` `Dismiss notification: ${g.message}` ``（`${m}` → `${g}`）；
+  - `` `Remove ${Me.configKey}` ``（`${Le}` → `${Me}`）。
+- **4 条嵌套模板词条按新版逐字重塑**：Freebucks 付费时长 / 钱包提示那四条以 `${fe?` / `${D?` /
+  `${d.monthlyBonus>0?` 结尾的「半截模板」键，`remap.js` 的 `parseTemplate` 无法解析
+  （花括号不闭合）因而一直报 MISSING，本轮手工按新 bundle 逐字回填（`ve/as→ge/us`、`Ki→er`），
+  键与译文同步改写；顺带补上 `` `Could not select that element: ${C5(E)}` ``（同为 0.0.103 存量漏翻）。
+- **新增模型名**：`GPT-6-Astra` / `GPT-5.6-Sol` / `GPT-5.6-Terra` / `GPT-5.6-Luna` / `Opus 5` /
+  `Opus 4.8` / `Sonnet 5` / `Fable 5.1` 按约定保留英文（模型名不翻），tagline 走既有词典。
+- **有意保留**：`tagline:"0 Freebucks"`——0.0.104 起生效的推广价 tagline（promo 表按日期切到
+  `2026-09-09T15:49Z` 那条），与已译的兄弟条目 `0 Freebucks · 劳动节周末（至 9 月 7 日 PT）`
+  保持一致（`Freebucks` 是品牌词，词典里同样保留英文）。
+- **验证**：UI bundle `all keys matched`（1762 处替换，较 0.0.103.2 的 1672 增加 90 处）；
+  `lint_dict` 与 postbuild 自检全绿（纯字面量覆盖 1126/1126）；回归闸门（对比已发布的
+  `pack-v0.0.103.2`）**新增英文片段 0 处**；界面属性位置英文残留 14 条、`description:` 等字段英文
+  0 条，余下均为有意保留（模型名 8 条、`Freebuff` 品牌、MCP 配置 JSON 示例、`bun install`、
+  CodeMirror 内部的 ` Action: …`）。
+- 词典更新为 exact 1168 / template 262 / code 6 / pattern 64。
+
 ## [0.0.103.2] · 2026-09-11
 
 **补齐 connectors / MCP 面板**——0.0.103.1 条目里记的那个「已知未完成」，实际远不止状态标签：
