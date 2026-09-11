@@ -1,5 +1,37 @@
 # 更新日志
 
+## [0.0.105] · 2026-09-11
+
+**适配 0.0.105：BYOK 面板文案微调 + 新增两条 Freebucks 付费提示**，共 11 条新词条
+（替换数 1762 → 1773）。这是个小版本：主进程与 0.0.104 逐字节一致，改动集中在渲染进程。
+
+- **适配 Freebuff v0.0.105**：targetVersion / packVersion 升至 0.0.105；渲染 bundle
+  `index-BE7fL8LQ.js` → `index-B4mEUbmK.js`，样式表 `index-CY7Yir-T.css` → `index-DfedPj0M.css`。
+  主进程 asar 里 6 个 electron 文件经 `patches/` + 词典处理后与 0.0.104 产物**逐字节一致**，
+  `patches/` 无需改动；`ui/index.html` 也只差版本戳与资源哈希。
+- **模板变量自动重映射 49 条**（`tools/remap.js`）：`wO()→kO()`、`qi(…)→Ui(…)`、`wn(…)→kn(…)`、
+  `er(…)→Bi(…)`、`ge→ve`、`fe→ne`、`de→ce`、`Me→Ae` 等，含 4 条「半截模板」（Freebucks 钱包 /
+  付费时长）与译文写法变体（`${r.title||"新会话"}` 这类）的标识符回填。
+- **2 条 remap 歧义条目人工改写**（锚文本在 bundle 命中多处、插值不一致，工具拒绝猜）：
+  `` `Remove ${Me.configKey}` `` → `` `Remove ${Ae.configKey}` ``；
+  `` `Could not select ${oe.name}: ${He}` `` → `` `Could not select ${de.name}: ${Ge}` ``。
+- **2 条词条随上游文案下线而删除**：`One key, many models` / `OpenAI-compatible API`——
+  0.0.105 的 BYOK 表单不再用这两句宣传语，留着会卡住构建的 MISSED 门禁。
+- **新增 11 条**：
+  - BYOK 提供商面板：`Provider setup ↗` / `No providers found. Try “Custom”.` /
+    `Search providers…` / `Requests go to ` / `Preset only. Your model’s coding support still
+    needs testing.`，以及两处 aria-label `App tools` / `Providers`（走 `pattern` 分区）；
+  - Freebucks 提示：`Freebucks balance temporarily unavailable.` /
+    ` earned Freebucks can be claimed when starting a session.`（含前导空格，与金额前缀拼接）；
+  - 两条 paywall 确认分支模板： `` `${a?"Ends your current session. ":""}Your balance is
+    unavailable. …` `` 与 `` `Claim earned Freebucks when starting this session, then spend
+    ${t.price} Freebucks${a?" and end your current session":""}?` ``（插值内的英文字面量按既有
+    约定一并译出，`lint_dict` 的 E3 骨架校验通过）。
+- **门禁全绿**：`lint_dict` 无错误；构建 `all keys matched`（1773 处）；`postbuild` 自检通过；
+  `regress.js` 对 0.0.104 包比对 **0 处新增英文片段**；`uipos` 界面属性位置残留 14 条
+  （与 0.0.104 持平）、`fieldscan` 1 条（`tagline:"0 Freebucks"`），均为约定保留项
+  （`Freebuff` 品牌、`mcpServers` / `bun install` 代码片段、8 个模型名、CodeMirror 内部标签）。
+
 ## [0.0.104] · 2026-09-11
 
 **适配 0.0.104：新增「自带密钥（BYOK）API 提供商」整块界面中文化**，共 75 条新词条（替换数

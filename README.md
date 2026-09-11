@@ -4,20 +4,21 @@
 ![GitHub last commit](https://img.shields.io/github/last-commit/Ximmmmmmm/freebuff-zh)
 ![GitHub Repo stars](https://img.shields.io/github/stars/Ximmmmmmm/freebuff-zh?style=social)
 ![GitHub forks](https://img.shields.io/github/forks/Ximmmmmmm/freebuff-zh?style=social)
-[![Target](https://img.shields.io/badge/目标-Freebuff%20Desktop%20v0.0.104-blue)](https://freebuff.com)
+[![Target](https://img.shields.io/badge/目标-Freebuff%20Desktop%20v0.0.105-blue)](https://freebuff.com)
 [![lint](https://github.com/Ximmmmmmm/freebuff-zh/actions/workflows/ci.yml/badge.svg)](https://github.com/Ximmmmmmm/freebuff-zh/actions/workflows/ci.yml)
 
 **中文关键词 / Keywords**: Freebuff 汉化、Freebuff 中文版、Freebuff Chinese localization、AI coding agent 中文、Freebuff 翻译、Electron 汉化、localization pack
 
-Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.104）的**简体中文汉化包**，直接修改已打包产物，无需源码、不涉及任何联网改动。
+Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.105）的**简体中文汉化包**，直接修改已打包产物，无需源码、不涉及任何联网改动。
 
 > **English**: A Simplified-Chinese localization pack for Freebuff Desktop — the free AI coding agent. Patches the packaged app directly, no source build required. If you're a Chinese-speaking Freebuff user, this is for you.
 
 ## ✨ 特性
 
-- **覆盖全面**：渲染进程约 1760 处文案 + 主进程菜单 / 对话框 / 同意窗口全面中文化；connectors / MCP 面板（状态标签、详情面板与目录里 100 条连接器介绍）与 v0.0.104 新增的 BYOK（自带密钥）API 提供商界面已全量中文化
-- **词典驱动**：`dict.json`（exact 1168 / template 262 / code 6 / pattern 64），幂等应用、可审计
-- **可复现构建**：`build.sh` 从原版 + 词典 + 补丁**逐字节重建**汉化产物  （v0.0.77 曾对照 Release 产物验证；v0.0.83 / v0.0.87 / v0.0.88 / v0.0.90 / v0.0.91 / v0.0.92 / v0.0.103 / v0.0.104 适配经防呆自检通过）
+- **覆盖全面**：渲染进程约 1773 处文案 + 主进程菜单 / 对话框 / 同意窗口全面中文化；connectors / MCP 面板（状态标签、详情面板与目录里 100 条连接器介绍）与 v0.0.104 新增的 BYOK（自带密钥）API 提供商界面已全量中文化
+- **词典驱动**：`dict.json`（exact 1173 / template 264 / code 6 / pattern 66），幂等应用、可审计
+- **可复现构建**：`build.sh` 从原版 + 词典 + 补丁**逐字节重建**汉化产物  （v0.0.77 曾对照 Release 产物验证；v0.0.83 / v0.0.87 / v0.0.88 / v0.0.90 / v0.0.91 / v0.0.92 / v0.0.103 / v0.0.104 / v0.0.105 适配经防呆自检通过）
+- **v0.0.105 适配**：BYOK 提供商面板文案微调（`Provider setup ↗` / `No providers found. Try “Custom”.` / `Search providers…` / `Requests go to ` / `Preset only. … still needs testing.` 与 aria-label `App tools`、`Providers`），并收起上游下线的两句宣传语（`One key, many models` / `OpenAI-compatible API`）；新增两条 Freebucks 付费确认分支与两处余额提示（共 11 条，替换数 1762 → 1773）。主进程 6 个 electron 文件经补丁后与 0.0.104 逐字节一致，`patches/` 未改动；49 条模板变量自动重映射，2 条 remap 歧义条目（`Remove ${…}`、`Could not select ${…}: ${…}`）人工改名
 - **v0.0.104 适配**：新增「自带密钥（BYOK）API 提供商」整块界面中文化（设置页入口、提供商管理弹窗、模型选择器分组、表单与全部 aria-label 共 75 条），并补齐 3 处 0.0.103 就存在的历史漏翻（额度环 `resets in …` 标签、`Dismiss notification: …`、`Remove ${…}`）；v0.0.104 的主进程文件与 0.0.103 逐字节一致，补丁无需改动
 - **v0.0.103 适配**：自动重映射 56 条模板变量；补齐模型选择器新增 9 个模型的标签与数据使用 / 限速提示，以及 Freebucks 钱包 / paywall 的套餐升级与付费时长文案（模型名按约定保留英文）；v0.0.88 起 Freebucks 钱包额度系统（每日额度 + 钱包 + 按小时计价的会话购买）全新界面全套中文化
 - **一键安装/还原**：`apply.sh` / `restore.sh`，自动备份，随时回退英文原版
