@@ -1,0 +1,17 @@
+--- a/electron/renderer-health.cjs
++++ b/electron/renderer-health.cjs
+@@ -62,10 +62,10 @@ function watchRenderer(win, { app, dialog, isQuitting, isTrusted, reportCrash, r
+     recovering = true
+     try {
+       const { response } = await dialog.showMessageBox(win, {
+-        type: 'error', title: 'Freebuff window stopped',
+-        message: details.reason === 'oom' ? 'This window ran out of memory.' : 'This window stopped unexpectedly.',
+-        detail: 'Reload the window to return to your conversation. Reloading does not restart the agent.',
+-        buttons: ['Reload window', 'Close window'], defaultId: 0, cancelId: 1, noLink: true,
++        type: 'error', title: 'Freebuff 窗口已停止',
++        message: details.reason === 'oom' ? '此窗口内存不足。' : '此窗口意外停止。',
++        detail: '重新加载窗口即可回到你的对话。重新加载不会重启智能体。',
++        buttons: ['重新加载窗口', '关闭窗口'], defaultId: 0, cancelId: 1, noLink: true,
+       })
+       if (isQuitting() || win.isDestroyed() || win.webContents.isDestroyed()) return
+       if (response === 0) win.webContents.reload()

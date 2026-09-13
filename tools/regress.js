@@ -87,6 +87,10 @@ function isProse(plain, rawLen) {
   const lower = words.filter((w) => /^[a-z]/.test(w)).length;
   if (lower / words.length < 0.6) return false;
   if (!COMMON.test(t)) return false;
+  // kebab-case 标识符（CSS 类名 / data 属性）密集的片段是代码，不是文案：
+  // 如 `agent-trigger has-byok`（0.0.106 新增的类名组合）会命中 COMMON 里的 has。
+  const kebab = t.match(/[a-z][a-z0-9]*(?:-[a-z0-9]+)+/g) || [];
+  if (kebab.length >= 2 && kebab.join('').length / t.replace(/\s+/g, '').length > 0.6) return false;
   return true;
 }
 
@@ -98,7 +102,30 @@ function collectFragments(file) {
     if (/[\u4e00-\u9fff]/.test(plain)) return; // 已汉化
     if (isProse(plain, raw.length)) set.add(plain.replace(/\s+/g, ' ').trim());
   };
-  for (const m of src.matchAll(/"((?:[^"\\\n]|\\.){8,600})"/g)) add(m[1]);
+  // 字符串字面量：每个未转义引号都当「开引号」，向后读到下一个引号为止（重叠配对）。
+  // 不能用「相邻引号两两配对」的正则：minified 产物里短字符串（`"span"` 仅 4 字符，
+  // 不满足 {8,600}）会让引擎从它的右引号重新开始，整条链从此错位配对，把大半个字符串
+  // 当代码丢掉——0.0.106 适配时实测漏报新增的 `Add or manage your API keys`、
+  // `Your keys · Your provider’s billing`（靠 uipos 才发现）。重叠配对不会错位：
+  // 真正的字符串其开引号必然在候选里，向后第一个引号就是它的闭合引号。
+  for (let i = 0; i < src.length; i++) {
+    const q = src[i];
+    if ((q !== '"' && q !== "'") || src[i - 1] === '\\') continue;
+    let j = i + 1;
+    let buf = '';
+    while (j < src.length && buf.length <= 600) {
+      const c = src[j];
+      if (c === '\\') {
+        buf += c + (src[j + 1] ?? '');
+        j += 2;
+        continue;
+      }
+      if (c === '"' || c === "'" || c === '\n') break; // 串不能跨行：注释/正则里的引号就此收住
+      buf += c;
+      j++;
+    }
+    add(buf);
+  }
   // 模板：逐段取每两个相邻反引号之间的内容（转义反引号不算分隔）
   const ticks = [];
   for (let i = 0; i < src.length; i++) {

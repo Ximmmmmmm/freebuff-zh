@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 打包 output/ 为汉化包并发布 GitHub Release —— 多开控制器的「汉化包更新」
-# 从该 Release 检查 / 下载 / 校验（SHA512）/ 落到 output/，点「应用汉化」生效。
+# 从该 Release 检查 / 下载 / 校验（SHA512）/ 落到 output/，随后自动应用（无需点击）。
 #
 # 用法：
 #   bash tools/release.sh               # 打包并上传（需要 gh CLI 已登录）
@@ -166,10 +166,10 @@ if gh release view "${REL_TAG}" -R "${REPO}" >/dev/null 2>&1; then
   gh release upload "${REL_TAG}" "${ZIP}" "${MANIFEST}" -R "${REPO}" --clobber
   gh release edit "${REL_TAG}" -R "${REPO}" \
     --title "汉化包 v${VER}（适配 Freebuff v${TARGET}）" \
-    --notes "词典/补丁适配 Freebuff Desktop v${TARGET}。控制器会自动检查并下载，点「应用汉化」生效。"
+    --notes "词典/补丁适配 Freebuff Desktop v${TARGET}。控制器会自动检查、下载并应用，无需手动操作。"
 else
   gh release create "${REL_TAG}" "${ZIP}" "${MANIFEST}" -R "${REPO}" \
     --title "汉化包 v${VER}（适配 Freebuff v${TARGET}）" \
-    --notes "词典/补丁适配 Freebuff Desktop v${TARGET}。控制器会自动检查并下载，点「应用汉化」生效。"
+    --notes "词典/补丁适配 Freebuff Desktop v${TARGET}。控制器会自动检查、下载并应用，无需手动操作。"
 fi
 echo "已发布 Release ${REL_TAG}。控制器下次检查即可拉到新包。"

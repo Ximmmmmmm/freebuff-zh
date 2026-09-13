@@ -140,6 +140,12 @@ const MAIN_SENTINELS = {
   'electron/linux-launch.cjs': ['无法启动所需的子进程。'],
   'electron/open-in.cjs': ['复制路径'],
 }
+// 可选哨兵：对应的主进程文件只存在于较新的 Freebuff 版本里（老版本 asar 里没有），
+// 因此缺失只警告不报错，存在则必须带译文哨兵。
+const OPTIONAL_SENTINELS = {
+  // 0.0.107 新增：渲染进程健康状况采样 + 「窗口已停止」恢复弹窗
+  'electron/renderer-health.cjs': ['重新加载窗口'],
+}
 if (mainSrc) {
   for (const rel of Object.keys(MAIN_SENTINELS)) {
     const f = path.join(mainSrc, rel)
@@ -158,6 +164,24 @@ if (mainSrc) {
     }
     const text = fs.readFileSync(f, 'utf8')
     for (const s of MAIN_SENTINELS[rel]) {
+      if (!text.includes(s)) bad(`${rel} 缺少译文哨兵「${s}」—— 对应补丁可能未套用`)
+    }
+  }
+  for (const rel of Object.keys(OPTIONAL_SENTINELS)) {
+    const f = path.join(mainSrc, rel)
+    if (!fs.existsSync(f)) {
+      warn(`主进程文件不存在（旧版本正常）：${rel}，跳过哨兵检查`)
+      continue
+    }
+    try {
+      execFileSync(process.execPath, ['--check', f], { stdio: 'pipe' })
+      ok(`${rel} 语法校验通过`)
+    } catch (e) {
+      bad(`${rel} node --check 失败 —— 补丁破坏了 JS 结构：\n${String(e.stderr || e)}`)
+      continue
+    }
+    const text = fs.readFileSync(f, 'utf8')
+    for (const s of OPTIONAL_SENTINELS[rel]) {
       if (!text.includes(s)) bad(`${rel} 缺少译文哨兵「${s}」—— 对应补丁可能未套用`)
     }
   }
