@@ -3,7 +3,7 @@
 #
 #   1/5 模板变量重映射：tools/remap.js 把 template 词典条目的 ${...} 变量名迁移到新 bundle
 #   2/5 可复现构建：bash build.sh（内含语法校验 + 构建产物自检）
-#   3/5 残留扫描：leftover / prose / uipos 扫描构建出的主 bundle
+#   3/5 残留扫描：leftover / prose / uipos / fieldscan / blindscan 扫描构建出的主 bundle
 #   4/5 回归闸门：tools/regress.js 对比上一版汉化包，揪出「变回英文」的静默回归
 #   5/5 汇总：打印剩余人工事项清单，扫描全文归档到 work/
 #
@@ -105,6 +105,17 @@ if [ -f "${FINAL_BUNDLE}" ]; then
   # （0.0.103.2 的 connectors 目录介绍就是这么藏了 100 条）。
   echo "-- fieldscan（description/tagline/hint… 字段英文）--" | tee -a "${REPORT}"
   node "${HERE}/tools/fieldscan.js" "${FINAL_BUNDLE}" | tee -a "${REPORT}" || true
+  # 盲区扫描：原版里存在、产物里原样还在的英文片段——uipos / fieldscan / regress 都够不着的位置
+  # （`children:[cond?"A":"B"]` 三元分支、模板插值内部、函数默认值），也只报告不拦构建：
+  # 列表里本来就会混着 CodeMirror / shiki / React 这类库内部文案，人工挑出应用自己的文案。
+  echo "-- blindscan（uipos / fieldscan 的盲区：三元分支、模板插值内部、默认值）--" | tee -a "${REPORT}"
+  if [ -n "${UI_BUNDLE}" ] && [ -f "${UI_BUNDLE}" ]; then
+    BLIND_OUT="$(node "${HERE}/tools/blindscan.js" "${UI_BUNDLE}" "${FINAL_BUNDLE}" || true)"
+    printf '%s\n' "${BLIND_OUT}" >> "${REPORT}"
+    printf '%s\n' "${BLIND_OUT}" | sed -n '1,40p'
+  else
+    echo "  (未记录原版主 bundle 路径，跳过)" | tee -a "${REPORT}"
+  fi
   echo "-- prose（多词英文片段，控制台截前 40 行，全文在报告）--" | tee -a "${REPORT}"
   PROSE_OUT="$(node "${HERE}/tools/prose.js" "${FINAL_BUNDLE}" || true)"
   printf '%s\n' "${PROSE_OUT}" >> "${REPORT}"

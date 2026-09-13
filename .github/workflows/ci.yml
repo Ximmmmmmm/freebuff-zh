@@ -21,6 +21,8 @@ jobs:
         run: node tools/lint_dict.js
       - name: remap 自测（模板变量迁移 + 半截模板 + lint 负面用例）
         run: node tools/test_remap.js
+      - name: blindscan 自测（原版 vs 产物的英文片段对差）
+        run: node tools/test_blindscan.js
       - name: 工具脚本语法冒烟
         run: |
           for f in tools/*.js; do
