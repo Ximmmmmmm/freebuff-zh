@@ -1,6 +1,6 @@
 --- a/electron/main.cjs
 +++ b/electron/main.cjs
-@@ -494,10 +494,10 @@
+@@ -496,10 +496,10 @@ async function showOrchestratorFailure(failure, parent = mainWindow) {
      actions.push(() => shell.openExternal(compatibilityBuildUrl))
    }
    if (failure.logPath) {
@@ -13,7 +13,25 @@
    actions.push(() => {})
  
    const options = {
-@@ -1079,15 +1079,13 @@
+@@ -524,10 +524,13 @@ function startOrchestrator(requestedPort = 0) {
+   return new Promise((resolve, reject) => {
+     const { bun, args, cwd, uiDir, wasmDir, packaged } = resolveOrchestrator()
+     const capture = createStderrCapture(bun, args)
+-    const launchId = randomUUID()
+-    // Published to the renderer only once the orchestrator holding it is the
+-    // one being started; a crash restart mints a new one and the renderer
+-    // re-reads it on its next call.
++    // 汉化包补丁：orchestrator 崩溃重启时沿用本次应用会话已发出的 launch id。
++    // 渲染进程（preload.cjs 的 apiToken）只把这个令牌读一次就永久缓存，并不会
++    // 「在下次调用时重读」；重启换一个新 id 的话，此后每个写操作（发消息 / 停止 /
++    // 编辑 / 重命名…）都会被本机 orchestrator 判为 403 {"error":"forbidden"}，
++    // 界面只显示「消息未发送: forbidden」，直到窗口重载。复用同一 id 不改变安全
++    // 边界：它依旧只经同步 IPC 交给本窗口，从不进 argv。
++    const launchId = apiLaunchToken ?? randomUUID()
+     apiLaunchToken = launchId
+     let exited = false
+     let ready = false
+@@ -1086,15 +1089,13 @@ function confirmQuit(parent) {
    try {
      const response = askSync(parent, {
        type: 'question',
@@ -33,7 +51,7 @@
        // a stray Return keeps the agents alive
        defaultId: 0,
        cancelId: 0,
-@@ -1150,8 +1148,8 @@
+@@ -1162,8 +1163,8 @@ ipcMain.handle('dialog:pickAttachments', async (event) => {
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return []
    const res = await dialog.showOpenDialog(win, {
@@ -44,7 +62,7 @@
      properties: ['openFile', 'openDirectory', 'multiSelections', 'treatPackageAsDirectory'],
    })
    if (res.canceled) return []
-@@ -1180,8 +1178,8 @@
+@@ -1192,8 +1193,8 @@ ipcMain.handle('dialog:pickImages', async (event) => {
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return []
    const res = await dialog.showOpenDialog(win, {
@@ -55,7 +73,7 @@
      properties: ['openFile', 'multiSelections'],
      filters: [
        { name: 'Images', extensions: VIEWABLE_IMAGE_EXTENSIONS },
-@@ -1204,8 +1202,8 @@
+@@ -1216,8 +1217,8 @@ ipcMain.handle('dialog:pickDirectory', async (event) => {
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return null
    const res = await dialog.showOpenDialog(win, {
@@ -66,7 +84,7 @@
      properties: ['openDirectory', 'createDirectory'],
    })
    return res.canceled || res.filePaths.length === 0 ? null : res.filePaths[0]
-@@ -1351,7 +1349,7 @@
+@@ -1363,7 +1364,7 @@ ipcMain.handle('shell:openIn', async (_event, request) => {
      }
      return { ok: true, path: resolved.requested, openedPath: resolved.opened, fallback: resolved.fallback }
    } catch (error) {
@@ -75,7 +93,7 @@
    }
  })
  
-@@ -1462,10 +1460,10 @@
+@@ -1474,10 +1475,10 @@ ipcMain.handle('menu:tabContext', (event) => {
        resolve(action)
      }
      const menu = Menu.buildFromTemplate([
@@ -88,7 +106,7 @@
      ])
      menu.popup({
        window: BrowserWindow.fromWebContents(event.sender) ?? undefined,
-@@ -1488,7 +1486,7 @@
+@@ -1500,7 +1501,7 @@ function buildMenu(reloadApp) {
              label: app.name,
              submenu: [
                { role: 'about' },
@@ -97,7 +115,7 @@
                { type: 'separator' },
                { role: 'services' },
                { type: 'separator' },
-@@ -1498,7 +1496,7 @@
+@@ -1510,7 +1511,7 @@ function buildMenu(reloadApp) {
                { type: 'separator' },
                {
                  // not `role: 'quit'`: that reaches app.quit() directly, with no chance to ask
@@ -106,7 +124,7 @@
                  accelerator: 'Command+Q',
                  click: () => requestQuit(),
                },
-@@ -1507,15 +1505,15 @@
+@@ -1519,15 +1520,15 @@ function buildMenu(reloadApp) {
          ]
        : []),
      {
@@ -125,7 +143,7 @@
            accelerator: 'CmdOrCtrl+Shift+T',
            click: () => sendMenuCommand('reopen-tab'),
          },
-@@ -1524,24 +1522,24 @@
+@@ -1536,24 +1537,24 @@ function buildMenu(reloadApp) {
          // other, and on a fresh install its menu lists only the project already open — so ⌘O is
          // where someone who has never heard the word "space" is going to look.
          {
@@ -156,7 +174,7 @@
          { role: 'toggleDevTools' },
          { type: 'separator' },
          { role: 'resetZoom' },
-@@ -1551,15 +1549,15 @@
+@@ -1563,15 +1564,15 @@ function buildMenu(reloadApp) {
          { role: 'togglefullscreen' },
        ],
      },
@@ -175,7 +193,7 @@
              ],
            },
          ]),
-@@ -1706,7 +1704,7 @@
+@@ -1718,7 +1719,7 @@ async function boot() {
      if (err?.orchestratorFailure) {
        await showOrchestratorFailure(err.orchestratorFailure, win)
      } else {
@@ -184,7 +202,7 @@
      }
      app.quit()
      return
-@@ -1814,8 +1812,8 @@
+@@ -1826,8 +1827,8 @@ else if (!app.requestSingleInstanceLock()) {
        canRelaunch: !!relaunchExecPath,
      })
      const buttons = canRetryWithoutSandbox
@@ -195,7 +213,7 @@
      const body = `${detail}\n\n(${details.type} process: ${details.reason})`
      // A launch failure this early can land before `ready`, where the dialog
      // module throws — and an exception here would replace the message we came to
-@@ -1824,7 +1822,7 @@
+@@ -1836,7 +1837,7 @@ else if (!app.requestSingleInstanceLock()) {
      // buttons, so the pre-ready path explains and quits rather than offering the
      // retry. Nothing is running yet, so there is nothing to tear down.
      if (!app.isReady()) {
@@ -204,7 +222,7 @@
        app.exit(1)
        return
      }
-@@ -1832,7 +1830,7 @@
+@@ -1844,7 +1845,7 @@ else if (!app.requestSingleInstanceLock()) {
      try {
        response = dialog.showMessageBoxSync({
          type: 'error',

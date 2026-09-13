@@ -134,7 +134,15 @@ if (bundleText) {
 // --- 3. 主进程检查（可选，--main-src 指向已解包/尚未打包的 asar 内容目录） -----
 // 各补丁注入的稳定中文哨兵；补丁中的这些词不变；若改了措辞需同步这里。
 const MAIN_SENTINELS = {
-  'electron/main.cjs': ['退出 Freebuff？', '仍要退出'],
+  // 最后一条不是译文，而是行为补丁：orchestrator 重启时沿用同一 launch id
+  // （否则渲染进程缓存的令牌作废，此后每个写操作都被本机 orchestrator 403
+  // forbidden，见 patches/electron-main.cjs.patch 的 startOrchestrator 那一段）。
+  'electron/main.cjs': [
+    '退出 Freebuff？',
+    '仍要退出',
+    '汉化包补丁：orchestrator 崩溃重启时沿用本次应用会话已发出的 launch id',
+    'const launchId = apiLaunchToken ?? randomUUID()',
+  ],
   'electron/orchestrator-failure.cjs': ['编排器未能在规定时间内就绪。'],
   'electron/mcp-consent-bridge.cjs': ['此连接器没有可运行的命令——已拒绝'],
   'electron/linux-launch.cjs': ['无法启动所需的子进程。'],

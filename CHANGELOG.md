@@ -57,6 +57,17 @@
   （`Google’s server is in Developer Preview and needs a Google Cloud project.`，Gmail / Calendar
   两张卡上各一处）——按「同一 targetVersion 内修正重发」的惯例把 `packVersion` 升到 `0.0.110.1`
   重发，已装 0.0.110 的机器才会自动拉到。`targetVersion` 仍为 0.0.110。
+- **修正重发 0.0.110.2**：修掉「**orchestrator 崩溃重启后每个写操作都 403 `forbidden`**」——
+  界面只显示「消息未发送: forbidden」。链路：渲染进程把 `preload.cjs` 的 `apiToken()` 读一次就
+  **永久缓存**（bundle 里 `hD()` 只认 `og === undefined` 那一次），而 `startOrchestrator` 每次重启
+  都 `randomUUID()` 换新令牌、`restartOrchestrator` 又刻意不重载窗口（只让 SSE 重连重同步）→
+  此后每个 `POST /api/*` 都被本机 orchestrator 按 launch id 挡下（`orchestrator.js` 的
+  `requiresLaunchToken` + `isAuthorizedMutation` → `403 {"error":"forbidden"}`），而只读请求全部
+  照常，于是看起来「应用没坏，就是发不出去」，直到窗口重载。改法一行：`const launchId =
+  apiLaunchToken ?? randomUUID()`（orchestrator 重启时沿用本次应用会话已发出的 id；安全边界不变——
+  令牌依旧只经同步 IPC 交给本窗口、从不进 argv、也不发给上游）。该行随 `patches/electron-main.cjs.patch`
+  分发，`postbuild.js` 的 `electron/main.cjs` 哨兵同步加两条断言（中文说明 + 代码行）。
+  复现与实测见 `docs/更新维护.md` 的常见问题。
 - **门禁实测**：`lint_dict` 0 错误（exact 1181 / template 269 / code 8 / pattern 75）；词典对主 bundle
   **替换 1796 处 + `all keys matched`（MISSED 0）**；`uipos` 界面属性位置残留 14 条（与 0.0.109 持平，
   均为约定保留的模型名 / `Freebucks` / `bun install` / CodeMirror 内部标签）、`fieldscan` 1 条
