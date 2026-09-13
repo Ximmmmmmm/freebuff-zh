@@ -1179,7 +1179,8 @@
     "Showing the last known connection states.": "显示最近已知的连接状态。",
     "This file changed while the agent was working, but the change can’t be attributed to the agent, so rewinding leaves it alone.": "此文件在智能体工作期间发生了变化，但无法归因于智能体，因此回退时不会改动它。",
     "the preview returned an invalid element": "预览返回了无效元素",
-    "On": "已开启"
+    "On": "已开启",
+    "Google’s server is in Developer Preview and needs a Google Cloud project.": "Google 的服务器处于开发者预览阶段，需要一个 Google Cloud 项目。"
   },
   "template": {
     "\nneeds attention": "\n需要注意",
