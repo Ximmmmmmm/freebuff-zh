@@ -1,5 +1,186 @@
 # 更新日志
 
+## [0.0.110] · 2026-09-13
+
+**适配 0.0.110：上游把整块「会话退款」面板撤了（合并成 composer 里的一句提示）、重写了推理档位标签，
+顺带补翻 24 条历史遗留英文**（连接器面板 / 目录、预览报错、购买时段与高峰定价 tooltip、「编辑一条消息」提示、移动端镜像状态）。
+替换数 1785 → 1794；词典 exact 1176→1180 / template 264→269 / code 6→8 / pattern 73→75。
+
+- **适配 Freebuff v0.0.110**：targetVersion / packVersion 升至 0.0.110；渲染 bundle
+  `index-WHL57zaM.js` → `index-DVP89Kth.js`，样式表 `index-Bz7qlcod.css` → `index-DYQ73KeT.css`。
+- **模板变量自动重映射 15 条**（`tools/remap.js`：`PO()→RO()`、`lv(t,e)→cv(t,e)`、`qAe/6e4→IAe/6e4` 等），
+  **歧义 0 条**。另有 4 条落 MISSING，正是上游删掉的那 4 条退款模板（见下）。
+- **下线 19 条词条**（15 `exact` + 4 `template`）——上游把「会话退款」面板整体移除，只留一句合成提示：
+  `Retrying session end` / `Refund processing` / `Refund unconfirmed` / `Session refunds` /
+  `Recent session refunds` / `Final refund confirmed by the server.` /
+  `The server did not report a refund amount. No credit is assumed.` /
+  `Session ended · refund unconfirmed` / `Session settled · no refund` / `Previous session` /
+  `Your conversation is saved. Desktop will retry automatically when connected.`，
+  以及 4 条模板 `Retrying ${e} session ends` / `${n} refunds processing` /
+  `${t.freebucks} Freebucks refunded` / `` Session started ${new Date(e.admittedAt)…} ``（留着会卡住 MISSED 门禁）。
+- **0.0.110 新增/改写的文案**：
+  - **推理档位标签重写 4 条**：`Sprint — what was asked, working, with essential proof` /
+    `Focused — what was asked, checked through the real surface` /
+    `Thorough — proven and pruned on every dimension` /
+    `Exhaustive — the most careful version of exactly what was asked`
+    （`Crafted — correct, clean, and proven` 一字未动；旧的四条文案随上游改写下线）。
+  - **新的退款提示是 JSX 文本节点拼出来的**：`children:["Session", … "from", … "auto-ended after
+    inactivity · ", <金额>, " Freebucks returned."]`。uipos 看不见模板插值内部、`pattern` 又只认
+    第 0 层字面量，所以分两步钉住：`code` 逐字片段 `children:["Session",` 与 `" ","from"," "`
+    （不含压缩变量名，下个版本不会失效），其余两段走 `exact`。
+- **顺带补翻 24 条历史遗留英文**（0.0.109 及更早就在，且 `uipos` / `fieldscan` / `regress` 都扫不到——
+  它们藏在 `children` 数组的三元分支、模板插值内部或函数默认值里；13 `exact` + 9 `template` + 2 `pattern`）：
+  - 连接器 / MCP 面板：`Community setup guide` / `Setup documentation` /
+    `Connection states are unavailable.` / `Showing the last known connection states.` /
+    `Connector was added. Refresh your connectors to continue setup.` /
+    `A custom MCP server that runs on your computer.` /
+    `A custom MCP server connected through its own address.`；
+  - 连接器目录 3 条：`Dropbox describes this remote server as an open beta.` /
+    `Requires a Canva account and a client registration or compatible client metadata.` /
+    `Requires a Slack app identity and administrator-approved OAuth scopes.`；
+  - 模板 8 条：`Could not launch the preview: ${…}` / `Could not stop the preview: ${…}` /
+    `` Peak pricing: +${…} a session while DeepSeek charges double, … `` tooltip /
+    购买时段 tooltip（外层嵌套，含 `This purchased hour is in use in another tab`、`Resume your
+    purchased hour` 与 ` Use that tab, or choose “Use it here” …`）/「编辑一条消息」一族 4 条
+    （`Editing a message — sending will replace it${…}`、` Observed changes in ${…} will remain.`、
+    `remove the ${…} after it`、`revert changes to ${…}`）；
+  - 移动端镜像状态：`pattern` 收 MCP 开关的 `` `${$e.enabled?"Disable":"Enable"} ${$e.configKey}` ``
+    （`禁用` / `启用`），`exact` 收 `On`（已开启，与已译的 `Off` 成对），模板收
+    `` On · synced ${…} ``（已开启 · 已同步 …）；
+  - 另修两处译文：`` Move ${r.title||"new thread"} to a new window `` 的中文里残留英文回退值
+    （`new thread` → `新会话`，与 `Close ${r.title||…}` 那条保持一致）；
+    `Error: ${t.detail??"unknown"}` 的译文里 `unknown` 一并译出（→ `未知`）。
+- **主进程无需改动**：0.0.110 只动了 `electron/shell-lifetime.cjs`（退出时先 `socket.end('quit\n')`，
+  注释说明 Windows 没有 SIGTERM）与 `package.json` 版本号，无用户可见新文案；`patches/` 的 7 个补丁
+  仍干净套用，`postbuild` 的 6 个必检哨兵 + `renderer-health.cjs` 可选哨兵全过。
+- **门禁实测**：`lint_dict` 0 错误（exact 1180 / template 269 / code 8 / pattern 75）；词典对主 bundle
+  **替换 1794 处 + `all keys matched`（MISSED 0）**；`uipos` 界面属性位置残留 14 条（与 0.0.109 持平，
+  均为约定保留的模型名 / `Freebucks` / `bun install` / CodeMirror 内部标签）、`fieldscan` 1 条
+  （`tagline: 0 Freebucks`）；`regress` 对比 `pack-v0.0.109` **262 → 242，新增 0 处**；
+  `postbuild` 自检通过（纯字面量 1138/1138）；`test_remap` 15 条样本 + 3 条负面用例全过；
+  对英文原版重跑 `remap`：269 条模板全 SAME、歧义 0、MISSING 0（新增的 9 条模板键里包含
+  ``  ${$e.enabled?"Disable":"Enable"} ``、`On · synced ${…}`、「编辑一条消息」嵌套族等形态，
+  解析器均能正确拆段——不存在“下个版本只能人工拄变量名”的新增特例）。
+- **装机已实测**：`ui/index.html` 为 `lang="zh-CN"` + `hanhua-pack` 0.0.110，装机主 bundle 与
+  `output/ui/assets/index-DVP89Kth.js` 哈希一致（SHA256 `382e39b6…`）。
+- **注**：本机装机的 0.0.109 汉化产物已被上游更新覆盖且没有 `hanhua-backup-*`，`build.sh` 走的是
+  「安装目录即英文原版」这条首次构建路径；本次是先用 `dist/hanhua-pack-0.0.109.zip` 当旧基线做回归对比。
+
+## [0.0.109] · 2026-09-12
+
+**适配 0.0.109：上游是纯 SDK 改动，界面文案零变化——词典一字未改，只升版本重建。**
+这是首次数得清「改了 0 条」的适配：0.0.109 的渲染 bundle 与主进程 electron 文件
+与 0.0.108 **逐字节一致**，`dict.json` 无需增删。
+
+- **适配 Freebuff v0.0.109**：targetVersion / packVersion 升至 0.0.109；渲染 bundle
+  仍为 `index-WHL57zaM.js`、样式表仍为 `index-Bz7qlcod.css`（与 0.0.108 产物逐字节相同，
+  `diff -r` 全量比对无差异）。`tools/remap.js` 迁移 0 条、无歧义条目（变量名没变，符合预期）。
+- **上游改了什么**：`node_modules/@codebuff/sdk` 的 `read_files` 新增图片附件读取
+  （`tools/read-files.ts` 新增 `getImageFile`、`run.ts` 接线 `requestImageFile`、
+  `impl/agent-runtime.ts` 透传该回调，另带一个测试文件），加上 `package.json` 的版本号。
+  受影响的 `electron/*.cjs` 一个都没变，所以 `patches/` 无需新增或调整。
+- **新增 SDK 文案按惯例不翻**：`[Image is … KB; images over … KB cannot be attached. Save a
+  downscaled copy with a terminal command (for example `magick … -resize 1024x1024
+  /tmp/preview.png`) and read that instead.]` 是塞给模型的工具错误串（库内部文案，界面看不到），
+  与既有 `Freebuff`/模型名等保留类别一致。
+- **门禁实测**：`lint_dict` 0 错误；词典对主 bundle **替换 1785 处 + `all keys matched`
+  （MISSED 0）**；`uipos` 界面属性位置残留 14 条（全是约定保留的模型名 / `Freebucks` 等）、
+  `fieldscan` 1 条（`tagline: 0 Freebucks`）；`regress` 对比 `pack-v0.0.108`
+  **262 → 262，新增 0 处**；`postbuild` 自检通过（含 `renderer-health.cjs` 可选哨兵）。
+- **已发布**：汉化包 Release `pack-v0.0.109`（`hanhua-pack-0.0.109.zip` + `pack-manifest.json`，
+  含 SHA512），发布前闸门对比上一版 `pack-v0.0.108`——262 → 262、新增 0 处。
+- **注**：`update.sh` 的回归闸门会跳过与 `manifest.json` 里 `packVersion` 同名的包，
+  所以适配时**先在 manifest 里升版本再跑 update.sh**，闸门才会拿上一版包（0.0.108）当基线；
+  若先跑 update.sh，它会退回更早的包（本次首跑取到 0.0.105），必要时手动补跑一次
+  `node tools/regress.js dist/hanhua-pack-0.0.108.zip output`。
+
+## [0.0.108] · 2026-09-12
+
+**适配 0.0.108：补齐新上线的「对话历史翻页 + 编辑较早消息」文案，并给新增的主进程文件加补丁**，
+共 9 条新词条（替换数 1774 → 1785）。本机自动更新是从 0.0.106 直接跳到 0.0.108，
+所以 0.0.107 与 0.0.108 一起适配。
+
+- **适配 Freebuff v0.0.108**：targetVersion / packVersion 升至 0.0.108；渲染 bundle
+  `index-DcBlltOE.js` → `index-WHL57zaM.js`，样式表 `index-Cb9bL8st.css` → `index-Bz7qlcod.css`。
+- **模板变量自动重映射 47 条**（`tools/remap.js`），另 **2 条 remap 歧义条目人工改名**（锚文本在
+  bundle 里命中多处且插值不一致，工具拒绝猜）：`Sponsored · ${o}` → `Sponsored · ${a}`；
+  `Could not select ${ue.name}: ${Ye}` → `Could not select ${he.name}: ${Ye}`。
+- **新增 9 条**（对话历史翻页 / 编辑较早消息，全新功能）：
+  - `pattern`（界面属性位置，共 6 条）：`Newer messages` / `Older messages` / `Return to latest` /
+    `Return to latest messages` / `Conversation pages` / `Conversation outside the viewport — focus to read`；
+  - `exact`（不在界面属性锚点上的整句）：`Could not load history` /
+    `This history page changed. Return to latest and try again.` /
+    `Editing an earlier message — sending will replace it, remove all later messages and rewind the
+    agent’s subsequent file changes.`（编辑横幅的提示句）。
+  - 无词条下线、无改写；9 条新词条共命中 10 处（`Return to latest` 在 `children:` 出现两次），
+    另 1 处为旧词条在新版 bundle 里多出的一次使用。
+- **主进程新增文件需要补丁**：0.0.107 起 asar 里多了 `electron/renderer-health.cjs`（渲染进程
+  内存采样 + 崩溃恢复），里面 `dialog.showMessageBox` 的弹窗是用户直接看到的：
+  `Freebuff window stopped` / `This window ran out of memory.` / `This window stopped unexpectedly.` /
+  `Reload the window to return to your conversation. Reloading does not restart the agent.` /
+  `Reload window` / `Close window`。词典的 `exact` 只替换**双引号**字面量（`apply.js` 的实现如此），
+  而主进程这些文案用的是单引号，历来靠 `patches/` 手写补丁——故新增
+  `patches/electron-renderer-health.cjs.patch`，并在 `tools/postbuild.js` 加**可选哨兵**：
+  该文件在老版本 asar 里不存在，缺失只警告，存在则必须通过 `node --check` 且带译文哨兵
+  「重新加载窗口」。
+- **主进程其余 6 个补丁在 0.0.108 上仍干净套用**：`main.cjs` 的上游改动只是把
+  `render-process-gone` 接线到新的 `watchRenderer`（外加 `renderer:history` IPC），无新增文案；
+  0.0.105 → 0.0.108 的 asar 差异另有 `node_modules/@codebuff/sdk` 的 `run.ts` 与
+  `byok-run.test.ts`（库内部文件，不翻）。
+- **门禁实测**：`lint_dict` 0 错误；`uipos` 界面属性位置残留 14 条（全是约定保留的模型名 /
+  `Freebucks` 等）、`fieldscan` 1 条（`tagline: 0 Freebucks`）；`regress` 对比 0.0.105 包
+  **262 → 262，新增 0 处**；`postbuild` 自检通过（纯字面量词条覆盖 1134/1134）。
+- 装机已实测：`ui/index.html` 为 `lang="zh-CN"` + `hanhua-pack` 0.0.108，装机主 bundle 与
+  `output/ui/assets/index-WHL57zaM.js` 哈希一致，装机 `app.asar` 里的 `renderer-health.cjs`
+  已是「重新加载窗口 / 关闭窗口」。
+- **已发布**：汉化包 Release `pack-v0.0.108`（`hanhua-pack-0.0.108.zip` + `pack-manifest.json`），
+  `tools/release.sh` 发布前自动对比上一版 `pack-v0.0.105`——262 → 262、新增 0。
+  0.0.106 未单独发布，本次直接从 0.0.105 跳到 0.0.108。
+
+## [0.0.106] · 2026-09-11
+
+**适配 0.0.106：BYOK 提供商面板文案改写 + 会话状态标签更新**，共 13 条词条改动
+（替换数 1773 → 1774）。这是个小版本：主进程与 0.0.105 逐字节一致，改动集中在渲染进程。
+
+- **适配 Freebuff v0.0.106**：targetVersion / packVersion 升至 0.0.106；渲染 bundle
+  `index-B4mEUbmK.js` → `index-DcBlltOE.js`，样式表 `index-DfedPj0M.css` → `index-Cb9bL8st.css`。
+  主进程 asar 里 6 个 electron 文件经 `patches/` + 词典处理后与 0.0.105 产物**逐字节一致**
+  （只有 `package.json` 的 version 不同），`patches/` 无需改动；`ui/index.html` 也只差版本戳与资源哈希。
+- **模板变量自动重映射 12 条**（`tools/remap.js`）：`ve→ie`、`ce→H`、`W→Z`、`X→U`、
+  `q.limit→I.limit`、`oS(ie)→oS(ne)`、`ne.name→ie.name` 等，含 2 条「半截模板」
+  （Freebucks 钱包 / 付费时长提示）。
+- **2 条 remap 歧义条目人工改名**（锚文本在 bundle 命中多处、插值不一致，工具拒绝猜）：
+  `` `Remove ${Ae.configKey}` `` → `` `Remove ${$e.configKey}` ``；
+  `` `Could not select ${de.name}: ${Ge}` `` → `` `Could not select ${ue.name}: ${Ye}` ``。
+- **6 条词条随上游 BYOK 面板改写而下线**：`Another tab is using the hosted model` /
+  `OpenRouter or an OpenAI-compatible endpoint` / `Start a new task to change API providers.` /
+  `Direct to your provider. Billed to your account.` /
+  `To use a connection, select it in the model picker of a new task.` / ` · Unverified`
+  ——留着会卡住构建的 MISSED 门禁。
+- **改写 1 条**：`Provider added. Select it in the model picker of a new task.` →
+  `Provider added. Select it in the model picker of a new or existing Freebuff task.`
+- **新增 7 条**：
+  - BYOK 面板：`Select a provider in the model picker of a new or existing Freebuff task.
+    Once a task uses your API key, start a new task to return to Freebuff models.`
+    （0.0.106 把 0.0.105 的两条提示合并成了这一句）、
+    `You can switch this task to your API provider. After switching, start a new task to use
+    Freebuff models again.`、`Add or manage your API keys`、`Your keys · Your provider’s billing`；
+  - 顺带补齐 `This task uses your selected provider. Start a new task to use Freebuff models or
+    switch providers.`——0.0.105 就存在于 BYOK 面板同一分支，旧词典没收，本次靠 uipos 扫出；
+  - 会话状态标签：`Hosted session slots are in use`（替代下线的 `Another tab is using the hosted model`）；
+  - `pattern` 分区收 `Selected`（BYOK 提供商列表的选中标记，只作用于 `children:` 等界面位置）。
+- **工具修复：回归闸门会漏报「整句新增英文」**。`tools/regress.js` 原来用「相邻引号两两配对」的
+  正则提取字符串字面量，而 minified 产物里短字符串（`"span"` 仅 4 字符，不满足 `{8,600}`）会让
+  引擎从它的**右引号**重新开始，整条链从此错位配对——大半个字符串被当成代码丢掉。本次实测：
+  `Add or manage your API keys`、`Your keys · Your provider’s billing` 两条新增英文，闸门报
+  「0 处新增」，是 `uipos.js` 扫出来的。现改为「每个引号向后读到下一个引号」的**重叠配对**
+  （真正的字符串其开引号必然在候选里，不会错位），新旧产物提取到的英文片段 144 → 262 处；
+  另加 kebab-case 过滤，把 `agent-trigger has-byok` 这类新类名组合的误报挡掉。
+- **门禁全绿**：`lint_dict` 无错误、`test_remap` 13 条样本 + 3 条负面用例全过；构建
+  `all keys matched`（1774 处替换）；`postbuild` 自检通过（纯字面量 1131/1131）；
+  `regress.js` 对 0.0.105 包比对 **0 处新增英文片段**；`uipos` 界面属性位置残留 14 条
+  （与 0.0.105 持平）、`fieldscan` 1 条（`tagline:"0 Freebucks"`），均为约定保留项。
+
 ## [0.0.105] · 2026-09-11
 
 **适配 0.0.105：BYOK 面板文案微调 + 新增两条 Freebucks 付费提示**，共 11 条新词条
