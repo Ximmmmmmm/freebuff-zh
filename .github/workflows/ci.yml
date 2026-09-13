@@ -27,6 +27,8 @@ jobs:
         run: node tools/test_ui_code_patch.js
       - name: 行为取证探针自测（拿不到证据必须 rc 2，不冒充判决）
         run: node tools/test_probe_stream_epoch.js
+      - name: 退场判定自测（决策表 / 退出码契约 / 删除清单完整性）
+        run: node tools/test_ui_patch_status.js
       - name: 工具脚本语法冒烟
         run: |
           for f in tools/*.js; do

@@ -19,8 +19,13 @@ const fs = require('fs')
 const INJECT_PREFIX = '_hanhua'
 
 // 哨兵：补丁注入的稳定片段，用来判断「已应用」与构建产物自检（tools/postbuild.js）。
+//
+// defect 字段把补丁归到「上游的那个缺陷」上：多条补丁可以协同修同一个缺陷。它让
+// tools/ui_patch_status.js 能回答「上游自己修好了吗、这些补丁能不能退场」——判定是
+// 按缺陷成组做的，找不到对应探针的补丁会被如实标成「无法自动判定」。
 const PATCHES = [
   {
+    defect: 'stream-epoch',
     id: 'mark-in-flight-after-reconnect',
     why:
       '断线重连（含 orchestrator 崩溃重启）时，给未完成的回复打上 streamSeq=-1 标记：' +
@@ -36,6 +41,7 @@ const PATCHES = [
     sentinel: `.streamSeq===void 0?${INJECT_PREFIX}Msg`,
   },
   {
+    defect: 'stream-epoch',
     id: 'skip-stale-seq-filter',
     why:
       'EG 的流事件守卫 `streamSeq !== void 0 && seq <= streamSeq` 对上面那个 -1 标记放行：' +
@@ -45,6 +51,7 @@ const PATCHES = [
     sentinel: '.streamSeq>=0&&',
   },
   {
+    defect: 'stream-epoch',
     id: 'keep-local-in-flight',
     why:
       '重连后的 loadThread 用 nY 决定「本地那条未完成回复」与「服务端快照」谁胜出。' +

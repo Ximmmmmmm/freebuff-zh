@@ -150,6 +150,33 @@ function probe(src) {
 
 const yn = (b) => (b ? '是' : '否')
 
+// --- 探针身份与判决：供 tools/ui_patch_status.js 登记、与 postbuild 共用同一份判据 ------ 
+// 一个「缺陷」可能对应多条补丁（本缺陷就是三条协同），所以判定放在缺陷这一层，
+// 补丁与缺陷的从属关系由 apply_ui_code_patch.js 里每条补丁的 defect 字段声明。
+const ID = 'stream-epoch'
+const TITLE = '崩溃重启后，被打断的那一轮回复永远不结束'
+
+/**
+ * 判决：给 bundle 一个结论，而不是让调用方各自解释两行数据。
+ * @returns {{
+ *   id: string, title: string,
+ *   rows: Array<{label:string, kept:boolean, delta:boolean, finish:boolean}>,
+ *   defectPresent: boolean,  // 未打标记时增量与 finish 双双被丢弃 = 缺陷在
+ *   patchEffective: boolean,  // 打上标记后不再丢，且未打标记时仍丢 = 补丁有效且最小
+ * }}
+ * @throws 抽不到函数时抛错（调用方应视为「无法取证」）
+ */
+function verdict(src) {
+  const [plain, marked] = probe(src).rows
+  return {
+    id: ID,
+    title: TITLE,
+    rows: [plain, marked],
+    defectPresent: !plain.delta && !plain.finish,
+    patchEffective: marked.kept && marked.delta && marked.finish && !plain.delta && !plain.finish,
+  }
+}
+
 function main() {
   const args = process.argv.slice(2)
   const file = args.find((a) => !a.startsWith('--'))
@@ -170,23 +197,20 @@ function main() {
 
   let result
   try {
-    result = probe(src)
+    result = verdict(src)
   } catch (e) {
     // 上游把这段结构改了：拿不到证据就直说，绝不根据「抽不到」去推断缺陷是否还在
     console.error(`probe: 无法取证（${e.message}）—— 上游渲染进程的代码结构已变，需人工核对后再更新本工具的锚点`)
     process.exit(2)
   }
 
-  const [plain, marked] = result.rows
   console.log(`stream-epoch 取证：${file}`)
   for (const r of result.rows) {
     console.log(`  ${r.label.padEnd(22)} 保留本地内容=${yn(r.kept)}  seq=4 增量生效=${yn(r.delta)}  finish 生效=${yn(r.finish)}`)
   }
 
-  // 缺陷在 = 未打标记时增量与 finish 双双被丢弃
-  const defectPresent = !plain.delta && !plain.finish
-  // 补丁有效且最小 = 标记后不再丢，而未打标记时仍然丢（守卫没被整体拆掉）
-  const patchedOk = marked.kept && marked.delta && marked.finish && !plain.delta && !plain.finish
+  const defectPresent = result.defectPresent
+  const patchedOk = result.patchEffective
 
   let verdict
   if (expect === 'present') verdict = defectPresent
@@ -215,4 +239,4 @@ function main() {
 
 if (require.main === module) main()
 
-module.exports = { probe, ANCHORS }
+module.exports = { probe, verdict, ANCHORS, ID, TITLE }

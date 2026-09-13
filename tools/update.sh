@@ -2,7 +2,7 @@
 # 一键版本迁移：应用自动更新到新版本后跑一次，把能自动的都自动掉。
 #
 #   1/6 模板变量重映射：tools/remap.js 把 template 词典条目的 ${...} 变量名迁移到新 bundle
-#   2/6 UI 行为补丁体检：锚点还能唯一命中吗？缺陷还在吗？（tools/apply_ui_code_patch.js + probe_stream_epoch.js）
+#   2/6 UI 行为补丁体检：该保留 / 该重维护 / 该退场？（tools/ui_patch_status.js，退场时附删除清单）
 #   3/6 可复现构建：bash build.sh（内含语法校验 + 构建产物自检）+ 构建后行为取证
 #   4/6 残留扫描：leftover / prose / uipos / fieldscan / blindscan 扫描构建出的主 bundle
 #   5/6 回归闸门：tools/regress.js 对比上一版汉化包，揪出「变回英文」的静默回归
@@ -84,52 +84,40 @@ else
 fi
 
 # --- 2/6 UI 行为补丁体检（原版）-----------------------------------------------------
-# 在**花时间构建之前**先把两件事问清楚。它们与词典无关，但一旦不成立，构建要么硬失败、
-# 要么白插一段桩：
-#   ① 锚点还能唯一命中吗 —— 上游改写了这段代码时，build.sh 的补丁步会中止；在这里报
-#      得更早、更清楚（知道是哪一条），并顺带把缺陷取证打出来供决策。
-#   ② 缺陷还在吗 —— 原版必须仍能复现；若上游已自行修复，探针会直说，那就不该再插桩。
+# 在**花时间构建之前**先问清楚：这些补丁该保留、该重维护、还是该退场？（与词典无关，
+# 但如果不成立，构建要么硬失败、要么白插一段修一个上游已经没有的缺陷的桩。）
+# 判定交给 tools/ui_patch_status.js：锚点维度（能不能套用）× 缺陷维度（原版还能不能复现
+# 出缺陷），逐组给出 KEEP / REWRITE / RETIRE / UNKNOWN，退场时附上删除清单。
 echo
-echo "== 2/6 UI 行为补丁体检（原版）=="
-PATCH_ANCHORS=skipped
-PATCH_COUNT=0
-PATCH_DEFECT=skipped
+echo "== 2/6 UI 行为补丁体检（原版：该保留还是退场）=="
+PATCH_STATUS=skipped
 if [ -n "${UI_BUNDLE}" ] && [ -f "${UI_BUNDLE}" ]; then
   set +e
-  ANCHOR_OUT="$(node "${HERE}/tools/apply_ui_code_patch.js" "${UI_BUNDLE}" 2>&1)"
-  ANCHOR_RC=$?
+  STATUS_OUT="$(node "${HERE}/tools/ui_patch_status.js" "${UI_BUNDLE}" 2>&1)"
+  STATUS_RC=$?
   set -e
-  PATCH_ANCHORS="${ANCHOR_RC}"
-  printf '%s\n' "${ANCHOR_OUT}" | tee -a "${REPORT}"
-  if [ "${ANCHOR_RC}" -ne 0 ]; then
-    echo "ERROR: UI 行为补丁的锚点在新版原版 bundle 里匹配不上（明细见上）。" >&2
-    echo "  上游改写了这段代码。两条路：" >&2
-    echo "    · 缺陷仍在 —— 在新 bundle 里重新定位同一处语义，更新 tools/apply_ui_code_patch.js 的 find/apply；" >&2
-    echo "    · 上游已自行修复 —— 把对应补丁从清单里移除（下面的取证会告诉你是不是这种）。" >&2
-    node "${HERE}/tools/probe_stream_epoch.js" "${UI_BUNDLE}" || true
-    exit 1
-  fi
-  PATCH_COUNT="$(printf '%s' "${ANCHOR_OUT}" | sed -n 's/^ui code patch: applied \([0-9][0-9]*\).*/\1/p')"
-  PATCH_COUNT="${PATCH_COUNT:-0}"
-  set +e
-  DEFECT_OUT="$(node "${HERE}/tools/probe_stream_epoch.js" "${UI_BUNDLE}" --expect present 2>&1)"
-  DEFECT_RC=$?
-  set -e
-  printf '%s\n' "${DEFECT_OUT}" | tee -a "${REPORT}"
-  case "${DEFECT_RC}" in
-    0) PATCH_DEFECT=present ;;
-    1) PATCH_DEFECT=gone ;;
-    *) PATCH_DEFECT=unknown ;;
+  printf '%s\n' "${STATUS_OUT}" | tee -a "${REPORT}"
+  case "${STATUS_RC}" in
+    0) PATCH_STATUS=keep ;;
+    1) PATCH_STATUS=retire ;;
+    3) PATCH_STATUS=unknown ;;
+    *) # rc 2：锚点失配（缺陷仍在，需重新定位）+ 原版路径不可用等配置问题，两者都该停下
+       echo "ERROR: UI 行为补丁体检需要人工介入（rc=${STATUS_RC}）：锚点已失配（构建也会在中途中止），或原版 bundle 不可用。" >&2
+       echo "  明细见上方输出。重新定位锚点后重跑；若上游已自行修复，则按清单把那组补丁退场。" >&2
+       exit 1 ;;
   esac
-  if [ "${PATCH_DEFECT}" = "gone" ]; then
-    echo "  ! 原版里已复现不出该缺陷 —— 上游可能自行修复（或改写了时序），建议人工确认后将对应补丁退场" >&2
+  if [ "${PATCH_STATUS}" = "retire" ]; then
+    echo "  ! 有补丁可以退场（上游已复现不出缺陷，删除清单见上方与报告）——确认后删，不要在缺陷仍在时删" >&2
+  fi
+  if [ "${PATCH_STATUS}" = "unknown" ]; then
+    echo "  ! 补丁去留无法自动判定（探针拿不到证据）——请人工核对上游是否改写了这段代码" >&2
   fi
 else
   echo "  (未记录原版主 bundle 路径，跳过)" | tee -a "${REPORT}"
 fi
 {
   echo
-  echo "## UI 行为补丁体检（原版）：锚点 rc=${PATCH_ANCHORS} / 命中 ${PATCH_COUNT} 条 / 缺陷 ${PATCH_DEFECT}"
+  echo "## UI 行为补丁体检（原版）：${PATCH_STATUS}"
 } >> "${REPORT}"
 
 # --- 3/6 构建 --------------------------------------------------------------------
@@ -229,16 +217,11 @@ case "${GATE_RC}" in
   1) echo "  · 回归闸门：⚠ 发现新增英文片段（清单见报告）——补翻 dict.json 后重跑 build.sh" ;;
   *) echo "  · 回归闸门：跳过（本地缺上一版包，发布时还会再比一次）" ;;
 esac
-if [ "${PATCH_ANCHORS}" = "skipped" ]; then
-  echo "  · UI 行为补丁锚点：跳过（未记录原版主 bundle）"
-else
-  echo "  · UI 行为补丁锚点：${PATCH_COUNT} 条全部唯一命中 ✓（rc=${PATCH_ANCHORS}）"
-fi
-case "${PATCH_DEFECT}" in
-  present) echo "  · 缺陷取证（原版）：可复现 ✓ 补丁仍然必要" ;;
-  gone)    echo "  · 缺陷取证（原版）：⚠ 已复现不出——上游可能自行修复，确认后应将该补丁退场" ;;
-  unknown) echo "  · 缺陷取证（原版）：⚠ 无法取证（上游结构变化），需人工核对锚点与补丁去留" ;;
-  *) echo "  · 缺陷取证（原版）：跳过" ;;
+case "${PATCH_STATUS}" in
+  keep)    echo "  · UI 行为补丁（原版体检）：KEEP ✓ 锚点命中、上游仍带该缺陷，补丁继续保留" ;;
+  retire)  echo "  · UI 行为补丁（原版体检）：⚠ RETIRE 可退场——上游已复现不出缺陷，删除清单见报告" ;;
+  unknown) echo "  · UI 行为补丁（原版体检）：⚠ UNKNOWN 无法判定去留，需人工核对" ;;
+  *)       echo "  · UI 行为补丁（原版体检）：跳过（未记录原版主 bundle）" ;;
 esac
 echo "  · 产物侧行为取证：由 build.sh 末尾的 postbuild 执行（未达标会直接中止构建）"
 echo "      结果见上面构建日志里的「主 bundle 行为取证」一行"
@@ -251,9 +234,10 @@ cat <<TIP
   2) 重新构建验证全命中：bash build.sh
   3) 安装生效：bash apply.sh
 
-报告里「UI 行为补丁体检」一节红了或带 ⚠ 时（与词典无关）：
-  · 锚点匹配失败 → 上游改写了那段渲染进程代码，需重新定位锚点；
-  · 原版已复现不出缺陷 → 上游自行修复，确认后把该补丁从 tools/apply_ui_code_patch.js 退场；
+报告里「UI 行为补丁体检」红了或带 ⚠ 时（与词典无关）：
+  · REWRITE（锚点失配、缺陷仍在）→ 在新版原版里重新定位同一处语义，更新 find/apply；
+  · RETIRE（原版已复现不出缺陷）→ 上游自行修复，按报告里的删除清单把那组补丁退场；
+  · UNKNOWN（无法取证）→ 上游结构变化，探针拿不到证据，人工核对后决定去留；
   · 产物侧行为取证未达标（构建日志里的「主 bundle 行为取证」）→ 别装机，先核对补丁是否真的生效。
-  · 无法取证（两边都可能）→ 上游结构变化，探针拿不到证据，需人工核对后决定补丁去留。
+随时可以单独问一次：node tools/ui_patch_status.js   （不带参数就自动找本机英文原版）
 TIP

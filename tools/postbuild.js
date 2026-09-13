@@ -12,7 +12,7 @@ const path = require('path')
 const { execFileSync } = require('child_process')
 const { findUnsafeMatches } = require('./semantic_guard')
 const { SENTINELS: UI_PATCH_SENTINELS } = require('./apply_ui_code_patch')
-const { probe } = require('./probe_stream_epoch')
+const { verdict: probeVerdict } = require('./probe_stream_epoch')
 
 const REPO = path.join(__dirname, '..')
 
@@ -114,8 +114,7 @@ if (!fs.existsSync(idxPath)) {
         // 标记不丢」同时成立。抽不到函数（上游结构变了）只警告：那种情况由 build.sh 的
         // 补丁步与上面的哨兵先报。
         try {
-          const [plain, marked] = probe(bundleText).rows
-          uiBehavior = marked.kept && marked.delta && marked.finish && !plain.delta && !plain.finish
+          uiBehavior = probeVerdict(bundleText).patchEffective
         } catch (e) {
           warn(`主 bundle 行为取证失败（${e.message}）—— 补丁效果未经实测，仅凭哨兵放行`)
         }
