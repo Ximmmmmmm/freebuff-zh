@@ -6,6 +6,8 @@
 #   2. apply the translation dictionary (dict.json) via tools/apply.js
 #   3. apply the hand-written patches (patches/electron-*.patch) via git apply
 #   4. repack app.asar; for ui/: patch index.html + apply the dictionary to the bundles
+#      + apply the UI behaviour patches (tools/apply_ui_code_patch.js — not translations,
+#      see docs/更新维护.md「第五种静默失败」)
 #
 # Usage:
 #   bash build.sh                          # auto-pick pristine: newest hanhua-backup-*,
@@ -137,6 +139,12 @@ if [ -n "${PRISTINE_UI}" ]; then
         exit 1
       fi
     fi
+    # 行为补丁（不是翻译）：少量必须改的 UI 逻辑。锚点用「属性名 + 字面量 + 结构」
+    # 匹配并把短名字经捕获组带回，所以 minifier 改名不会失配；但必须唯一命中，
+    # 命中 0 处或 2 处以上都中止构建，逼出「上游改写了这段代码」的时刻。
+    # 必须在词典之后跑：锚点已经过校验的是词典替换后的文本（见 tools/apply_ui_code_patch.js）。
+    echo "== 套用 UI 行为补丁 (tools/apply_ui_code_patch.js) =="
+    node "${HERE}/tools/apply_ui_code_patch.js" "${HERE}/output/ui/${MAIN_BUNDLE}" --write
   else
     echo "  ! 未在 index.html 中找到主 bundle，跳过词典应用" >&2
   fi

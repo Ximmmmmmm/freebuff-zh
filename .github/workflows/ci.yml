@@ -23,6 +23,8 @@ jobs:
         run: node tools/test_remap.js
       - name: blindscan 自测（原版 vs 产物的英文片段对差）
         run: node tools/test_blindscan.js
+      - name: UI 行为补丁自测（改名抗性 / 唯一命中 / 幂等）
+        run: node tools/test_ui_code_patch.js
       - name: 工具脚本语法冒烟
         run: |
           for f in tools/*.js; do

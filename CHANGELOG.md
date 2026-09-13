@@ -68,6 +68,26 @@
   令牌依旧只经同步 IPC 交给本窗口、从不进 argv、也不发给上游）。该行随 `patches/electron-main.cjs.patch`
   分发，`postbuild.js` 的 `electron/main.cjs` 哨兵同步加两条断言（中文说明 + 代码行）。
   复现与实测见 `docs/更新维护.md` 的常见问题。
+- **修正重发 0.0.110.3**：修掉「**orchestrator 崩溃重启后，被打断的那一轮回复永远不结束**」——
+  这是仓库里第一处**不是翻译**的产物改动，也是首次为 UI bundle 引入行为补丁机制
+  （`tools/apply_ui_code_patch.js`）。成因：回合内的流式序号 `live.seq` 由 orchestrator 持有、
+  **每个新回合从 0 重新计数**（`threadPage` 以 `streamSeq` 回给渲染进程），而渲染进程的流事件守卫
+  `if(r.streamSeq!==void 0&&n<=r.streamSeq)return` 序号不增就整条丢弃（`finish` 也在闸前）；
+  `boot()` 会把崩溃前未完成的回合重新 `pump()`，但新进程序号从 0 起 —— 本地那条回复带着旧高序号
+  （如 42）压住一切，`nY()` 的合并规则又让「本地 `streamSeq` 更大者胜出」，于是此后所有增量与
+  `finish` 全被丢弃：回复停在崩溃前的内容、`done` 永远不为真（composer 已解锁，看起来只是「卡住」），
+  直到下一条消息新建 `streamSeq:0` 的消息才自愈。**已实测复现**：把装机 bundle 里的 `EG`/`nY`/折叠
+  纯函数抽出来跑事故时序（`work/stream-epoch-check.js`），原始 bundle 是「保留本地部分回复=是、
+  seq=4 增量被丢、finish 被丢」，补丁后三项全部为「是」。改法三条协同：重连分支给未 `done` 的消息打
+  `streamSeq:-1`（本地序号作废）→ 守卫对 `-1` 放行（`streamSeq>=0&&`，之后自动恢复）→ `nY` 对 `-1`
+  一律保留本地内容（硬崩溃时本地那条回复是唯一副本，服务端要等回合结束才落盘），让服务端增量续写在它上面。
+  **为什么另起一层工具**：这些改动落在表达式上（守卫条件 / 对象展开 / 三元分支），锚点里全是 minifier
+  起的短名字，词典的逐字替换机制无能为力；新工具改用「属性名 + 字面量 + 结构」匹配、短名字经捕获组
+  原样带回（改名不失配），并把「必须唯一命中」和「已应用则跳过（哨兵）」做成硬规则，命中 0 处或 2 处以上
+  中止构建，`postbuild.js` 另有哨兵自检。三条补丁对 0.0.110 的 `index-DVP89Kth.js` **各命中 1 处**
+  （+157 字节），`node --check` 通过，未打标记的消息行为逐字不变。新增自测 `tools/test_ui_code_patch.js`
+  （9 组用例：干净 bundle / 幂等 / minifier 改名抗性 / 锚点消失记 MISSED / 锚点重复拒绝 / 括号计数错位拒写 /
+  未知 `_hanhua` 前缀拒写 / 注入内容 / CLI 退出码），已接进 CI 的 `lint` 工作流。
 - **门禁实测**：`lint_dict` 0 错误（exact 1181 / template 269 / code 8 / pattern 75）；词典对主 bundle
   **替换 1796 处 + `all keys matched`（MISSED 0）**；`uipos` 界面属性位置残留 14 条（与 0.0.109 持平，
   均为约定保留的模型名 / `Freebucks` / `bun install` / CodeMirror 内部标签）、`fieldscan` 1 条
@@ -76,8 +96,8 @@
   对英文原版重跑 `remap`：269 条模板全 SAME、歧义 0、MISSING 0（新增的 9 条模板键里包含
   ``  ${$e.enabled?"Disable":"Enable"} ``、`On · synced ${…}`、「编辑一条消息」嵌套族等形态，
   解析器均能正确拆段——不存在“下个版本只能人工拄变量名”的新增特例）。
-- **装机已实测**：`ui/index.html` 为 `lang="zh-CN"` + `hanhua-pack` 0.0.110.1，装机主 bundle 与
-  `output/ui/assets/index-DVP89Kth.js` 哈希一致（SHA256 `fa6dfdf9…`）。
+- **装机已实测**：`ui/index.html` 为 `lang="zh-CN"` + `hanhua-pack` 0.0.110.3，装机主 bundle 与
+  `output/ui/assets/index-DVP89Kth.js` 哈希一致。
 - **注**：本机装机的 0.0.109 汉化产物已被上游更新覆盖且没有 `hanhua-backup-*`，`build.sh` 走的是
   「安装目录即英文原版」这条首次构建路径；本次是先用 `dist/hanhua-pack-0.0.109.zip` 当旧基线做回归对比。
 

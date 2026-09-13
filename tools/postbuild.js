@@ -11,6 +11,7 @@ const fs = require('fs')
 const path = require('path')
 const { execFileSync } = require('child_process')
 const { findUnsafeMatches } = require('./semantic_guard')
+const { SENTINELS: UI_PATCH_SENTINELS } = require('./apply_ui_code_patch')
 
 const REPO = path.join(__dirname, '..')
 
@@ -91,6 +92,18 @@ if (!fs.existsSync(idxPath)) {
         if (unique.length > 30) bad(`主 bundle 另有 ${unique.length - 30} 个代码语义中文字面量，详见 semantic_guard 扫描`)
       } else {
         ok('主 bundle 代码语义常量未发现中文')
+      }
+
+      // UI 行为补丁（tools/apply_ui_code_patch.js）的哨兵。这是硬检查：
+      // 补丁漏套时界面仍然能跑，只是「orchestrator 崩溃重启后那条未完成的回复
+      // 永远不 done」的静默故障会回来，装机前必须挡住。
+      const missingUi = UI_PATCH_SENTINELS.filter((s) => !bundleText.includes(s))
+      if (missingUi.length) {
+        for (const s of missingUi) {
+          bad(`主 bundle 缺少 UI 行为补丁哨兵「${s}」—— tools/apply_ui_code_patch.js 未生效`)
+        }
+      } else {
+        ok(`主 bundle 已套用 UI 行为补丁（${UI_PATCH_SENTINELS.length}/${UI_PATCH_SENTINELS.length} 条哨兵）`)
       }
     }
   }
