@@ -4,7 +4,7 @@
 
 **适配 0.0.110：上游把整块「会话退款」面板撤了（合并成 composer 里的一句提示）、重写了推理档位标签，
 顺带补翻 24 条历史遗留英文**（连接器面板 / 目录、预览报错、购买时段与高峰定价 tooltip、「编辑一条消息」提示、移动端镜像状态）。
-替换数 1785 → 1794；词典 exact 1176→1180 / template 264→269 / code 6→8 / pattern 73→75。
+替换数 1785 → 1796；词典 exact 1176→1181 / template 264→269 / code 6→8 / pattern 73→75。
 
 - **适配 Freebuff v0.0.110**：targetVersion / packVersion 升至 0.0.110；渲染 bundle
   `index-WHL57zaM.js` → `index-DVP89Kth.js`，样式表 `index-Bz7qlcod.css` → `index-DYQ73KeT.css`。
@@ -53,18 +53,49 @@
 - **主进程无需改动**：0.0.110 只动了 `electron/shell-lifetime.cjs`（退出时先 `socket.end('quit\n')`，
   注释说明 Windows 没有 SIGTERM）与 `package.json` 版本号，无用户可见新文案；`patches/` 的 7 个补丁
   仍干净套用，`postbuild` 的 6 个必检哨兵 + `renderer-health.cjs` 可选哨兵全过。
-- **门禁实测**：`lint_dict` 0 错误（exact 1180 / template 269 / code 8 / pattern 75）；词典对主 bundle
-  **替换 1794 处 + `all keys matched`（MISSED 0）**；`uipos` 界面属性位置残留 14 条（与 0.0.109 持平，
+- **修正重发 0.0.110.1**：新增的 `tools/blindscan.js` 第一次跑就扫出连接器目录里漏翻的 setupNote
+  （`Google’s server is in Developer Preview and needs a Google Cloud project.`，Gmail / Calendar
+  两张卡上各一处）——按「同一 targetVersion 内修正重发」的惯例把 `packVersion` 升到 `0.0.110.1`
+  重发，已装 0.0.110 的机器才会自动拉到。`targetVersion` 仍为 0.0.110。
+- **门禁实测**：`lint_dict` 0 错误（exact 1181 / template 269 / code 8 / pattern 75）；词典对主 bundle
+  **替换 1796 处 + `all keys matched`（MISSED 0）**；`uipos` 界面属性位置残留 14 条（与 0.0.109 持平，
   均为约定保留的模型名 / `Freebucks` / `bun install` / CodeMirror 内部标签）、`fieldscan` 1 条
   （`tagline: 0 Freebucks`）；`regress` 对比 `pack-v0.0.109` **262 → 242，新增 0 处**；
-  `postbuild` 自检通过（纯字面量 1138/1138）；`test_remap` 15 条样本 + 3 条负面用例全过；
+  `postbuild` 自检通过（纯字面量 1139/1139）；`test_remap` 15 条样本 + 3 条负面用例全过；
   对英文原版重跑 `remap`：269 条模板全 SAME、歧义 0、MISSING 0（新增的 9 条模板键里包含
   ``  ${$e.enabled?"Disable":"Enable"} ``、`On · synced ${…}`、「编辑一条消息」嵌套族等形态，
   解析器均能正确拆段——不存在“下个版本只能人工拄变量名”的新增特例）。
-- **装机已实测**：`ui/index.html` 为 `lang="zh-CN"` + `hanhua-pack` 0.0.110，装机主 bundle 与
-  `output/ui/assets/index-DVP89Kth.js` 哈希一致（SHA256 `382e39b6…`）。
+- **装机已实测**：`ui/index.html` 为 `lang="zh-CN"` + `hanhua-pack` 0.0.110.1，装机主 bundle 与
+  `output/ui/assets/index-DVP89Kth.js` 哈希一致（SHA256 `fa6dfdf9…`）。
 - **注**：本机装机的 0.0.109 汉化产物已被上游更新覆盖且没有 `hanhua-backup-*`，`build.sh` 走的是
   「安装目录即英文原版」这条首次构建路径；本次是先用 `dist/hanhua-pack-0.0.109.zip` 当旧基线做回归对比。
+
+## [工程] · 2026-09-13
+
+**新增 `tools/blindscan.js`：把 0.0.110 适配时一次性用的「原版 vs 产物」对差脚本固化成正式工具，
+并接进 `update.sh` 的残留扫描。**它专治 `uipos` / `fieldscan` / `regress` 都够不着的那批英文——
+`children:[cond?"A":"B"]` 三元分支、模板插值内部的字面量、函数默认值与赋值语句里的字符串。
+
+- **工具**：`node tools/blindscan.js <原版 bundle|目录> <产物 bundle|目录>`（目录可以是 `ui/`、
+  Freebuff 的 `resources`、或本仓库的 `output/`）。判据只有一条：片段在**原版里与引号相邻**、
+  在**产物里原样还在** ⇒ 词典没碰过它（翻过的会变中文；升级时 minifier 改的是插值变量名，
+  不动字面量本身）。输出分两桶：「疑似文案」（多词 + 常见小词，判据与 `regress` 的同一套）与
+  「其余」（短标签 / 术语 / 库内部 / 品牌词）；每条带原版上下文，`--words 1` 可连单字标签一起找。
+- **刻意不写 JS 词法分析器**：2.4 MB 的 minified bundle 里既有正则字面量里的引号、也有 shiki
+  那种含反引号的怪模板，朴素扫描会错位配对、把大半个文件当成一个字符串（实测最长一条 38 万字符、
+  字面量只抽出 6 千种）；改用「与引号相邻的英文片段」后，2.4 MB 全扫只需 0.2 秒、10094 种片段，
+  而 `typeof b` 这类代码片段因不与引号相邻自动排除。
+- **接进流程**：`tools/update.sh` 第 3 步在 `fieldscan` 之后新增一段 blindscan（只报告不拦构建：
+  列表里本就混着 CodeMirror / shiki / React 这类库内部文案，人工挑出应用自己的），全文进
+  `work/update-*.txt`、控制台预览前 40 行；`docs/更新维护.md` 的「第四种静默失败」一节改用它作为
+  标准做法（不再是一次性脚本）。
+- **自测**：`tools/test_blindscan.js`（合成原版 / 产物片段，钉住两类误判：把已汉化 / 产物新增的
+  当成残留、把代码片段当成文案），已接入 GitHub Actions；`--words` 与目录参数解析也一并覆盖。
+- **实测**：对 0.0.110 的英文原版 vs 本次产物跑出 **284 条「疑似文案」+ 397 条「其余」**
+  （首跑 285 + 433：一条是它第一个找出的漏翻 setupNote，见下；另 36 条是 `act tool-row` 这类
+  类名字符串，补上「全标识符形状且带连字符、又没有常见小词」的过滤后消失）。
+  其中「Google’s server is in Developer Preview and needs a Google Cloud project.」（连接器目录
+  的 setupNote）就是它扫出来的，已随 packVersion 0.0.110.1 补翻（→ 284）。
 
 ## [0.0.109] · 2026-09-12
 

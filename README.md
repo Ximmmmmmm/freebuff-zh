@@ -15,10 +15,10 @@ Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.110）的**简体中文汉�
 
 ## ✨ 特性
 
-- **覆盖全面**：渲染进程约 1794 处文案 + 主进程菜单 / 对话框 / 同意窗口全面中文化；connectors / MCP 面板（状态标签、详情面板与目录里 100 条连接器介绍）与 v0.0.104 新增的 BYOK（自带密钥）API 提供商界面已全量中文化
-- **词典驱动**：`dict.json`（exact 1180 / template 269 / code 8 / pattern 75），幂等应用、可审计
+- **覆盖全面**：渲染进程约 1796 处文案 + 主进程菜单 / 对话框 / 同意窗口全面中文化；connectors / MCP 面板（状态标签、详情面板与目录里 100 条连接器介绍）与 v0.0.104 新增的 BYOK（自带密钥）API 提供商界面已全量中文化
+- **词典驱动**：`dict.json`（exact 1181 / template 269 / code 8 / pattern 75），幂等应用、可审计
 - **可复现构建**：`build.sh` 从原版 + 词典 + 补丁**逐字节重建**汉化产物  （v0.0.77 曾对照 Release 产物验证；v0.0.83 / v0.0.87 / v0.0.88 / v0.0.90 / v0.0.91 / v0.0.92 / v0.0.103 / v0.0.104 / v0.0.105 / v0.0.106 / v0.0.107 / v0.0.108 / v0.0.109 / v0.0.110 适配经防呆自检通过）
-- **v0.0.110 适配**：上游把整块「会话退款」面板撤掉、合并成 composer 里的一句提示（`Session … from … auto-ended after inactivity · … Freebucks returned.`），并重写了 4 条推理档位标签（`Sprint — what was asked…` / `Focused — …checked through the real surface` / `Thorough — proven and pruned…` / `Exhaustive — the most careful version…`）——下线 19 条、新增 6 条，替换数 1785 → 1794；模板变量自动重映射 15 条、歧义 0 条。主进程只动了 `shell-lifetime.cjs`（退出时先发 `quit`，无用户可见文案），`patches/` 无需改动。顺带补翻 **24 条历史遗留英文**——连接器面板与目录、预览报错 `Could not launch/stop the preview: …`、购买时段与 `Peak pricing` tooltip、「编辑一条消息」嵌套模板族、MCP 开关与移动端镜像状态；这些字符串藏在 `children` 三元分支 / 模板插值 / 函数默认值里，`uipos` 与 `regress` 都扫不到，是逐个从原版 bundle 里比对出来的（回归闸门英文片段 262 → 242，新增 0）
+- **v0.0.110 适配**：上游把整块「会话退款」面板撤掉、合并成 composer 里的一句提示（`Session … from … auto-ended after inactivity · … Freebucks returned.`），并重写了 4 条推理档位标签（`Sprint — what was asked…` / `Focused — …checked through the real surface` / `Thorough — proven and pruned…` / `Exhaustive — the most careful version…`）——下线 19 条、新增 6 条，替换数 1785 → 1796；模板变量自动重映射 15 条、歧义 0 条。主进程只动了 `shell-lifetime.cjs`（退出时先发 `quit`，无用户可见文案），`patches/` 无需改动。顺带补翻 **24 条历史遗留英文**——连接器面板与目录、预览报错 `Could not launch/stop the preview: …`、购买时段与 `Peak pricing` tooltip、「编辑一条消息」嵌套模板族、MCP 开关与移动端镜像状态；这些字符串藏在 `children` 三元分支 / 模板插值 / 函数默认值里，`uipos` 与 `regress` 都扫不到，是逐个从原版 bundle 里比对出来的（回归闸门英文片段 262 → 242，新增 0）
 - **v0.0.109 适配**：上游这一版只动了 SDK（`node_modules/@codebuff/sdk` 的 `read_files` 支持读取图片附件），渲染进程 bundle 与主进程 `electron/*.cjs` 与 0.0.108 **逐字节一致**——词典无需增删（替换数仍为 1785，`all keys matched`）、模板变量重映射 0 条、`patches/` 无需改动。新增的 SDK 拒读提示（`Image is … KB; images over … KB cannot be attached.`）是给模型看的库内部文案，按惯例保留英文
 - **v0.0.108 适配**：上游新增「对话历史翻页 + 编辑较早消息」功能，补齐 9 条新文案（`pattern` 里的 `Newer messages` / `Older messages` / `Return to latest` / `Return to latest messages` / `Conversation pages` / `Conversation outside the viewport — focus to read`，`exact` 里的 `Could not load history` / `This history page changed. Return to latest and try again.` / `Editing an earlier message — …`），替换数 1774 → 1785；模板变量自动重映射 47 条，2 条 remap 歧义条目人工改名。0.0.107 新增主进程文件 `electron/renderer-health.cjs`（渲染进程健康采样 + 「窗口已停止」恢复弹窗），为此新增 `patches/electron-renderer-health.cjs.patch` 与 `postbuild.js` 的可选哨兵；其余 6 个补丁在 0.0.108 上仍干净套用（`main.cjs` 上游改动只是接线，补丁无需改动）
 - **v0.0.106 适配**：BYOK 提供商面板文案改写（新增 `Select a provider in the model picker of a new or existing Freebuff task. …` / `You can switch this task to your API provider. …` / `Add or manage your API keys` / `Your keys · Your provider’s billing` 与 `pattern` 里的 `Selected`，下线 6 条旧文案，改写 1 条），并补上会话状态标签 `Hosted session slots are in use`；顺带补齐 0.0.105 漏翻的 `This task uses your selected provider. …`（共 13 条改动，替换数 1773 → 1774）。主进程 6 个 electron 文件经补丁后与 0.0.105 逐字节一致，`patches/` 未改动；12 条模板变量自动重映射，2 条 remap 歧义条目人工改名。另修复回归闸门漏报整句新增英文的提取器缺陷（见 `CHANGELOG`）
@@ -27,9 +27,11 @@ Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.110）的**简体中文汉�
 - **v0.0.103 适配**：自动重映射 56 条模板变量；补齐模型选择器新增 9 个模型的标签与数据使用 / 限速提示，以及 Freebucks 钱包 / paywall 的套餐升级与付费时长文案（模型名按约定保留英文）；v0.0.88 起 Freebucks 钱包额度系统（每日额度 + 钱包 + 按小时计价的会话购买）全新界面全套中文化
 - **一键安装/还原**：`apply.sh` / `restore.sh`，自动备份，随时回退英文原版
 - **工具链完整**：`tools/` 提供版本迁移、构建核查、残留扫描和发布脚本。
-  残留扫描分两层：`uipos.js` 扫界面属性位置（含三元分支、`actionLabel`、JSX 文本节点），
-  `fieldscan.js` 扫 `description:` / `tagline:` / `hint:` 这类属性锚点之外的字段
-- **版本迁移自动化**：`tools/update.sh` 一键串起重映射 → 构建 → 残留扫描。其中
+  残留扫描分三层：`uipos.js` 扫界面属性位置（含三元分支、`actionLabel`、JSX 文本节点），
+  `fieldscan.js` 扫 `description:` / `tagline:` / `hint:` 这类属性锚点之外的字段，
+  `blindscan.js` 把英文原版与产物对一比，抓 `children` 三元分支 / 模板插值内部 / 函数默认值里
+  那批前两者都够不着、`regress` 也判不成句子的英文（0.0.110 的 24 条历史遗留就是它扫出来的）
+- **版本迁移自动化**：`tools/update.sh` 一键串起重映射 → 构建 → 残留扫描 → 回归闸门。其中
   `tools/remap.js` 自动把 template 词典条目的 `${...}` 变量名迁移到新 bundle，也包括以未闭合
   `${条件?` 结尾的「半截模板」嵌套词条（对 v0.0.75→v0.0.76 的 13 条改名全量命中验证），
   不再逐条手工核对
@@ -124,6 +126,7 @@ bash build.sh <app.asar> <ui-dir>   # 或显式指定原版文件
 │   ├── lint_dict.js   # 词典质量门禁（结构 / 重复键 / 占位符一致性）
 │   ├── test_remap.js  # remap / lint 自测（合成「变量改名」bundle，CI 跑）
 │   ├── regress.js     # 发布回归闸门（新旧产物英文片段比对，release/update 调用）
+│   ├── blindscan.js   # 盲区扫描：原版 vs 产物，找 uipos/fieldscan/regress 都扫不到的英文
 │   └── apply_ui_patch.js # 直接替换 UI index.html 翻译（替代 git apply）
 ├── build.sh           # 可复现构建：原版 + 词典 + 补丁 → output/（含防呆自检）
 ├── apply.sh           # 安装汉化到应用（自动备份）
