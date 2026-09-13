@@ -12,6 +12,7 @@ const path = require('path')
 const { execFileSync } = require('child_process')
 const { findUnsafeMatches } = require('./semantic_guard')
 const { SENTINELS: UI_PATCH_SENTINELS } = require('./apply_ui_code_patch')
+const { probe } = require('./probe_stream_epoch')
 
 const REPO = path.join(__dirname, '..')
 
@@ -43,6 +44,8 @@ if (!fs.existsSync(asarPath)) {
 
 const idxPath = path.join(outDir, 'ui', 'index.html')
 let bundleText = null
+// null=未取证 / true=通过 / false=未达标（见下面的 UI 行为补丁一节）
+let uiBehavior = null
 if (!fs.existsSync(idxPath)) {
   bad(`缺少 ${idxPath}（构建参数没给 ui 目录？）`)
 } else {
@@ -104,6 +107,23 @@ if (!fs.existsSync(idxPath)) {
         }
       } else {
         ok(`主 bundle 已套用 UI 行为补丁（${UI_PATCH_SENTINELS.length}/${UI_PATCH_SENTINELS.length} 条哨兵）`)
+
+        // 哨兵只证明“插进去了”，证不了“真的改变了行为”（apply 里的表达式写错、被上游
+        // 改写后变成空操作，哨兵照样在）。所以再把装机 bundle 里的那几段纯函数原样抽出来
+        // 跑一遍事故时序（tools/probe_stream_epoch.js）：必须「未打标记仍丢事件 + 打上
+        // 标记不丢」同时成立。抽不到函数（上游结构变了）只警告：那种情况由 build.sh 的
+        // 补丁步与上面的哨兵先报。
+        try {
+          const [plain, marked] = probe(bundleText).rows
+          uiBehavior = marked.kept && marked.delta && marked.finish && !plain.delta && !plain.finish
+        } catch (e) {
+          warn(`主 bundle 行为取证失败（${e.message}）—— 补丁效果未经实测，仅凭哨兵放行`)
+        }
+        if (uiBehavior === false) {
+          bad('主 bundle 行为取证未达标 —— 补丁插入了但未生效（缺陷仍会复现，或守卫被整体拆掉）')
+        } else if (uiBehavior === true) {
+          ok('主 bundle 行为取证通过（缺陷已消除，且未打标记时守卫仍在）')
+        }
       }
     }
   }
@@ -233,4 +253,5 @@ if (problems.length) {
 }
 console.log('\n✓ 自检通过：布局 / index.html 汉化标记'
   + (mainSrc ? ' / 主进程语法与译文哨兵' : '')
+  + (uiBehavior === true ? ' / UI 行为补丁哨兵与行为取证' : bundleText ? ' / UI 行为补丁哨兵' : '')
   + ' 均正常。')

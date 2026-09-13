@@ -77,7 +77,7 @@
   （如 42）压住一切，`nY()` 的合并规则又让「本地 `streamSeq` 更大者胜出」，于是此后所有增量与
   `finish` 全被丢弃：回复停在崩溃前的内容、`done` 永远不为真（composer 已解锁，看起来只是「卡住」），
   直到下一条消息新建 `streamSeq:0` 的消息才自愈。**已实测复现**：把装机 bundle 里的 `EG`/`nY`/折叠
-  纯函数抽出来跑事故时序（`work/stream-epoch-check.js`），原始 bundle 是「保留本地部分回复=是、
+  纯函数抽出来跑事故时序（已固化进 `tools/probe_stream_epoch.js`），原始 bundle 是「保留本地部分回复=是、
   seq=4 增量被丢、finish 被丢」，补丁后三项全部为「是」。改法三条协同：重连分支给未 `done` 的消息打
   `streamSeq:-1`（本地序号作废）→ 守卫对 `-1` 放行（`streamSeq>=0&&`，之后自动恢复）→ `nY` 对 `-1`
   一律保留本地内容（硬崩溃时本地那条回复是唯一副本，服务端要等回合结束才落盘），让服务端增量续写在它上面。
@@ -87,7 +87,18 @@
   中止构建，`postbuild.js` 另有哨兵自检。三条补丁对 0.0.110 的 `index-DVP89Kth.js` **各命中 1 处**
   （+157 字节），`node --check` 通过，未打标记的消息行为逐字不变。新增自测 `tools/test_ui_code_patch.js`
   （9 组用例：干净 bundle / 幂等 / minifier 改名抗性 / 锚点消失记 MISSED / 锚点重复拒绝 / 括号计数错位拒写 /
-  未知 `_hanhua` 前缀拒写 / 注入内容 / CLI 退出码），已接进 CI 的 `lint` 工作流。
+  未知 `_hanhua` 前缀拒写 / 注入内容 / CLI 退出码），已接进 CI 的 `lint` 工作流。补丁的验收分三层：
+  **锚点唯一命中 → 哨兵（postbuild） → 行为取证（probe，postbuild 硬门禁）**，第三层才是“真的修好了”。
+- **补丁验收与退场（工具，与 0.0.110.3 同批）**：新增 `tools/probe_stream_epoch.js` —— **行为取证探针**：
+  不从合成片段推断，而是把 bundle 里的相关纯函数**原样抽出来**跑一遍事故时序。`--expect present` 用于原版
+  （缺陷必须仍可复现，否则补丁该退场）、`--expect absent` 用于产物（缺陷必须已消除**且未打标记时守卫仍在**
+  —— “有效且最小”，防止把守卫整个拆掉那种灵异修法）；三种退出码 0/1/2 分别对应符合预期 / 不符 / 无法取证，
+  **抽不到函数一律 rc 2**，绝不据“拿不到证据”去推断“缺陷已消失”。接入三处：
+  `tools/update.sh` 新增 **2/6 UI 行为补丁体检**（在花时间构建之前就把「锚点还唯一吗 / 缺陷还在吗」问清楚，
+  并在小结里给出判决与退场建议，步骤总数 5 → 6）；`tools/postbuild.js` 在哨兵之后加**硬门禁**——
+  哨兵只证明“插进去了”，表达式被改写后变成空操作它照样在，所以产物还要跑一次行为取证，未达标直接中止构建
+  （已用「哨兵齐全但行为未修」的假产物实测：3/3 哨兵通过、行为取证未达标、rc 1）；`tools/probe_stream_epoch.js`
+  另有自测 `tools/test_probe_stream_epoch.js`（5 组用例，钉住 rc 2 纪律）并进 CI。
 - **门禁实测**：`lint_dict` 0 错误（exact 1181 / template 269 / code 8 / pattern 75）；词典对主 bundle
   **替换 1796 处 + `all keys matched`（MISSED 0）**；`uipos` 界面属性位置残留 14 条（与 0.0.109 持平，
   均为约定保留的模型名 / `Freebucks` / `bun install` / CodeMirror 内部标签）、`fieldscan` 1 条
