@@ -4,20 +4,21 @@
 ![GitHub last commit](https://img.shields.io/github/last-commit/Ximmmmmmm/freebuff-zh)
 ![GitHub Repo stars](https://img.shields.io/github/stars/Ximmmmmmm/freebuff-zh?style=social)
 ![GitHub forks](https://img.shields.io/github/forks/Ximmmmmmm/freebuff-zh?style=social)
-[![Target](https://img.shields.io/badge/目标-Freebuff%20Desktop%20v0.0.110-blue)](https://freebuff.com)
+[![Target](https://img.shields.io/badge/目标-Freebuff%20Desktop%20v0.0.112-blue)](https://freebuff.com)
 [![lint](https://github.com/Ximmmmmmm/freebuff-zh/actions/workflows/ci.yml/badge.svg)](https://github.com/Ximmmmmmm/freebuff-zh/actions/workflows/ci.yml)
 
 **中文关键词 / Keywords**: Freebuff 汉化、Freebuff 中文版、Freebuff Chinese localization、AI coding agent 中文、Freebuff 翻译、Electron 汉化、localization pack
 
-Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.110）的**简体中文汉化包**，直接修改已打包产物，无需源码、不涉及任何联网改动。
+Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.112）的**简体中文汉化包**，直接修改已打包产物，无需源码、不涉及任何联网改动。
 
 > **English**: A Simplified-Chinese localization pack for Freebuff Desktop — the free AI coding agent. Patches the packaged app directly, no source build required. If you're a Chinese-speaking Freebuff user, this is for you.
 
 ## ✨ 特性
 
-- **覆盖全面**：渲染进程约 1796 处文案 + 主进程菜单 / 对话框 / 同意窗口全面中文化；connectors / MCP 面板（状态标签、详情面板与目录里 100 条连接器介绍）与 v0.0.104 新增的 BYOK（自带密钥）API 提供商界面已全量中文化
-- **词典驱动**：`dict.json`（exact 1181 / template 269 / code 8 / pattern 75），幂等应用、可审计
-- **可复现构建**：`build.sh` 从原版 + 词典 + 补丁**逐字节重建**汉化产物  （v0.0.77 曾对照 Release 产物验证；v0.0.83 / v0.0.87 / v0.0.88 / v0.0.90 / v0.0.91 / v0.0.92 / v0.0.103 / v0.0.104 / v0.0.105 / v0.0.106 / v0.0.107 / v0.0.108 / v0.0.109 / v0.0.110 适配经防呆自检通过）
+- **覆盖全面**：渲染进程约 1807 处文案 + 主进程菜单 / 对话框 / 同意窗口全面中文化；connectors / MCP 面板（状态标签、详情面板与目录里 100 条连接器介绍）与 v0.0.104 新增的 BYOK（自带密钥）API 提供商界面已全量中文化
+- **词典驱动**：`dict.json`（exact 1186 / template 272 / code 8 / pattern 75），幂等应用、可审计
+- **可复现构建**：`build.sh` 从原版 + 词典 + 补丁**逐字节重建**汉化产物  （v0.0.77 曾对照 Release 产物验证；v0.0.83 / v0.0.87 / v0.0.88 / v0.0.90 / v0.0.91 / v0.0.92 / v0.0.103 / v0.0.104 / v0.0.105 / v0.0.106 / v0.0.107 / v0.0.108 / v0.0.109 / v0.0.110 / v0.0.112 适配经防呆自检通过）
+- **v0.0.112 适配**：新增「继续被中断的轮次」（`Continue the interrupted turn` 一组 5 条）与消息队列暂停态的文案（`Send now to go first, or resume the queue.` / `Send now, then run queued messages (Enter)` / `Type a message — sent before the queue` / `Add this message to the queue; keep the queue paused`），BYOK 连接说明改写 3 条（`…until you select the replacement in the model picker.` 等）、移除确认句扩写（`? Tasks using it will stop before their next model request. Select another provider or a Freebuff model to continue the same conversation.`）、模型选择器的运行中提示 1 条，以及 DeepSeek 限时促销 tooltip 整段重写（旧的两条 `drops / Drops … on a plan` 词条下线，新增 `${a}: ` / `${u} hour…` / `… a day on ${n.displayName} instead of ${o(i)} for free.` 三条）——下线 9 条、新增 20 条，替换数 1796 → 1807；模板变量自动重映射 65 条、歧义 2 条人工改名。顺带补翻 1 条历史遗留（技能徽章前缀 `Customized Freebuff built-in · …`，旧词典只翻了插值里的 `all projects` / `this project`）。主进程 `electron/*.cjs` 与 0.0.110 产物**逐字节一致**，`patches/` 无需改动，行为补丁体检 KEEP
 - **v0.0.110 适配**：上游把整块「会话退款」面板撤掉、合并成 composer 里的一句提示（`Session … from … auto-ended after inactivity · … Freebucks returned.`），并重写了 4 条推理档位标签（`Sprint — what was asked…` / `Focused — …checked through the real surface` / `Thorough — proven and pruned…` / `Exhaustive — the most careful version…`）——下线 19 条、新增 6 条，替换数 1785 → 1796；模板变量自动重映射 15 条、歧义 0 条。主进程只动了 `shell-lifetime.cjs`（退出时先发 `quit`，无用户可见文案），`patches/` 无需改动。顺带补翻 **24 条历史遗留英文**——连接器面板与目录、预览报错 `Could not launch/stop the preview: …`、购买时段与 `Peak pricing` tooltip、「编辑一条消息」嵌套模板族、MCP 开关与移动端镜像状态；这些字符串藏在 `children` 三元分支 / 模板插值 / 函数默认值里，`uipos` 与 `regress` 都扫不到，是逐个从原版 bundle 里比对出来的（回归闸门英文片段 262 → 242，新增 0）
 - **v0.0.109 适配**：上游这一版只动了 SDK（`node_modules/@codebuff/sdk` 的 `read_files` 支持读取图片附件），渲染进程 bundle 与主进程 `electron/*.cjs` 与 0.0.108 **逐字节一致**——词典无需增删（替换数仍为 1785，`all keys matched`）、模板变量重映射 0 条、`patches/` 无需改动。新增的 SDK 拒读提示（`Image is … KB; images over … KB cannot be attached.`）是给模型看的库内部文案，按惯例保留英文
 - **v0.0.108 适配**：上游新增「对话历史翻页 + 编辑较早消息」功能，补齐 9 条新文案（`pattern` 里的 `Newer messages` / `Older messages` / `Return to latest` / `Return to latest messages` / `Conversation pages` / `Conversation outside the viewport — focus to read`，`exact` 里的 `Could not load history` / `This history page changed. Return to latest and try again.` / `Editing an earlier message — …`），替换数 1774 → 1785；模板变量自动重映射 47 条，2 条 remap 歧义条目人工改名。0.0.107 新增主进程文件 `electron/renderer-health.cjs`（渲染进程健康采样 + 「窗口已停止」恢复弹窗），为此新增 `patches/electron-renderer-health.cjs.patch` 与 `postbuild.js` 的可选哨兵；其余 6 个补丁在 0.0.108 上仍干净套用（`main.cjs` 上游改动只是接线，补丁无需改动）

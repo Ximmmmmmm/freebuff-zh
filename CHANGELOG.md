@@ -1,5 +1,76 @@
 # 更新日志
 
+## [0.0.112] · 2026-09-15
+
+**适配 0.0.112：新增「继续被中断的轮次」与消息队列暂停态的一整组文案，BYOK 连接说明与
+DeepSeek 限时促销 tooltip 被上游整段重写**——下线 9 条、新增 20 条，替换数 1796 → 1807。
+
+- **适配 Freebuff v0.0.112**：targetVersion / packVersion 升至 0.0.112；渲染 bundle
+  `index-DVP89Kth.js` → `index-BGPVyb6x.js`，样式表 `index-DYQ73KeT.css` → `index-YJ7gnGWz.css`。
+  本机自动更新是从 0.0.110 直接跳到 0.0.112，没有 0.0.111 的包。
+- **模板变量自动重映射 65 条**（`tools/remap.js`），**歧义 2 条人工改名**（锚文本在 bundle 里
+  命中多处且插值不一致，工具拒绝猜）：`` `Remove ${$e.configKey}` `` → `` `Remove ${Ae.configKey}` ``；
+  `` `Could not select ${he.name}: ${Ye}` `` → `` `Could not select ${de.name}: ${We}` ``。
+  另有 2 条落 MISSING，正是上游整段改写的促销 tooltip（见下）。
+- **新增「继续被中断的轮次」一条链路**（回合被 orchestrator 崩溃打断后 composer 里出现的按钮）：
+  `Continue the interrupted turn` / `Continue the interrupted turn, then run queued messages`
+  （`data-tooltip`，队列非空时用后者）、`Continue interrupted turn`（`aria-label`）、
+  `Continuing…`（按钮进行态）、以及点下去实际发出的那句
+  `Continue the interrupted request from where you left off.`。
+- **消息队列暂停态文案重写**（旧的一组「Resume …」整句下线）：
+  `Send now to go first, or resume the queue.`（配既有 `Queue paused.` /
+  `Queue paused after an error.` 拼成一句）、`Send now, then run queued messages (Enter)`
+  （替代 `Send and resume queue (Enter)`）、`Type a message — sent before the queue`
+  （替代 `Type a message — sending resumes the queue`）、
+  `Add this message to the queue; keep the queue paused`（队列暂停时 Queue 按钮的 tooltip）、
+  模板 `` `Send now, steering the running turn (${QO()}Enter)` ``（发送键的接管 tooltip）；
+  按钮本体 `Resume queue` / `Resume the queue` / `Send now` / `Add to queue` / `Send message` 都在。
+- **BYOK 连接说明改写 3 条 + 运行中提示 1 条**：
+  `Existing tasks keep their old connection revision until you select the replacement in the model picker.`、
+  `Key replaced. Select this updated connection in the model picker to continue your task.`、
+  移除确认句扩写为 `? Tasks using it will stop before their next model request. Select another provider
+  or a Freebuff model to continue the same conversation.`；模型选择器在回合运行中的提示
+  `Switch providers or Freebuff models here while keeping this conversation. Finish or stop the current
+  turn and clear queued messages first.`（它替掉了原来「本任务正在使用你选中的提供商 / 你可以把此任务
+  切换到你自己的 API 提供商」那对三元分支，两条旧词条随之下线）。
+- **DeepSeek 限时促销 tooltip 整段重写**：旧句 `X drops to N Freebucks on a plan — A a day instead of B.`
+  变成 `X: A hours a day on Plan instead of B hours for free.`。旧的两条词条
+  （`` `${u} drops` `` 与以 `:"Drops"}` 开头的半截模板尾巴）**留着会卡 MISSED 门禁**，已删除；
+  新增三条：`` `${a}: ` ``（三元真分支的嵌套模板）、`` `${u} hour${u===1?"":"s"}` ``（小时数格式化，
+  译文按既有复数吸收写法收成 `${u} 小时`）、以及外层尾巴
+  `` `:""}${o(r)} a day on ${n.displayName} instead of ${o(i)} for free. …` ``
+  （沿用 0.0.110 那套「从内层模板的收尾反引号接着写」的半截模板形态，`lint` 的 E3 骨架校验通过）。
+- **其余新增**：`Project threads`（计划反馈输入框的会话选择菜单，与既有
+  `Project threads and files` 区分开）、`Worktree`（@ 提及里执行模式的回退标签，与已译的
+  `Shared workspace` 成对）、`Customized Freebuff built-in · ${…}`。
+- **顺带补翻 1 条历史遗留**：`` `Customized Freebuff built-in · ${t.builtin==="personal"?"all projects":"this project"}` ``
+  ——技能徽章的前缀一直是英文（旧词典只收了插值里的 `all projects` / `this project`），
+  `blindscan` 的「两个版本都在」列表里躺着，这次补上；补后该条从盲区扫描里消失。
+- **下线 9 条**（7 `exact` + 2 `template`）：`Resume`、`Resume it, or send a message to continue.`、
+  `Send and resume queue (Enter)`、`Send message and resume queue`、
+  `Type a message — sending resumes the queue`、`This task uses your selected provider. …`、
+  `You can switch this task to your API provider. …`，以及上一条里那两条促销模板。
+- **主进程无需改动**：解包比对确认 0.0.112 的 `electron/*.cjs` 与 0.0.110 产物**逐字节一致**
+  （本轮 asar 树里变的只有渲染 bundle 与 `node_modules/@codebuff/sdk` 的
+  `byok.ts` / `client.ts` / `run.ts` 与 `package.json` 版本号），7 个补丁仍干净套用，
+  `postbuild` 的哨兵与行为取证全过；`tools/ui_patch_status.js` 对 0.0.112 原版给出 **KEEP**
+  （3 条锚点各命中 1 处、缺陷仍可复现），UI 行为补丁继续保留。
+- **门禁实测**：`lint_dict` 0 错误（exact 1186 / template 272 / code 8 / pattern 75）；词典对主 bundle
+  **替换 1807 处 + `all keys matched`（MISSED 0）**；`uipos` 界面属性位置残留 14 条（与 0.0.110 持平，
+  均为约定保留的模型名 / `Freebuff` / MCP 配置示例 / `bun install` / CodeMirror 内部标签）、
+  `fieldscan` 1 条（`tagline: 0 Freebucks`）；`blindscan` 疑似文案 299 → 283、
+  **新增 0 条应用文案**（只剩 React / CodeMirror / shiki 这类库内部英文）；`postbuild` 自检通过
+  （纯字面量词条覆盖 1144/1144）；`remap` 对英文原版重跑：272 条模板全 SAME、歧义 0、MISSING 0。
+- **回归闸门的一个已知误报**：对比 `pack-v0.0.110.1`，英文片段 242 → 242、差集只有 2 条
+  `` ,message:D instanceof Error?D.message: `` 与 `` :D instanceof Error?D.message: ``——**不是界面文案**，
+  是新版 `catch(D){… {kind:"error",message:D instanceof Error?D.message:"Could not read this file"}}`
+  这种类型守卫写法被提取器跨引号配对出来的代码片段（`regress` 的「自然语言」判据对 `instanceof` 不设防）。
+  该版发布后成为新基线，这两条自然消失，无需改工具；首次发布时按闸门惯例用 `--allow-english` 放行。
+- **装机已实测**：`ui/index.html` 为 `lang="zh-CN"` + `hanhua-pack` 0.0.112，装机 `app.asar` 与
+  `ui/assets/index-BGPVyb6x.js` 与 `output/` **哈希一致**；自 0.0.110 起就没有备份链，本次 `apply.sh`
+  先把英文原版存成了 `hanhua-backup-20260915-182128`（今后 `build.sh` / `remap` 有 pristine 可用，
+  不必再走「安装目录即英文原版」那条首次构建路径）。
+
 ## [0.0.110] · 2026-09-13
 
 **适配 0.0.110：上游把整块「会话退款」面板撤了（合并成 composer 里的一句提示）、重写了推理档位标签，
