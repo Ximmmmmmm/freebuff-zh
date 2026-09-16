@@ -94,8 +94,17 @@ const writeJson = (f, obj) => {
   mkdirp(path.dirname(f))
   fs.writeFileSync(f, JSON.stringify(obj, null, 2) + '\n')
 }
-// 走到 shell 的参数一律加引号（Windows 与 POSIX 都认双引号；路径里的引号极少见，直接剔掉）
-const q = (s) => `"${String(s).replace(/"/g, '')}"`
+// 走到 shell 的参数一律加引号——但**引号形式必须按平台来**：POSIX sh 的双引号里 `$` 与反引号
+// 仍会展开，而 NSIS 安装包解出来的目录名恰好就叫 `$PLUGINSDIR`，用双引号包它就会被展开成空
+// 路径（Linux 上 capture --exe 必挂，Windows 的 cmd.exe 却完全正常，所以本地跑不出来）；
+// 而 cmd.exe 又不认单引号。于是：Windows 用双引号（剔掉内部引号），POSIX 用单引号（内部
+// 单引号按 '\'' 转义）。platform 参数只为自测能同时验证两条分支。
+function quoteArg(s, platform = process.platform) {
+  const str = String(s)
+  if (platform === 'win32') return `"${str.replace(/"/g, '')}"`
+  return `'${str.replace(/'/g, `'\\''`)}'`
+}
+const q = (s) => quoteArg(s)
 
 function run(cmd, { allowFail = false } = {}) {
   const r = spawnSync(cmd, { shell: true, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
@@ -1090,4 +1099,4 @@ if (require.main === module) {
     })
 }
 
-module.exports = { main, verifySnapshot, writeSnapshot, exportBuffer, importBuffer, cmpVersion, listVersions, snapDir, checkVersion }
+module.exports = { main, verifySnapshot, writeSnapshot, exportBuffer, importBuffer, cmpVersion, listVersions, snapDir, checkVersion, quoteArg }

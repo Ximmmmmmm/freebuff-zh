@@ -299,5 +299,15 @@ if (c8b.code === 2) {
   chk(c8b.code !== 0 || true, `8) 本机装了 7-Zip（rc=${c8b.code}），跳过「缺 7z」断言`)
 }
 
-console.log(fail ? `\n${fail} 项未通过` : '\n全部通过（8 组用例）')
+// --- 9) 参数引号按平台：POSIX 的单引号分支在 Windows 上跑不到，单独钉住 ----------------
+// 这条是 CI 先发现的真 bug：NSIS 解出来的目录名就叫 `$PLUGINSDIR`，用双引号包它会被 POSIX sh
+// 展开成空路径（Linux 上 capture --exe 必挂，Windows 完全正常），所以不能在 Windows 上靠
+// 「跑一遍看看」发现。
+const { quoteArg } = require('./pristine.js')
+chk(quoteArg('/tmp/$PLUGINSDIR/app-64.7z', 'linux') === "'/tmp/$PLUGINSDIR/app-64.7z'", '9) POSIX：单引号内的 $ 不会被 shell 展开')
+chk(quoteArg('C:\\Program Files\\7-Zip\\7z.exe', 'win32') === '"C:\\Program Files\\7-Zip\\7z.exe"', '9) Windows：路径含空格时用双引号')
+chk(quoteArg("it's", 'linux') === "'it'\\''s'", '9) POSIX：参数自身的单引号正确转义')
+chk(quoteArg('a"b', 'win32') === '"ab"', '9) Windows：内部引号剔掉（cmd 的转义规则太碎）', quoteArg('a"b', 'win32'))
+
+console.log(fail ? `\n${fail} 项未通过` : '\n全部通过（9 组用例）')
 process.exit(fail ? 1 : 0)
