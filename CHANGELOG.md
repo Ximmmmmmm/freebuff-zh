@@ -88,15 +88,27 @@
     `update.sh` 第 6 步只有一版基线时不再只说「下次再说」，直接打出三条补齐命令。
     `upstreamdiff --auto` 同时认快照仓库与旧式单文件归档，并**按版本去重**——否则同一版会被当成
     「上一版」与「本版」自比，结论永远是「新增 0 条」。
-  - **自测**：`tools/test_pristine.js`（CI 跑，8 组）：采集口径含 `.html`、`*.test.cjs` 不入、幂等与 `--force`、
+  - **自测**：`tools/test_pristine.js`（CI 跑，9 组）：采集口径含 `.html`、`*.test.cjs` 不入、幂等与 `--force`、
     版本从 app.asar 的 `package.json` 推断（文件名与之不符时打 WARN 并按包内登记）、解包器调用形态、
     NSIS 安装包的两次 7z 编排与缺 7-Zip 时的三条替代办法、坏输入与路径穿越、export→import **逐字节往返**、
-    篡改文件 / 版本冲突拒收、`list` 能发现缺件、退出码 0/1/2 契约。
+    篡改文件 / 版本冲突拒收、`list` 能发现缺件、退出码 0/1/2 契约、参数引号按平台取（见下条）。
+  - **CI 揪出一个只在 POSIX 上炸的 bug**：NSIS 解包出来的目录名恰好就叫 `$PLUGINSDIR`，而 `run()` 用双引号
+    包参数——POSIX sh 的双引号里 `$` **仍会展开**，于是内层 `app-64.7z` 的路径变成 `/…/nsis//app-64.7z`，
+    Linux / macOS 上 `capture --exe` 第二步必挂；Windows 的 cmd.exe 不展开 `$`，本地怎么跑都是绿的。
+    改为按平台取引号形式（Windows 双引号 / POSIX 单引号并转义内部单引号），两条分支都写进自测
+    （POSIX 分支在 Windows 上跑不到，不这样钉就只能等 CI）。这次是**先推上去让 CI 跑**才发现的，
+    `gh run view --log-failed` 里那行 `nsis//app-64.7z` 就是全部证据。
   - **实测**：`capture --install` 从 `hanhua-backup-20260916-112157` 拿到 31 个文件（含 28 个主进程文件）；
     `export` 得到 1.2 MB 的 `pristine-0.0.114.json.gz`；把它 import 回来与导出前逐文件比对一致；
     拿一份合成的上一版快照跑 `upstreamdiff --auto`，报告如实列出本版新增的 3 条折扣文案；
     `release.sh` 闸一在「用快照」与「解包 asar」两条路径上给出**完全相同的数字**
     （28 个文件 / 946 条字面量 / 两边都有 817 条 / 约定保留 66 条）。
+- **已发布**：汉化包 Release `pack-v0.0.114`（`hanhua-pack-0.0.114.zip` 14 012 411 B + `pack-manifest.json`），
+  两道英文闸门全绿，`pack-manifest.json` 的 sha512 与本地 `dist/` 包逐一核对一致。
+  本版起 Release 多一个附加资产 **`pristine-0.0.114.json.gz`**（30 个文件，与本地 `work/pristine/0.0.114/`
+  逐文件 sha1 一致）——别的机器一条 `pristine.js import --from-release 0.0.114` 就有了发布闸门要的英文
+  原版，不必装过 Freebuff、也不依赖本机更新缓存。（`pack-v0.0.113` 从未发布：上游当天就跳到 0.0.114，
+  适配与发布合并成这一版。）
 
 ## [0.0.113] · 2026-09-16
 

@@ -92,7 +92,7 @@ bash tools/release.sh               # 打包 + 生成 pack-manifest.json + 发�
 bash tools/release.sh --no-upload   # 只打包到 dist/，打印手工上传步骤
 ```
 
-- **发布端**：Release tag `pack-v<packVersion>`，附件为 `hanhua-pack-<版本>.zip`（= `output/` 打包）和 `pack-manifest.json`（packVersion / targetVersion / asset / sha512）
+- **发布端**：Release tag `pack-v<packVersion>`，附件为 `hanhua-pack-<版本>.zip`（= `output/` 打包）、`pack-manifest.json`（packVersion / targetVersion / asset / sha512），以及**本版英文原版快照** `pristine-<版本>.json.gz`（发布成功后自动附上；控制器不读它，是给别的机器当「上一版原版」基线用的，`node tools/pristine.js import --from-release <版本>`）
 - **客户端**：控制器每 30 分钟检查一次（与 Freebuff 更新检查共用同一条代理链）。仅当 manifest 的 targetVersion 与本机 Freebuff 版本**完全一致**且 packVersion 更新时才下载，SHA512 校验、解包后落到 `output/`，随后自动应用（无需点击）
 - **packVersion**：跟随 targetVersion；同一 targetVersion 内的修正重发追加第四段（如 `0.0.103.1`，`targetVersion` 不变）。控制器按四段比较，已装旧包的机器会被判定「有新包可应用」并自动拉取；只有回滚线上烂包这类应急场景才用 `release.sh --force` 同号覆盖
 - ⚠️ 汉化产物派生自 Freebuff 专有软件，发布 Release 即公开传播，与文末免责声明的「仅限本机自用」条款冲突——是否发布由你决定，发布前请确认接受并相应调整声明
