@@ -59,6 +59,24 @@ fi
 echo "Pristine app.asar: ${PRISTINE_ASAR}"
 [ -n "${PRISTINE_UI}" ] && echo "Pristine ui dir:   ${PRISTINE_UI}"
 
+# --- 登记本版英文原版快照（供下次适配对差 / 跨机器搬运）----------------------------
+# 自动更新会把装机目录的英文原版覆盖掉（0.0.114 那次连 hanhua-backup-* 一起清了），而
+# 「本版上游新增了哪些文案」正需要上一版的英文原版才能比。这里是全流程唯一手里正好拿着
+# 英文原版的地方，所以顺手把它登记成快照 work/pristine/<版本>/（ui 主 bundle + electron/*.cjs，
+# work/ 不入库）。tools/upstreamdiff.js --auto 取最新的两版，update.sh 第 6 步会自动跑。
+#
+# 快照而非单个 bundle 的好处是**可搬运**：node tools/pristine.js export/import 能把它拷到
+# 另一台机器（或从我们自己的 Release import），换机器/清空 work/ 之后基线也还在。
+# 登记失败不该让构建挂掉（缺的只是「下次的基线」，不是这次的产物），所以只提醒。
+UPVER="$(node -e 'const m = require(process.argv[1]); console.log(m.targetVersion)' "${HERE}/manifest.json")"
+if [ -n "${PRISTINE_UI}" ] && [ -f "${PRISTINE_UI}/index.html" ]; then
+  if ! node "${HERE}/tools/pristine.js" capture --asar "${PRISTINE_ASAR}" --ui "${PRISTINE_UI}" --version "${UPVER}" --quiet; then
+    echo "  ! 本版英文原版快照未登记（不影响本次构建）：node tools/pristine.js capture --asar <asar> --ui <ui 目录> 可手工补" >&2
+  fi
+else
+  echo "  ! 未给 ui 目录，跳过英文原版快照登记（下次对差会少一版基线）" >&2
+fi
+
 # --- 词典门禁：结构 / 重复键 / 占位符 / 半截模板键 （tools/lint_dict.js）-----------------
 # 以前 lint 只在 CI 跑，本地 build.sh → apply.sh 这条实际用的链路里形同虚设：结构写坏
 # （最阴的是「半截模板」键丢了尾巴）照样能构建、能装，装完才崩。放在解包之前跑，

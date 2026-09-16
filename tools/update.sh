@@ -1,12 +1,18 @@
 #!/usr/bin/env bash
 # 一键版本迁移：应用自动更新到新版本后跑一次，把能自动的都自动掉。
 #
-#   1/6 模板变量重映射：tools/remap.js 把 template 词典条目的 ${...} 变量名迁移到新 bundle
-#   2/6 UI 行为补丁体检：该保留 / 该重维护 / 该退场？（tools/ui_patch_status.js，退场时附删除清单）
-#   3/6 可复现构建：bash build.sh（内含语法校验 + 构建产物自检）+ 构建后行为取证
-#   4/6 残留扫描：leftover / prose / uipos / fieldscan / blindscan 扫描构建出的主 bundle
-#   5/6 回归闸门：tools/regress.js 对比上一版汉化包，揪出「变回英文」的静默回归
-#   6/6 汇总：打印剩余人工事项清单，扫描全文归档到 work/
+#   1/7 模板变量重映射：tools/remap.js 把 template 词典条目的 ${...} 变量名迁移到新 bundle
+#   2/7 UI 行为补丁体检：该保留 / 该重维护 / 该退场？（tools/ui_patch_status.js，退场时附删除清单）
+#   3/7 可复现构建：bash build.sh（内含语法校验 + 构建产物自检）+ 构建后行为取证
+#   4/7 UI 残留扫描：leftover / prose / uipos / fieldscan / blindscan 扫描构建出的主 bundle
+#   5/7 主进程英文扫描：tools/mainscan.js 对差 electron/*.cjs——词典只替换双引号字面量，
+#       单引号 / 模板里的文案（菜单、原生对话框、openIn 报错、MCP 同意窗口）全靠 patches/，
+#       漏了不会有任何构建报错；这一步就是盯「原版有、产物里还是英文」的那些。
+#   6/7 上游新增文案 + 回归闸门：两个基线、两个视角——
+#       tools/upstreamdiff.js 比**上一版英文原版 vs 本版英文原版**（不依赖汉化包，本版原版由
+#       build.sh 每次构建登记成快照 work/pristine/<版本>/），先给出「本版上游新写了哪些文案」
+#       的待翻清单；tools/regress.js 比**上一版汉化包 vs 本版产物**，揪出「变回英文」的静默回归。
+#   7/7 汇总：打印剩余人工事项清单，扫描全文归档到 work/（报告里含上游新增文案清单）
 #
 # 之后只差两步：把报告里的新增文案补进 dict.json（重跑 build），再 bash apply.sh 安装。
 #
@@ -64,9 +70,9 @@ if [ -n "${PRISTINE_UI}" ] && [ -f "${PRISTINE_UI}/index.html" ]; then
   [ -n "${UI_BUNDLE}" ] && UI_BUNDLE="${PRISTINE_UI}/${UI_BUNDLE}"
 fi
 
-# --- 1/4 重映射 -----------------------------------------------------------------
+# --- 1/7 重映射 -----------------------------------------------------------------
 echo
-echo "== 1/6 模板变量重映射 =="
+echo "== 1/7 模板变量重映射 =="
 REMAPPED=0
 if [ -n "${UI_BUNDLE}" ]; then
   # remap.js --write only needs to inspect the pristine bundle. The installed
@@ -83,13 +89,13 @@ else
   echo "(无 ui 目录，跳过)"
 fi
 
-# --- 2/6 UI 行为补丁体检（原版）-----------------------------------------------------
+# --- 2/7 UI 行为补丁体检（原版）-----------------------------------------------------
 # 在**花时间构建之前**先问清楚：这些补丁该保留、该重维护、还是该退场？（与词典无关，
 # 但如果不成立，构建要么硬失败、要么白插一段修一个上游已经没有的缺陷的桩。）
 # 判定交给 tools/ui_patch_status.js：锚点维度（能不能套用）× 缺陷维度（原版还能不能复现
 # 出缺陷），逐组给出 KEEP / REWRITE / RETIRE / UNKNOWN，退场时附上删除清单。
 echo
-echo "== 2/6 UI 行为补丁体检（原版：该保留还是退场）=="
+echo "== 2/7 UI 行为补丁体检（原版：该保留还是退场）=="
 PATCH_STATUS=skipped
 if [ -n "${UI_BUNDLE}" ] && [ -f "${UI_BUNDLE}" ]; then
   set +e
@@ -120,9 +126,9 @@ fi
   echo "## UI 行为补丁体检（原版）：${PATCH_STATUS}"
 } >> "${REPORT}"
 
-# --- 3/6 构建 --------------------------------------------------------------------
+# --- 3/7 构建 --------------------------------------------------------------------
 echo
-echo "== 3/6 构建（含防呆自检）=="
+echo "== 3/7 构建（含防呆自检）=="
 if ! bash "${HERE}/build.sh" "${PRISTINE_ASAR}" "${PRISTINE_UI}" 2>&1 | tee -a "${REPORT}"; then
   echo "ERROR: build.sh 失败（详情见上方日志），中止。" >&2
   exit 1
@@ -133,9 +139,9 @@ fi
 # 已知路径的变量，供后面的残留扫描复用。
 FINAL_BUNDLE="${HERE}/output/ui/assets/$(basename "${UI_BUNDLE:-__none__}")"
 
-# --- 4/6 残留扫描 ------------------------------------------------------------------
+# --- 4/7 UI 残留扫描 ---------------------------------------------------------------
 echo
-echo "== 4/6 残留扫描 =="
+echo "== 4/7 UI 残留扫描 =="
 {
   echo
   echo "## 残留扫描（output 主 bundle）"
@@ -170,11 +176,71 @@ else
   echo "(未找到 output 主 bundle，跳过)" | tee -a "${REPORT}"
 fi
 
-# --- 4/5 回归闸门 ------------------------------------------------------------------
-# 迁移的静默失败模式：remap 按「去变量的文字骨架」找对应位置，同一句话若有多种变体，
-# 两条词条可能被指到同一处互相覆盖，剩下那处就变回英文而 build.sh 依旧全绿。
+# --- 5/7 主进程英文扫描 ---------------------------------------------------------------
+# 为什么单独一步：上面那堆扫描（uipos / fieldscan / blindscan / regress）**全都只看 UI bundle**。
+# 主进程的界面文案（标签页右键菜单、原生对话框、`shell:openIn` 的报错、MCP 同意窗口）
+# 既不在词典的 exact（只替双引号字面量）也不在任何扫描的视野里，只能靠 patches/electron-*.patch
+# 手工覆盖——于是「某条文案没写进补丁」可以在每一版都静静躺着（0.0.113 适配时一次扫出 29 处，
+# 其中有些从 0.0.104 之前就在）。mainscan 就是把这个对差固化下来：原版有、产物里还一样的英文
+# 就是漏翻。与 blindscan 一样**只报告不拦脚本**（迁移途中本来就该先发现再补），但结论进小结。
 echo
-echo "== 5/6 回归闸门（对比上一版汉化包）=="
+echo "== 5/7 主进程英文扫描（electron/*.cjs）=="
+{
+  echo
+  echo "## 主进程英文扫描（mainscan：原版 electron/*.cjs vs 构建产物）"
+} >> "${REPORT}"
+MAIN_RC=skip
+if [ -f "${PRISTINE_ASAR}" ] && [ -f "${HERE}/output/app.asar" ]; then
+  # 临时目录用 mktemp：解包出来的树里有 Freebuff 自己的 vendored 二进制
+  # （`sdk/vendor/ripgrep/*/rg.exe`），Windows 上偶尔被安全软件 / 正在运行的应用占住而删不掉；
+  # 固定路径会留下上一轮的残留，而清理失败也不该让整套 update.sh 在这儿 abort。
+  MS_DIR="$(mktemp -d)"
+  # 两侧都要解包：原版那一侧 build.sh 已经解过一次但用 mktemp 用完即删（traps rm），
+  # 28 MB 的 asar 解包是秒级，这里重解一次远比让 build.sh 留下副作用目录干净。
+  set +e
+  npx -y @electron/asar extract "${PRISTINE_ASAR}" "${MS_DIR}/pristine" >> "${REPORT}" 2>&1
+  MS_PRISTINE_RC=$?
+  npx -y @electron/asar extract "${HERE}/output/app.asar" "${MS_DIR}/built" >> "${REPORT}" 2>&1
+  MS_BUILT_RC=$?
+  set -e
+  if [ "${MS_PRISTINE_RC}" -ne 0 ] || [ "${MS_BUILT_RC}" -ne 0 ]; then
+    echo "  ! app.asar 解包失败（npx @electron/asar 不可用？），跳过主进程扫描" | tee -a "${REPORT}"
+    MAIN_RC=skip
+  else
+    set +e
+    MAIN_OUT="$(node "${HERE}/tools/mainscan.js" "${MS_DIR}/pristine" "${MS_DIR}/built" 2>&1)"
+    MAIN_RC=$?
+    set -e
+    printf '%s\n' "${MAIN_OUT}" | tee -a "${REPORT}"
+  fi
+  rm -rf "${MS_DIR}" 2>/dev/null || echo "  ! 临时目录未能删除：${MS_DIR}（不影响扫描结论）" | tee -a "${REPORT}"
+else
+  echo "  ! 缺原版 app.asar 或 output/app.asar，跳过" | tee -a "${REPORT}"
+fi
+
+# --- 6/7 上游新增文案 + 回归闸门 ------------------------------------------------------
+# 两个基线、两个视角，恰好互补：
+#   ① 上游新增（tools/upstreamdiff.js）：比**上一版英文原版 vs 本版英文原版**，无需汉化包——
+#      先把「本版上游新写了哪些文案」列出来（这是补翻的待办清单）；原版由 build.sh 每次登记成
+#      快照 work/pristine/<版本>/（上一次适配存的那份就是今天的基线）。只有一版基线时按提示
+#      「补基线」（import --from-release / capture --exe），别就这么放过这一步。
+#   ② 回归闸门（tools/regress.js）：比**上一版汉化包 vs 本版产物**，揪「变回英文」的静默回归。
+#      迁移的静默失败模式：remap 按「去变量的文字骨架」找对应位置，同一句话若有多种变体，
+#      两条词条可能被指到同一处互相覆盖，剩下那处就变回英文而 build.sh 依旧全绿。
+echo
+echo "== 6/7 上游新增文案 + 回归闸门 =="
+{
+  echo
+  echo "## 上游新增文案（upstreamdiff：上一版英文原版 vs 本版英文原版）"
+} >> "${REPORT}"
+UDIFF_RC=2
+set +e
+UDIFF_OUT="$(node "${HERE}/tools/upstreamdiff.js" --auto 2>&1)"
+UDIFF_RC=$?
+set -e
+# 全文进报告，控制台只预览前 40 行（同 blindscan 的处理；用 sed 不用 head，避免 SIGPIPE 配 pipefail）
+printf '%s\n' "${UDIFF_OUT}" | tee -a "${REPORT}" >/dev/null
+printf '%s\n' "${UDIFF_OUT}" | sed -n '1,40p'
 CUR_VER="$(node -e 'const m = require(process.argv[1]); console.log(m.packVersion || m.targetVersion)' "${HERE}/manifest.json")"
 BASE=""
 for z in $(ls -1t "${HERE}"/dist/hanhua-pack-*.zip 2>/dev/null || true); do
@@ -203,19 +269,31 @@ else
   echo "    发布时 release.sh 会拉 GitHub 上已发布的包再比一次。"
 fi
 
-# --- 6/6 汇总 ----------------------------------------------------------------------
+# --- 7/7 汇总 ----------------------------------------------------------------------
 echo
-echo "== 6/6 本次更新小结 =="
+echo "== 7/7 本次更新小结 =="
 echo "  · 模板变量自动迁移：${REMAPPED} 条$( [ "${REMAPPED}" -gt 0 ] && echo '  → 建议人工抽查 git diff dict.json 后提交' )"
 if [ "${AMBIGUOUS:-0}" -gt 0 ]; then
   echo "  · remap 歧义条目：${AMBIGUOUS} 条 ⚠ 未自动迁移（清单见报告）——不改就会在下个版本变回英文"
 else
   echo "  · remap 歧义条目：0 条 ✓"
 fi
+case "${UDIFF_RC}" in
+  0)  echo "  · 上游新增文案：词典已全覆盖 ✓" ;;
+  1)  echo "  · 上游新增文案：⚠ 有待补翻（清单见报告「上游新增文案」一节）" ;;
+  *)  echo "  · 上游新增文案：跳过（只有一版原版基线）——补基线：node tools/pristine.js import --from-release latest";;
+
+esac
 case "${GATE_RC}" in
-  0) echo "  · 回归闸门：未发现新增英文片段 ✓" ;;
+  0)  echo "  · 回归闸门：未发现新增英文片段 ✓" ;;
   1) echo "  · 回归闸门：⚠ 发现新增英文片段（清单见报告）——补翻 dict.json 后重跑 build.sh" ;;
   *) echo "  · 回归闸门：跳过（本地缺上一版包，发布时还会再比一次）" ;;
+esac
+case "${MAIN_RC}" in
+  0)    echo "  · 主进程英文扫描：未发现漏翻 ✓" ;;
+  1)    echo "  · 主进程英文扫描：⚠ 有疑似漏翻（清单见报告）——补进 patches/electron-*.patch 后重跑 bash build.sh" ;;
+  skip) echo "  · 主进程英文扫描：跳过（app.asar 解包不可用）" ;;
+  *)    echo "  · 主进程英文扫描：⚠ 未能完成（mainscan 自身报错，明细见报告）" ;;
 esac
 case "${PATCH_STATUS}" in
   keep)    echo "  · UI 行为补丁（原版体检）：KEEP ✓ 锚点命中、上游仍带该缺陷，补丁继续保留" ;;
@@ -233,6 +311,23 @@ cat <<TIP
      （少量直接编辑 dict.json；保持 key 与 MISSED 原文逐字节一致）
   2) 重新构建验证全命中：bash build.sh
   3) 安装生效：bash apply.sh
+  4) 报告里「上游新增文案」一节是**上游本版新写的英文**（与有无汉化包无关）：
+     「词典未覆盖」那几条就是本版要翻的清单，补进 dict.json 后重跑 bash build.sh；
+     「疑似改写」是上一版某句被整段重写（旧词条会落 MISSED），要按新句改写词条；
+     清单来自 work/pristine/ 里上一版与本版两份英文原版快照（build.sh 每次登记本版那份）。
+     只有一版基线时这一步会报「只有 1 版原版基线」——那不是「等下次」，按提示补：
+       node tools/pristine.js list                              # 本机还能掘到什么
+       node tools/pristine.js import --from-release latest      # 从我们自己的 Release 取上一版原版
+       node tools/pristine.js capture --exe <安装包>            # 从安装包解（需要 7-Zip）
+     本版快照也可以搬去别的机器：node tools/pristine.js export <版本> --out dist/
+  5) 报告里「主进程英文扫描」带 ⚠ 时：那些是 electron/*.cjs 里没译的**界面文案**
+     （菜单、原生对话框、shell:openIn 报错、MCP 同意窗口）——词典够不着，得写进
+     patches/electron-*.patch；若确认它就该保留英文（协议 / 日志 / 品牌名），
+     把它加进 tools/mainscan.js 的 INTENTIONAL 名单并写明理由，下次不再重复报。
+     单独重跑（解包方式与本步骤相同，两侧都给「含 electron/ 的目录」）：
+       npx -y @electron/asar extract <原版 app.asar> /tmp/ms-pristine
+       npx -y @electron/asar extract output/app.asar /tmp/ms-built
+       node tools/mainscan.js /tmp/ms-pristine /tmp/ms-built
 
 报告里「UI 行为补丁体检」红了或带 ⚠ 时（与词典无关）：
   · REWRITE（锚点失配、缺陷仍在）→ 在新版原版里重新定位同一处语义，更新 find/apply；

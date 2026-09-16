@@ -7,7 +7,7 @@
 //   2. CLI 退出码契约（0/1/2/3），尤其是「拿产物来判定必须被拒绝」这条护栏；
 //   3. 退场删除清单里点名的文件真实存在——清单是给人照着删的，文件改名后它不该静默腐烂。
 //
-// 真实 bundle 上的四类判决由 tools/update.sh 的 2/6 步覆盖（那是本项目里唯一有原版 bundle 的地方）。
+// 真实 bundle 上的四类判决由 tools/update.sh 的 2/7 步覆盖（那是本项目里唯一有原版 bundle 的地方）。
 //
 // 用法：node tools/test_ui_patch_status.js        # 退出码非 0 表示回归
 'use strict'

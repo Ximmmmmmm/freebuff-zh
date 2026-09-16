@@ -4,20 +4,22 @@
 ![GitHub last commit](https://img.shields.io/github/last-commit/Ximmmmmmm/freebuff-zh)
 ![GitHub Repo stars](https://img.shields.io/github/stars/Ximmmmmmm/freebuff-zh?style=social)
 ![GitHub forks](https://img.shields.io/github/forks/Ximmmmmmm/freebuff-zh?style=social)
-[![Target](https://img.shields.io/badge/目标-Freebuff%20Desktop%20v0.0.112-blue)](https://freebuff.com)
+[![Target](https://img.shields.io/badge/目标-Freebuff%20Desktop%20v0.0.113-blue)](https://freebuff.com)
 [![lint](https://github.com/Ximmmmmmm/freebuff-zh/actions/workflows/ci.yml/badge.svg)](https://github.com/Ximmmmmmm/freebuff-zh/actions/workflows/ci.yml)
 
 **中文关键词 / Keywords**: Freebuff 汉化、Freebuff 中文版、Freebuff Chinese localization、AI coding agent 中文、Freebuff 翻译、Electron 汉化、localization pack
 
-Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.112）的**简体中文汉化包**，直接修改已打包产物，无需源码、不涉及任何联网改动。
+Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.113）的**简体中文汉化包**，直接修改已打包产物，无需源码、不涉及任何联网改动。
 
 > **English**: A Simplified-Chinese localization pack for Freebuff Desktop — the free AI coding agent. Patches the packaged app directly, no source build required. If you're a Chinese-speaking Freebuff user, this is for you.
 
 ## ✨ 特性
 
-- **覆盖全面**：渲染进程约 1807 处文案 + 主进程菜单 / 对话框 / 同意窗口全面中文化；connectors / MCP 面板（状态标签、详情面板与目录里 100 条连接器介绍）与 v0.0.104 新增的 BYOK（自带密钥）API 提供商界面已全量中文化
-- **词典驱动**：`dict.json`（exact 1186 / template 272 / code 8 / pattern 75），幂等应用、可审计
-- **可复现构建**：`build.sh` 从原版 + 词典 + 补丁**逐字节重建**汉化产物  （v0.0.77 曾对照 Release 产物验证；v0.0.83 / v0.0.87 / v0.0.88 / v0.0.90 / v0.0.91 / v0.0.92 / v0.0.103 / v0.0.104 / v0.0.105 / v0.0.106 / v0.0.107 / v0.0.108 / v0.0.109 / v0.0.110 / v0.0.112 适配经防呆自检通过）
+- **覆盖全面**：渲染进程约 1817 处文案 + 主进程菜单 / 对话框 / 同意窗口全面中文化；connectors / MCP 面板（状态标签、详情面板与目录里 100 条连接器介绍）与 v0.0.104 新增的 BYOK（自带密钥）API 提供商界面已全量中文化
+- **词典驱动**：`dict.json`（exact 1192 / template 276 / code 8 / pattern 75），幂等应用、可审计
+- **可复现构建**：`build.sh` 从原版 + 词典 + 补丁**逐字节重建**汉化产物  （v0.0.77 曾对照 Release 产物验证；v0.0.83 / v0.0.87 / v0.0.88 / v0.0.90 / v0.0.91 / v0.0.92 / v0.0.103 / v0.0.104 / v0.0.105 / v0.0.106 / v0.0.107 / v0.0.108 / v0.0.109 / v0.0.110 / v0.0.112 / v0.0.113 / v0.0.114 适配经防呆自检通过）
+- **v0.0.114 适配**：上游新增「首个标签页折扣」（`firstTabDiscount`）的 4 条文案——`HM()` 拼出的两条 tooltip（`` `First-tab discount: up to ${e.amount} Freebucks off one session at a time, shared across Desktop and CLI. Prices shown include the discount.` `` 与 `Your first-tab discount is in use. Parallel sessions pay the regular price. The discount becomes available when that session ends.`）与 agent 菜单里那行 `` `First-tab discount · up to ${…} Freebucks off` `` / `First-tab discount in use`——新增 4 条、下线 0 条，替换数 1813 → 1817；模板变量自动重映射 37 条、歧义 2 条人工改名（`Remove ${…}` / `Could not select ${…}: ${…}` 这对老面孔，首跑正是它俩把构建卡在 MISSED 上）。主进程 `electron/*.cjs` 与 0.0.113 产物**逐字节一致**，`patches/` 无需改动，行为补丁体检 KEEP。本轮还把两件事固化成了工具：`tools/mainscan.js`（主进程英文对差，接进 `update.sh` 第 5 步与 CI）与 `tools/upstreamdiff.js`（上游新增文案对差，不依赖汉化包，接进第 6 步；英文原版由 `build.sh` 登记成快照 `work/pristine/<版本>/`，从下一版适配起自动给出待翻清单）与 `tools/pristine.js`（快照仓库：上一版原版可 export / import / 发布后从 Release 取，换机器也不丢基线）
+- **v0.0.113 适配**：上游把 Freebucks 每日额度的说明整段重写——余额提示变成 `${zi(u.remaining)} of today's ${zi(u.limit)} ${Qs} left. Spent before your wallet; unused daily Freebucks do not carry over. ${eD(u,o)} Timezone changes apply after the next refill.`，新加的 `eD()` 带来一整套「下次补充」提示（`The daily refill is due. …` / `` `Next refill: … (your device time).` `` 与其内嵌的 `` ` Reset timezone: …` `` / `Check your daily reset countdown.`），入门里那句 `… midnight Pacific. Nothing to earn, nothing to wait for.` 改成 `… midnight in your reset timezone. …`，赞助任务新增一条沙箱阻断原因 `Sponsored tasks cannot start because the workspace sandbox is not working on this machine. No paid task has started.`——下线 1 条、新增 9 条，替换数 1807 → 1813；模板变量自动重映射 47 条、歧义 1 条人工改名。主进程 27 个 `electron/*.cjs` 与 0.0.112 产物**逐字节一致**，`patches/` 无需改动，行为补丁体检 KEEP。顺带**补翻主进程遗留英文 29 处**（0.0.112 之前就在、7 个补丁没盖到的一批：Bun 崩溃对话框整段、标签页菜单 `Export as Markdown…` / `Move to New Window`、按钮 `Get Compatibility Build`、`shell:openIn` 的六条报错、MCP 同意窗口的说明行与按钮组、赞助任务的 `Task:` / `Procedure:` 字段标签），三个补丁文件改为从「原版 + 词典」真实基线重新生成，`postbuild.js` 新增 13 条译文哨兵
 - **v0.0.112 适配**：新增「继续被中断的轮次」（`Continue the interrupted turn` 一组 5 条）与消息队列暂停态的文案（`Send now to go first, or resume the queue.` / `Send now, then run queued messages (Enter)` / `Type a message — sent before the queue` / `Add this message to the queue; keep the queue paused`），BYOK 连接说明改写 3 条（`…until you select the replacement in the model picker.` 等）、移除确认句扩写（`? Tasks using it will stop before their next model request. Select another provider or a Freebuff model to continue the same conversation.`）、模型选择器的运行中提示 1 条，以及 DeepSeek 限时促销 tooltip 整段重写（旧的两条 `drops / Drops … on a plan` 词条下线，新增 `${a}: ` / `${u} hour…` / `… a day on ${n.displayName} instead of ${o(i)} for free.` 三条）——下线 9 条、新增 20 条，替换数 1796 → 1807；模板变量自动重映射 65 条、歧义 2 条人工改名。顺带补翻 1 条历史遗留（技能徽章前缀 `Customized Freebuff built-in · …`，旧词典只翻了插值里的 `all projects` / `this project`）。主进程 `electron/*.cjs` 与 0.0.110 产物**逐字节一致**，`patches/` 无需改动，行为补丁体检 KEEP
 - **v0.0.110 适配**：上游把整块「会话退款」面板撤掉、合并成 composer 里的一句提示（`Session … from … auto-ended after inactivity · … Freebucks returned.`），并重写了 4 条推理档位标签（`Sprint — what was asked…` / `Focused — …checked through the real surface` / `Thorough — proven and pruned…` / `Exhaustive — the most careful version…`）——下线 19 条、新增 6 条，替换数 1785 → 1796；模板变量自动重映射 15 条、歧义 0 条。主进程只动了 `shell-lifetime.cjs`（退出时先发 `quit`，无用户可见文案），`patches/` 无需改动。顺带补翻 **24 条历史遗留英文**——连接器面板与目录、预览报错 `Could not launch/stop the preview: …`、购买时段与 `Peak pricing` tooltip、「编辑一条消息」嵌套模板族、MCP 开关与移动端镜像状态；这些字符串藏在 `children` 三元分支 / 模板插值 / 函数默认值里，`uipos` 与 `regress` 都扫不到，是逐个从原版 bundle 里比对出来的（回归闸门英文片段 262 → 242，新增 0）
 - **v0.0.109 适配**：上游这一版只动了 SDK（`node_modules/@codebuff/sdk` 的 `read_files` 支持读取图片附件），渲染进程 bundle 与主进程 `electron/*.cjs` 与 0.0.108 **逐字节一致**——词典无需增删（替换数仍为 1785，`all keys matched`）、模板变量重映射 0 条、`patches/` 无需改动。新增的 SDK 拒读提示（`Image is … KB; images over … KB cannot be attached.`）是给模型看的库内部文案，按惯例保留英文
@@ -28,17 +30,24 @@ Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.112）的**简体中文汉�
 - **v0.0.103 适配**：自动重映射 56 条模板变量；补齐模型选择器新增 9 个模型的标签与数据使用 / 限速提示，以及 Freebucks 钱包 / paywall 的套餐升级与付费时长文案（模型名按约定保留英文）；v0.0.88 起 Freebucks 钱包额度系统（每日额度 + 钱包 + 按小时计价的会话购买）全新界面全套中文化
 - **一键安装/还原**：`apply.sh` / `restore.sh`，自动备份，随时回退英文原版
 - **工具链完整**：`tools/` 提供版本迁移、构建核查、残留扫描和发布脚本。
-  残留扫描分三层：`uipos.js` 扫界面属性位置（含三元分支、`actionLabel`、JSX 文本节点），
+  残留扫描分四层：`uipos.js` 扫界面属性位置（含三元分支、`actionLabel`、JSX 文本节点），
   `fieldscan.js` 扫 `description:` / `tagline:` / `hint:` 这类属性锚点之外的字段，
   `blindscan.js` 把英文原版与产物对一比，抓 `children` 三元分支 / 模板插值内部 / 函数默认值里
-  那批前两者都够不着、`regress` 也判不成句子的英文（0.0.110 的 24 条历史遗留就是它扫出来的）
-- **版本迁移自动化**：`tools/update.sh` 一键串起重映射 → 构建 → 残留扫描 → 回归闸门。其中
+  那批前两者都够不着、`regress` 也判不成句子的英文（0.0.110 的 24 条历史遗留就是它扫出来的），
+  `mainscan.js` 再把**主进程** `electron/*.cjs` 与产物对一遍——菜单 / 原生对话框 /
+  `shell:openIn` 报错 / MCP 同意窗口历来只靠手写补丁，漏一条不会有任何构建报错
+  （0.0.113 适配时一次扫出 29 处，有的从 0.0.104 以前就在）
+- **上游新增文案清单**：`tools/upstreamdiff.js` 拿**两版英文原版**对差（不依赖上一版汉化包），列出本版上游新写 / 改写 / 下线的文案，并把「词典未覆盖」的那批单独拎出来当待翻清单——`build.sh` 每次把本版英文原版登记成快照 `work/pristine/<版本>/`，`update.sh` 第 6 步自动取最新两版比一次；只有一版基线时它会打印补齐办法，不当静默跳过
+- **英文原版快照可跨机器搬**：`tools/pristine.js` 管快照仓库（`capture` 从备份 / 装机原版 / NSIS 安装包采集，`export` / `import` 单文件搬运，`publish` / `--from-release` 走自己的 Release，`list` 逐文件 sha1 校验并顺带探官方发布源上还有哪些版本的安装包）。上一版原版在本机是会被抹掉的（自动更新覆盖装机原版，更新缓存装完即删）：换机器或清过 `work/` 之后，`node tools/pristine.js import --from-release latest` 一条命令就能把基线拿回来
+- **版本迁移自动化**：`tools/update.sh` 一键串起重映射 → 构建 → UI 残留扫描 → 主进程英文扫描 → 上游新增文案 + 回归闸门。其中
   `tools/remap.js` 自动把 template 词典条目的 `${...}` 变量名迁移到新 bundle，也包括以未闭合
   `${条件?` 结尾的「半截模板」嵌套词条（对 v0.0.75→v0.0.76 的 13 条改名全量命中验证），
   不再逐条手工核对
 - **发布回归闸门**：`tools/regress.js` 把新构建与上一版已发布包对一遍——比对前抹掉 `${...}`
   插值（变量改名不误报）、模板逐段取（嵌套模板不漏），只要出现新增英文自然语言片段就中止
-  发布，拦住「词典全命中但某句变回英文」这类静默回归（`update.sh` / `release.sh` 自动调用）
+  发布，拦住「词典全命中但某句变回英文」这类静默回归（`update.sh` / `release.sh` 自动调用）；
+  `release.sh` 发布前还有一道**主进程闸门**（`tools/mainscan.js`），`electron/*.cjs` 里还有
+  没译的界面文案就中止发布（确认有意保留时 `--allow-english` 放行）
 - **构建防呆自检**：`build.sh` 在解包前先跑 `tools/lint_dict.js`（词典结构 / 半截模板键，
   此前只在 CI 跑、本地流程形同虚设），之后对补丁后的主进程做 `node --check`、词典替换次数为 0 即中止，
   构建后由 `tools/postbuild.js` 断言 `ui/index.html` 汉化标记与译文哨兵——杜绝历史上出现过的
@@ -121,19 +130,25 @@ bash build.sh <app.asar> <ui-dir>   # 或显式指定原版文件
 ├── manifest.json      # 词典适配的 Freebuff 版本（多开控制器读取做兼容检查）
 ├── patches/           # 人工补丁：词典覆盖不到的手工修改（主进程 7 个文件；index.html 由 tools/apply_ui_patch.js 直改）
 ├── tools/             # 构建 / 版本迁移 / 找漏翻脚本（见 docs/更新维护.md）
-│   ├── update.sh      # 一键版本迁移：重映射 → 构建 → 残留扫描 → 待办汇总
+│   ├── update.sh      # 一键版本迁移（7 步）：重映射 → 补丁体检 → 构建 → UI 残留扫描 → 主进程扫描 → 上游新增文案 + 回归闸门 → 汇总
 │   ├── remap.js       # template 词典条目随 minifier 改名自动迁移
 │   ├── postbuild.js   # 构建产物自检（index.html 标记 / 主进程语法与译文哨兵）
 │   ├── lint_dict.js   # 词典质量门禁（结构 / 重复键 / 占位符一致性）
 │   ├── test_remap.js  # remap / lint 自测（合成「变量改名」bundle，CI 跑）
 │   ├── regress.js     # 发布回归闸门（新旧产物英文片段比对，release/update 调用）
 │   ├── blindscan.js   # 盲区扫描：原版 vs 产物，找 uipos/fieldscan/regress 都扫不到的英文
+│   ├── mainscan.js    # 主进程扫描：electron/*.cjs 原版 vs 产物（跳过注释，三桶分类）
+│   ├── test_mainscan.js # mainscan 自测（CI 跑）
+│   ├── upstreamdiff.js # 上游新增文案：两版英文原版对差（新增 / 改写 / 下线，不依赖汉化包）
+│   ├── test_upstreamdiff.js # upstreamdiff 自测（CI 跑）
+│   ├── pristine.js    # 英文原版快照仓库：capture / export / import（含 --from-release）/ publish / list / path
+│   ├── test_pristine.js # pristine 自测（CI 跑）
 │   └── apply_ui_patch.js # 直接替换 UI index.html 翻译（替代 git apply）
 ├── build.sh           # 可复现构建：原版 + 词典 + 补丁 → output/（含防呆自检）
 ├── apply.sh           # 安装汉化到应用（自动备份）
 ├── restore.sh         # 从备份还原英文原版
 ├── docs/              # 汉化维护说明（日常恢复 / 版本适配 / 发布）
-└── work/              # 扫描中间产物（gitignore，不入库）
+└── work/              # 扫描中间产物与英文原版快照 work/pristine/（gitignore，不入库）
 ```
 
 ## ⚠️ 注意事项

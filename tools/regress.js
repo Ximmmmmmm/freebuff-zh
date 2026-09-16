@@ -56,7 +56,10 @@ const WORD = /[A-Za-z]{2,}/g;
 
 // 出现这些就基本是代码，不是给人看的文案。注意 } 不在此列：嵌套模板会让它把上一层的
 // 收尾花括号留在本段里（如 paywall 的 `:"Drops"} to …`），那是正常文案。
-const CODEISH = /[(){}\[\];=<>]|&&|\|\||=>|\?\.|\?\?|function |typeof |const |let |var |\[object|\\n|console\.|\.js\b/;
+// 关键字要带词边界：以前写成 `let `（带尾空格）会把「Wa**llet** 」这种普通词里的 let 也当关键字，
+// 于是「Wallet 开头的整句」全被当成代码滤掉（0.0.114 适配时才发现：比对的合成句里带 wallet 的
+// 永远进不了清单）。`;` 留着：重叠配对会抽出 `"a");x=1;(` 这种跨代码边界的片段，靠它甩掉。
+const CODEISH = /[(){}\[\];=<>]|&&|\|\||=>|\?\.|\?\?|\b(?:function|typeof|const|let|var)\b|\[object|\\n|console\.|\.js\b/;
 // 自然语言的强信号：至少出现一个常见小词
 const COMMON = new RegExp(
   '\\b(' +
@@ -74,7 +77,13 @@ const COMMON = new RegExp(
   'i'
 );
 
-function isProse(plain, rawLen) {
+// opts.minWords / opts.requireCommon 的两个默认值就是回归闸门用的口径（≥3 词 + 必须含常见小词，
+// 尽量不漏报、也尽量不把术语当句子）。tools/upstreamdiff.js 要「上游新增了哪些文案」的全量清单，
+// 会用更宽的口径（minWords 2、不要求常见小词）再看一遍同一份提取结果——两处共用一个提取器，
+// 免得「是不是文案」的判断在两支工具里各说各话。
+function isProse(plain, rawLen, opts = {}) {
+  const minWords = opts.minWords ?? 3;
+  const requireCommon = opts.requireCommon ?? true;
   const t = plain.replace(/\s+/g, ' ').trim();
   if (t.length < 10 || t.length > 300) return false;
   if (rawLen > 800) return false; // 超长多半是拼进来的代码
@@ -83,10 +92,10 @@ function isProse(plain, rawLen) {
   // 单个残留的 } 允许（嵌套模板），再多就不是文案了
   if ((t.match(/[{}]/g) || []).length > 1) return false;
   const words = t.match(WORD) || [];
-  if (words.length < 3) return false;
+  if (words.length < minWords) return false;
   const lower = words.filter((w) => /^[a-z]/.test(w)).length;
   if (lower / words.length < 0.6) return false;
-  if (!COMMON.test(t)) return false;
+  if (requireCommon && !COMMON.test(t)) return false;
   // kebab-case 标识符（CSS 类名 / data 属性）密集的片段是代码，不是文案：
   // 如 `agent-trigger has-byok`（0.0.106 新增的类名组合）会命中 COMMON 里的 has。
   const kebab = t.match(/[a-z][a-z0-9]*(?:-[a-z0-9]+)+/g) || [];
@@ -94,13 +103,19 @@ function isProse(plain, rawLen) {
   return true;
 }
 
-function collectFragments(file) {
-  const src = fs.readFileSync(file, 'utf8');
+// 路径入口（回归闸门用）。不要在这里「是路径就读文件、否则当源码」地嗅探：把 2.4 MB 的源码
+// 文本当路径丢给 fs.existsSync 会直接触发 Node 的断言崩溃（idna.c / code_point），而且小样本
+// 看不出来——真 bundle 一发即崩。要看源码文本请用下面显式的 collectFragmentsFromSource。
+function collectFragments(file, opts = {}) {
+  return collectFragmentsFromSource(fs.readFileSync(file, 'utf8'), opts)
+}
+
+function collectFragmentsFromSource(src, opts = {}) {
   const set = new Set();
   const add = (raw) => {
     const plain = stripInterp(raw);
     if (/[\u4e00-\u9fff]/.test(plain)) return; // 已汉化
-    if (isProse(plain, raw.length)) set.add(plain.replace(/\s+/g, ' ').trim());
+    if (isProse(plain, raw.length, opts)) set.add(plain.replace(/\s+/g, ' ').trim());
   };
   // 字符串字面量：每个未转义引号都当「开引号」，向后读到下一个引号为止（重叠配对）。
   // 不能用「相邻引号两两配对」的正则：minified 产物里短字符串（`"span"` 仅 4 字符，
@@ -189,34 +204,50 @@ function resolveBundle(input) {
 
 // --- 主流程 -------------------------------------------------------------------
 
-const args = process.argv.slice(2);
-if (args.length !== 2) {
-  console.error('用法：node tools/regress.js <旧产物> <新产物>（目录 / pack zip / bundle 文件）');
-  process.exit(2);
+function main() {
+  const args = process.argv.slice(2);
+  if (args.length !== 2) {
+    console.error('用法：node tools/regress.js <旧产物> <新产物>（目录 / pack zip / bundle 文件）');
+    process.exit(2);
+  }
+
+  const oldBundle = resolveBundle(args[0]);
+  const newBundle = resolveBundle(args[1]);
+  if (!oldBundle || !newBundle) {
+    console.error(`无法定位主 bundle：${oldBundle ? '' : args[0] + ' '}${newBundle ? '' : args[1]}`);
+    console.error('（期望目录里有 ui/index.html，或 assets/index-*.js，或直接给 bundle / pack zip）');
+    process.exit(2);
+  }
+
+  const oldSet = collectFragments(oldBundle);
+  const newSet = collectFragments(newBundle);
+  const added = [...newSet].filter((x) => !oldSet.has(x)).sort();
+
+  console.log(`回归闸门：${path.basename(oldBundle)} → ${path.basename(newBundle)}`);
+  console.log(`  旧版英文片段 ${oldSet.size} 处；新版 ${newSet.size} 处；新版独有 ${added.length} 处`);
+
+  if (added.length === 0) {
+    console.log('  ✓ 未发现新增英文片段');
+    process.exit(0);
+  }
+
+  console.log('  ❌ 新版出现以下英文片段（漏翻/迁移回归，或有意保留）：');
+  for (const x of added) console.log('    · ' + x.slice(0, 200));
+  console.log('  处理：能翻的补进 dict.json 后重跑 bash build.sh；确认有意保留的，发布时用');
+  console.log('        bash tools/release.sh --allow-english 放行。');
+  process.exit(1);
 }
 
-const oldBundle = resolveBundle(args[0]);
-const newBundle = resolveBundle(args[1]);
-if (!oldBundle || !newBundle) {
-  console.error(`无法定位主 bundle：${oldBundle ? '' : args[0] + ' '}${newBundle ? '' : args[1]}`);
-  console.error('（期望目录里有 ui/index.html，或 assets/index-*.js，或直接给 bundle / pack zip）');
-  process.exit(2);
-}
+// 提取器与输入解析被 tools/upstreamdiff.js 复用（描述：同一份「minified bundle 里的英文自然语言
+// 片段」判据只该有一处实现，0.0.106 那次重叠配对的修正就是在这里做的）。
+module.exports = {
+  stripInterp,
+  collectFragments,
+  collectFragmentsFromSource,
+  resolveBundle,
+  isProse,
+  COMMON,
+  mainBundleInDir,
+};
 
-const oldSet = collectFragments(oldBundle);
-const newSet = collectFragments(newBundle);
-const added = [...newSet].filter((x) => !oldSet.has(x)).sort();
-
-console.log(`回归闸门：${path.basename(oldBundle)} → ${path.basename(newBundle)}`);
-console.log(`  旧版英文片段 ${oldSet.size} 处；新版 ${newSet.size} 处；新版独有 ${added.length} 处`);
-
-if (added.length === 0) {
-  console.log('  ✓ 未发现新增英文片段');
-  process.exit(0);
-}
-
-console.log('  ❌ 新版出现以下英文片段（漏翻/迁移回归，或有意保留）：');
-for (const x of added) console.log('    · ' + x.slice(0, 200));
-console.log('  处理：能翻的补进 dict.json 后重跑 bash build.sh；确认有意保留的，发布时用');
-console.log('        bash tools/release.sh --allow-english 放行。');
-process.exit(1);
+if (require.main === module) main();

@@ -1,5 +1,226 @@
 # 更新日志
 
+## [0.0.114] · 2026-09-16
+
+**适配 0.0.114：上游新增「首个标签页折扣」（first-tab discount）的 4 条文案**——新增 4 条、
+下线 0 条，替换数 1813 → 1817。主进程 `electron/*.cjs` 与 0.0.113 产物**逐字节一致**，
+`patches/` 无需改动。
+
+- **适配 Freebuff v0.0.114**：targetVersion / packVersion 升至 0.0.114；渲染 bundle
+  `index-02HepJVd.js` → `index-BHuq3B1m.js`，样式表仍为 `index-YJ7gnGWz.css`（与 0.0.113 产物哈希
+  一致，本轮 CSS 零变化）。本机自动更新又把装机汉化覆盖回英文，且这次 `hanhua-backup-*` 被**一并清掉**，
+  `build.sh` 走的仍是「安装目录即英文原版」这条首次构建路径；本次 `apply.sh` 已把英文原版存成
+  `hanhua-backup-20260916-112157`。
+- **模板变量自动重映射 37 条**（`qi(…)→Ui(…)`、`Tn(…)→Pn(…)`、`zi(…)→Bi(…)`、`eD(u,o)→tD(u,o)`、
+  `DO()→QO()`、`Ez/Cz/wz/kz` 一族整体移位、半截模板 `ve?→be?` 等），**歧义 2 条人工改名**
+  （都是 0.0.105 就中过一次的老面孔：锚文本在 bundle 里命中多处且插值不一致，工具拒绝猜）：
+  `` `Remove ${Ae.configKey}` `` → `` `Remove ${$e.configKey}` ``、
+  `` `Could not select ${de.name}: ${We}` `` → `` `Could not select ${fe.name}: ${Ze}` ``。
+  修完即 `all keys matched`——首跑时正是这 2 条把构建卡在 MISSED 上。
+- **新增「首个标签页折扣」4 条**（`HM()` 拼出 tooltip，`agent-menu-note` 那行显示 children）：
+  - tooltip（可用时）`` `First-tab discount: up to ${e.amount} Freebucks off one session at a time,
+    shared across Desktop and CLI. Prices shown include the discount.` ``；
+  - tooltip（占用中）`Your first-tab discount is in use. Parallel sessions pay the regular price.
+    The discount becomes available when that session ends.`；
+  - agent 菜单行 `` `First-tab discount · up to ${ve.firstTabDiscount.amount} Freebucks off` ``；
+  - agent 菜单行（占用中）`First-tab discount in use`。
+
+  折扣没有别的界面文案：`firstTabDiscount` 在 bundle 里共 16 处命中，按字面量去重后正好这 4 条。
+- **主进程无需改动**：`electron/*.cjs` 与 0.0.113 产物经 `diff -rq` 实测**逐字节一致**，
+  7 个补丁干净套用，`postbuild` 哨兵与行为取证全过；`tools/ui_patch_status.js` 对 0.0.114 原版给出
+  **KEEP**（3 条锚点各命中 1 处、上游仍带该缺陷）。`tools/mainscan.js`（0.0.113 新增的工具，本轮第一次
+  真正投入适配流程）报 疑似 0 / 短标签 0 / 约定保留 66。
+- **门禁实测**（`tools/update.sh` 七步全绿）：`lint_dict` 0 错误（exact 1192 / template 276 / code 8 /
+  pattern 75）；词典对主 bundle **替换 1817 处 + `all keys matched`（MISSED 0）**；`uipos` 14 条
+  （首跑 16 条就是新文案那两条，补完回落）、`fieldscan` 1 条（`tagline: 0 Freebucks`）、
+  `blindscan` 283 条（首跑 287 条，多的 4 条正是折扣文案），三条均与 0.0.112 / 0.0.113 持平；
+  `postbuild` 自检通过（UI 行为补丁 3/3 条哨兵 + 行为取证通过）。
+- **回归闸门**：对比 `pack-v0.0.113`，英文片段 **240 → 240、新增 0 处** ✓——它首跑就揪出了那 4 条折扣文案
+  （`First-tab discount in use` / `First-tab discount · up to Freebucks off` / 两条 tooltip），
+  补翻后转绿，又一次先于人工发现新版文案。（数字比 0.0.113 那次小，是因为本轮修了下面的提取器
+  关键字判据：重跑同一对比从 242 → 240，两个方向都用同一套口径，对比本身不受影响。）
+- **修掉提取器里的两个真 bug（`regress.js`，upstreamdiff 共用）**：
+  - `CODEISH` 里的语句关键字写成带尾空格的 `let ` / `var `，于是「Wa**llet** 开头的整句」被当成代码
+    滤掉；改成 `\b(?:function|typeof|const|let|var)\b`（真 bundle 里当前 0 处命中，但这是迟早会踩的坑），
+    代价是 5 条库内部 / CSS 类名片段不再进清单；
+  - `collectFragments(file)` 一度写成「是路径就读文件、否则当源码」的嗅探——把 2.4 MB 源码文本当路径
+    丢给 `fs.existsSync` 会直接触发 Node 的断言崩溃（`idna.c / code_point`），且只在大 bundle 上必现。
+    改为两个显式入口：`collectFragments(file)` 只收路径，`collectFragmentsFromSource(src)` 收文本。
+- **新增 `tools/upstreamdiff.js`：上游新增文案清单，不靠上一版汉化包。**「本版要翻什么」这件事本来就
+  不需要汉化包——两版**英文原版**一比就知道，而 `regress` 的前提（存在上一版包）首次发布 / 离线就没了。
+  - **原版从哪来**（真正的难点）：装机目录的英文原版会被自动更新覆盖（本轮 `hanhua-backup-*` 被一并清掉），
+    所以 `build.sh` 每跑一次就把本版英文原版归档到 `work/upstream/<targetVersion>-<bundle 名>`（唯一手里
+    正好拿着英文原版的地方），`--auto` 取最新两版，也可直接给两个路径（bundle / ui 目录 / resources 目录）；
+    本轮又把它升级成可搬运的快照仓库 `work/pristine/<版本>/`（见下面 pristine 那条）。
+  - **判据与 `regress` 共用同一份提取器**（抹掉 `${...}` 再比，minifier 改名不误报），但口径更宽
+    （≥2 词、不要求常见小词）且分两个桶（文案 / 短片段），并与词典做子串比对，把新增拆成
+    **词典未覆盖（待翻清单）/ 已覆盖**两半；一段改写按词重合度**配对**成一组（不再是一增一下线两件事）；
+    报告另有「上一版下线」桶（对应词条可能已成死条目）。
+  - **接进流程**：`update.sh` 第 6 步（与回归闸门同一个步骤：两个基线、两个视角），结论进小结
+    （`词典已全覆盖 ✓` / `⚠ 有待补翻` / `跳过（还没有上一版原版缓存）`），CI 跑
+    `tools/test_upstreamdiff.js`（11 组用例：插值改名不算新增、分桶与词典覆盖、改写配对、注释 / CSS /
+    代码片段不进、两桶口径与 Title case 短标签的现状、`--auto` 挑版本号最大的两版、快照仓库作基线且按版本去重、退出码 0/1/2）。
+  - **实测**（拿本版原版裁掉那 4 条折扣文案冒充「上一版」）：报告正好列出这 4 条为上游新增、且 4 条都已
+    被词典覆盖（exit 0）——即本版若早有这份清单，补翻清单是现成的；真实跑 `update.sh` 时该步在
+    有缓存的情况下也如期工作了。
+- **新增 `tools/pristine.js`：英文原版快照仓库，把「上一版英文原版」变成可跨机器搬的东西。**
+  起因是上一条留的尾：那份归档只活在本机的 `work/` 里，换机器、清过 `work/`、或让另一台机器发布，
+  基线就没了——而这一步一旦没有基线就只是「跳过」，正是这套流程一直在治的安静失效。
+  - **本机到底还有哪些原版（实测）**：`hanhua-backup-*` 备份（自动更新会一并清掉）与未汉化的装机目录
+    是**本机仅有的两个活源头**；Freebuff 的更新下载缓存
+    （`%LOCALAPPDATA%/@codebufffreebuff-desktop-updater/`）里**没有安装包**——electron-updater 装完即删，
+    只剩一个 `current.blockmap`；临时目录里的安装包只活几分钟（本轮 11:17 还在、随后就被清掉）。
+  - **官方发布源是永久的那一个**：更新源 `freebuff.com/api/desktop/updates/win-x64/latest.yml` 302 到
+    GitHub Release（`CodebuffAI/codebuff-community` 的 `freebuff-desktop-v*`），旧版安装包**至今可下**
+    （0.0.110 / 0.0.112 / 0.0.113 / 0.0.114 实测均为 200），`list --remote` 用 HEAD 把它们列出来
+    （不计 API 配额）。只有 win 的 NSIS 解包需要 7-Zip（本机没有）；缺他时 `capture --exe` 会把三条
+    替代办法直接打出来（装 7-Zip / 图形界面解包后 `capture <目录>` / 改走 import）。
+  - **快照内容**：`ui/index.html` + 主 bundle + `electron/` 下的 `.cjs/.html`（与 `mainscan` 的枚举口径
+    一致）。第一版只收了 `.cjs`，结果 `consent-window.html` 漏在外面——快照当原版时 `mainscan` 的
+    「两边都有才比」会把那个文件静默跳过，于是改成 `\.(cjs|html)$` 并加了自测。
+  - **子命令**：`capture`（备份 / 装机原版 / 已解包目录 / app.asar / NSIS 安装包）·
+    `export` / `import`（单文件 `.json.gz`，Node 内置 zlib，无外部依赖；`--from-release` 直接从我们自己的
+    Release 取）· `publish`（附到 `pack-v<版本>` Release）· `list [--remote]`（逐文件 sha1 校验，损坏就报 ✗）·
+    `path`（给 shell 脚本用的可用快照目录）。退出码 0 / 1（损坏、冲突）/ 2（用法、缺依赖、取不到来源）。
+  - **接进流程**：`build.sh` 把原来的单文件归档换成 `capture`（已存在就一行跳过，不重写；失败只提醒不拦构建，
+    缺的只是「下一次的基线」）；`release.sh` 闸一找不到本机原版时退一步用快照里的 `electron/`（免解包，
+    发布机可以不装 Freebuff），发布成功后自动 `publish` 把快照作为附加资产传上去（失败只 WARN）；
+    `update.sh` 第 6 步只有一版基线时不再只说「下次再说」，直接打出三条补齐命令。
+    `upstreamdiff --auto` 同时认快照仓库与旧式单文件归档，并**按版本去重**——否则同一版会被当成
+    「上一版」与「本版」自比，结论永远是「新增 0 条」。
+  - **自测**：`tools/test_pristine.js`（CI 跑，8 组）：采集口径含 `.html`、`*.test.cjs` 不入、幂等与 `--force`、
+    版本从 app.asar 的 `package.json` 推断（文件名与之不符时打 WARN 并按包内登记）、解包器调用形态、
+    NSIS 安装包的两次 7z 编排与缺 7-Zip 时的三条替代办法、坏输入与路径穿越、export→import **逐字节往返**、
+    篡改文件 / 版本冲突拒收、`list` 能发现缺件、退出码 0/1/2 契约。
+  - **实测**：`capture --install` 从 `hanhua-backup-20260916-112157` 拿到 31 个文件（含 28 个主进程文件）；
+    `export` 得到 1.2 MB 的 `pristine-0.0.114.json.gz`；把它 import 回来与导出前逐文件比对一致；
+    拿一份合成的上一版快照跑 `upstreamdiff --auto`，报告如实列出本版新增的 3 条折扣文案；
+    `release.sh` 闸一在「用快照」与「解包 asar」两条路径上给出**完全相同的数字**
+    （28 个文件 / 946 条字面量 / 两边都有 817 条 / 约定保留 66 条）。
+
+## [0.0.113] · 2026-09-16
+
+**适配 0.0.113：上游把 Freebucks 每日额度的说明整段重写（新增 `eD()` 下次补充提示），
+赞助任务多了一条沙箱阻断原因**——下线 1 条、新增 9 条，替换数 1807 → 1813。
+主进程与 0.0.112 产物**逐字节一致**，`patches/` 无需改动。
+
+- **适配 Freebuff v0.0.113**：targetVersion / packVersion 升至 0.0.113；渲染 bundle
+  `index-BGPVyb6x.js` → `index-02HepJVd.js`，样式表仍为 `index-YJ7gnGWz.css`（与 0.0.112 产物
+  哈希一致，本轮 CSS 零变化）。本机自动更新把装机汉化覆盖回了英文，且 `hanhua-backup-*` 已不在，
+  `build.sh` 走的仍是「安装目录即英文原版」这条首次构建路径；这次 `apply.sh` 会把英文原版
+  存成 `hanhua-backup-<时间戳>`，之后 `remap` / 回归对比又有 pristine 可用。
+- **模板变量自动重映射 47 条**（`tools/remap.js`：`Ps(…)→oo(…)`、`Ns→Qs`、`v.branch→S.branch`、
+  `QO()→DO()` 等），**歧义 1 条人工改名**（锚文本在 bundle 命中 3 处且插值不一致，工具拒绝猜）：
+  `` `resets in ${Ps(u.resetAt,o)}` `` → `` `resets in ${oo(u.resetAt,o)}` ``。
+  另有 1 条落 MISSING，正是上游整段重写的余额提示（见下）。
+- **Freebucks 余额提示整句重写**：旧句 `… Spent before your wallet, and they do not carry over —
+  refills in …` 变成 `… Spent before your wallet; unused daily Freebucks do not carry over. ${eD(u,o)}
+  Timezone changes apply after the next refill.`（插值函数由 `Ps(u.resetAt,s)` 换成新的 `eD(u,o)`，
+  即 0.0.113 新加的「下次补充」提示函数）；旧词条留着会卡 MISSED 门禁，已改写。
+- **新增 `eD()` 一整套补充提示**（共 4 条 + 1 个常量）：
+  `The daily refill is due. This is the last confirmed balance; an updated balance will appear shortly.`
+  （`resetAt` 已过时）、`Check your daily reset countdown.`（拿不到时间的兜底）、
+  `` `Next refill: ${n.toLocaleString(void 0,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})}
+  (your device time).${t.resetTimeZone?…}` ``（含内嵌模板的「重置时区」尾巴，译文沿用「从内层模板的
+  收尾反引号接着写」的半截模板形态，并在 `lint_dict.js` 的 `TRUNCATED_TEMPLATE_ANCHORS` 里
+  登记了新骨架 `(your device time).`）、
+  `` ` Reset timezone: ${t.resetTimeZone.replace(/_/g," ")}.` ``（内层模板本体，时区名是数据不译）、
+  以及余额环上的 `Updating balance…` 常量。
+- **入门卡片整段重写**：`Your daily Freebucks refill at midnight Pacific. Nothing to earn, nothing to
+  wait for.` → `Your daily Freebucks refill at midnight in your reset timezone. Your first refill may
+  arrive earlier; timezone changes can delay a later refill. Your balance shows the next refill time.`
+  （旧词条下线，新句进 `exact`）。
+- **赞助任务新增 1 条阻断原因**：`Sponsored tasks cannot start because the workspace sandbox is not
+  working on this machine. No paid task has started.`（`lF` 阻断原因表的
+  `containment-probe-failed` 分支，是本次唯一新增的赞助任务文案；同一张表里其余四条
+  —— Windows / 其他平台 / 缺 bubblewrap / 缺桌面同意桥 —— 0.0.112 就已在词典里，未变动）。
+- **主进程无需改动**：解包比对确认 0.0.113 的 27 个 `electron/*.cjs` 与 0.0.112 产物**逐字节一致**
+  （asar 里唯一新增的是 SDK 测试文件 `node_modules/@codebuff/sdk/src/__tests__/
+  sponsored-containment-probe.test.ts`），7 个补丁仍干净套用，`postbuild` 的哨兵与行为取证全过；
+  `tools/ui_patch_status.js` 对 0.0.113 原版给出 **KEEP**（3 条锚点各命中 1 处、缺陷仍可复现）。
+- **门禁实测**：`lint_dict` 0 错误（exact 1190 / template 274 / code 8 / pattern 75）；词典对主 bundle
+  **替换 1813 处 + `all keys matched`（MISSED 0）**；`uipos` 界面属性位置残留 14 条（与 0.0.110 / 0.0.112
+  持平，均为约定保留的模型名 / `Freebuff` / MCP 配置示例 / `bun install` / CodeMirror 内部标签）、
+  `fieldscan` 1 条（`tagline: 0 Freebucks`）；`blindscan` 疑似文案 283 条（与 0.0.112 持平，
+  新增 0 条应用文案，唯一「新增」是 `in r3.documentElement.style` 这类代码片段）；
+  `postbuild` 自检通过（纯字面量词条覆盖 1148/1148）；`remap` 对英文原版重跑：274 条模板全 SAME、
+  歧义 0、MISSING 0。
+- **回归闸门**：对比 `pack-v0.0.112`，英文片段 **242 → 242、新增 0 处** ✓（首跑时它先揪出了赞助任务的
+  那条新文案，补翻后转绿）。
+- **顺带补翻主进程遗留英文（3 个文件、29 处改动）**：这批文案 **0.0.112 之前就在**，7 个补丁
+  没覆盖到，而 `regress` / `uipos` / `blindscan` 都只盯 UI bundle（扫不到主进程），是逐个从原版
+  `electron/*.cjs` 比对出来的：
+  - **Bun 崩溃对话框整段**（`orchestrator-failure.cjs` 的 `describeBunCrash`）：标题
+    `Freebuff failed to start`、正文 `This is a bug inside Bun rather than in Freebuff, and the log has
+    the full report.`，以及 Windows 兼容版本那两行说明（`On this PC the standard build of that
+    runtime is the one crashing. …`）；
+  - **菜单与原生对话框**（`main.cjs`）：标签页右键菜单 `Export as Markdown…` /
+    `Move to New Window` / `Move Tab to New Window`，崩溃对话框按钮 `Get Compatibility Build`，
+    附件选择器的文件类型 `Images` / `All Images`，保存对话框标题 `Export thread as Markdown`；
+  - **启动失败对话框的正文**：`The shell lifetime server is unavailable.`、
+    `Failed to start the orchestrator with "…": …`、`The bundled Bun runtime could not be launched.` /
+    `Make sure Bun is installed or set FREEBUFF_BUN_PATH.`、
+    `The failed orchestrator could not be stopped. Restart Windows and try again.`，以及 Linux
+    沙箱失败对话框结尾的 `(… process: …)` 括注；
+  - **`shell:openIn` 的六条报错**：`Invalid open request` / `Invalid open target` /
+    `Invalid line number` / `That application is not available` / `The workspace path is
+    unavailable` / `That application cannot open this path`（都经 IPC 回到界面提示）；
+  - **MCP 同意窗口**（`mcp-consent-bridge.cjs`）：第二行说明
+    `Environment variable names are shown; their values are not.`、按钮组
+    `['No', 'Yes']` / `['Cancel', local ? 'Run it' : 'Connect']`，以及赞助任务那组字段标签
+    `Task:` / `Procedure:` / `User task N:` / `Folder:` / `Branch:`（`Command:` / `Arguments:` /
+    `Directory:` / `Environment:` / `Address:` 那一组早就译过了）；
+  - **补丁重生成与哨兵**：这三个文件的 `patches/electron-*.patch` 改为从**真实基线**（原版 LF +
+    词典，即 `build.sh` 打补丁前的状态）重新生成，现有改动与本次补翻合并成一份；`git apply`
+    干净套用，产物侧与预期内容逐字节一致。`tools/postbuild.js` 为本次补翻新增 **13 条译文哨兵**
+    （`main.cjs` 9 条、`orchestrator-failure.cjs` 2 条、`mcp-consent-bridge.cjs` 2 条），
+    把「补丁只套了一半」挡在装机前；
+  - **有意保留英文（不属遗留）**：`open-in.cjs` 里的应用名与可执行文件（Visual Studio Code /
+    Cursor / Zed / Windows Terminal / Command Prompt / File Explorer / `Code.exe`…——产品名，
+    且被用于探测匹配）、`Task Manager` / `Activity Monitor`、格式名 `Markdown`、
+    `SIGKILL` / `SIGTERM`、CDP 协议方法名、`[orchestrator]` / `[updater]` 开头的控制台日志，
+    以及 bridge 的 HTTP 错误码文本（日志与协议，不是界面文案）。
+  - **复查方式**：`node tools/mainscan.js <原版 electron 目录> <产物 electron 目录>`——目标字符串
+    全部消失，剩余英文都是上面「保留」那批（当时用的是 `work/` 下的临时审计脚本 `audit-main.js`，
+    本次已固化成正式工具，见下条）。
+- **新增 `tools/mainscan.js`：把这次「主进程英文对差」固化成正式工具，`update.sh` 从 6 步变 7 步。**
+  上次的 29 处是靠 `work/` 下一个临时脚本扫出来的，靠人记得跑——而「主进程漏翻」恰恰是没有任何
+  构建门禁会报的那类问题：`uipos` / `fieldscan` / `blindscan` / `regress` **全都只看 UI bundle**，
+  主进程的文案（菜单、原生对话框、`shell:openIn` 报错、MCP 同意窗口）既不在词典的 `exact`
+  （只替双引号字面量）也不在任何扫描器的视野里。
+  - **判据只有一条**（与 `blindscan` 相同）：片段在**英文原版**里存在、在**产物**里原样还在 ⇒ 没被翻过；
+    比较按文件进行，报告直接给 `main.cjs:495` 这样的位置与原版上下文。
+  - **三桶而不是一堆**：`疑似文案`（多词 + 含常见小词，判据直接复用 `blindscan.js` 的 `isLikelyCopy`，
+    两支工具的「像句子吗」结论不会互相打架；非空即 exit 1）、`短标签待过目`
+    （`Invalid open request` / `Get Compatibility Build` 这类判不出句子感的短词，人工看一眼）、
+    `约定保留`（品牌名 / 日志 / 协议错误码 / 协议方法名…，逐条登记在 `INTENTIONAL` 名单里**并写明理由**）。
+    修好的标准因此不是「零英文」，而是**只剩约定保留这一桶**。
+  - **刻意写了词法扫描**（`blindscan` 是刻意不写）：主进程是 27 个可读的 CJS 文件、没有 minified
+    bundle 那种含怪模板的怪物，而这里最大的噪音是**注释**——`electron/*.cjs` 里大段英文注释占一半
+    以上，朴素 grep 会把报告直接淹掉。于是逐个字符扫：跳注释、认正则字面量、只收真正在代码里的
+    字符串字面量（模板插值内部也收，那正是词典够不着的位置）。
+  - **接进流程**：`update.sh` 第 5/7 步解包两侧 `app.asar` 后对差（只报告不拦脚本——迁移途中本就
+    该先发现再补，但结论进小结：`未发现漏翻 ✓` / `⚠ 有疑似漏翻` / `跳过`）；CI 跑
+    `tools/test_mainscan.js`（12 组用例：注释、转义引号、模板插值、正则字面量、保留名单、目录解析、
+    三桶分类与退出码 0/1/2——这些地方改错都会**静默**误判，只有自测能提前发现）。
+  - **实测**：对本次产出的 0.0.113 汉化产物报 **疑似 0 条 / 短标签 0 条 / 约定保留 66 条**（exit 0）；
+    对补翻前的产物（`patches/` 还没写那 29 处时）报出 16 条疑似文案 + 8 条短标签，正好覆盖本次
+    补的那批。文档侧：`docs/更新维护.md` 的「第六种静默失败」改用本工具作为查法、工具表补两行。
+- **`release.sh` 新增「闸门一：主进程英文扫描」，发布时才真的拦。**`update.sh` 那一步只报告
+  （迁移途中本就该先发现再补），但「到底补完了没有」只有发布这道口子拦得住：拿英文原版的
+  `electron/*.cjs` 与待发布的产物对差（原版取自本机最新 `hanhua-backup-*`，与 `build.sh` 同源），
+  有疑似漏翻即 `exit 1`，并打印补翻路径（写进 `patches/electron-*.patch` → 重跑 `build.sh`；
+  确认该保留英文就登记进 `mainscan.js` 的 `INTENTIONAL`）。`--allow-english` 现在同时放行两道
+  闸门（本来只管回归闸门），报告里写「两道英文闸门都只报告不拦截」。发布机找不到英文原版时
+  **响亮地跳过**并说明原因——静态闸门静默失效正是这套流程一直在治的毛病。
+  - 实跑验证两条路径：拿英文原版 `app.asar` 冒充「主进程没翻」的产物 → **exit 1、报告停在闸门一、
+    没有产出任何包**；加 `--allow-english` → 打印 WARN 后继续跑完回归闸门并打包（验证完已还原
+    产物与 `dist/` 包，`sha1` 与发布前一致）。
+  - 顺带修掉一个会让闸门「假失败」的坑：临时解包目录 `rm -rf` 在 Windows 上偶尔删不掉
+    （解包树里的 vendored `sdk/vendor/ripgrep/*/rg.exe` 被安全软件 / 正在运行的应用占住），
+    配合 `set -e` 会让脚本在闸门判定**之前**就 abort——退出码与真拦截一模一样，很容易误判。
+    两处（`update.sh` 与 `release.sh`）改为 `mktemp -d` + 清理失败只提醒不中止。
+
 ## [0.0.112] · 2026-09-15
 
 **适配 0.0.112：新增「继续被中断的轮次」与消息队列暂停态的一整组文案，BYOK 连接说明与

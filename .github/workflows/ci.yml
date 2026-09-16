@@ -23,6 +23,12 @@ jobs:
         run: node tools/test_remap.js
       - name: blindscan 自测（原版 vs 产物的英文片段对差）
         run: node tools/test_blindscan.js
+      - name: mainscan 自测（主进程对差：注释 / 模板插值 / 正则 / 保留名单 / 退出码）
+        run: node tools/test_mainscan.js
+      - name: upstreamdiff 自测（上游两版原版对差：插值改名 / 分桶 / 改写配对 / --auto）
+        run: node tools/test_upstreamdiff.js
+      - name: pristine 自测（原版快照：采集 / 校验 / 导出导入往返 / 损坏与冲突 / 退出码）
+        run: node tools/test_pristine.js
       - name: UI 行为补丁自测（改名抗性 / 唯一命中 / 幂等）
         run: node tools/test_ui_code_patch.js
       - name: 行为取证探针自测（拿不到证据必须 rc 2，不冒充判决）

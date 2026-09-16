@@ -86,7 +86,7 @@ function retireChecklist(group) {
     `    2. tools/probe_stream_epoch.js 与 tools/test_probe_stream_epoch.js —— 本缺陷的探针与自测。`,
     `    3. tools/postbuild.js —— \`const { verdict: probeVerdict } = ...\` 那行 + 行为取证那一段（约 15 行）。`,
     `    4. tools/ui_patch_status.js —— 删掉缺陷登记表里的 '${group.defect}' 条目（若再无其它缺陷则整个工具可删）。`,
-    `    5. tools/update.sh —— 2/6 体检步与小结两行（步骤数 6 → 5）。`,
+    `    5. tools/update.sh —— 2/7 体检步与小结两行（步骤数 7 → 6）。`,
     `    6. .github/workflows/ci.yml —— 「行为取证探针自测」那一步。`,
     `    7. docs/更新维护.md —— 「第五种静默失败」整节、工具表两行、常见问题里那一条。`,
     `    删完跑一次：bash tools/update.sh —— 应全绿，且报告里不再出现 UI 行为补丁小节。`,
