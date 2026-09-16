@@ -38,13 +38,24 @@ for (let i = 0; i < 2; i++) {
 fs.mkdirSync(WORK, { recursive: true })
 
 let fail = 0
-const chk = (cond, label) => {
+// 第三个参数是失败时的诊断（把工具自己的 stderr / stdout 带出来）：CI 上只看得到
+// 「rc=2」这种结果时，真正的原因（哪条命令失败、说了什么）会被埋掉——那正是它要避免的事。
+const chk = (cond, label, detail) => {
   if (cond) console.log(`  ok  ${label}`)
   else {
     console.log(`  FAIL ${label}`)
+    if (detail) console.log(`      ${String(detail).trim().split('\n').slice(0, 5).join('\n      ')}`)
     fail++
   }
 }
+const diag = (r) =>
+  [
+    `rc=${r.code}`,
+    r.err ? `stderr: ${r.err.trim().split('\n').slice(0, 3).join(' / ')}` : '',
+    r.out ? `stdout: ${r.out.trim().split('\n').slice(0, 2).join(' / ')}` : '',
+  ]
+    .filter(Boolean)
+    .join(' | ')
 const sha1 = (buf) => crypto.createHash('sha1').update(buf).digest('hex')
 
 // --- 合成素材 ------------------------------------------------------------------
@@ -239,10 +250,11 @@ fs.writeFileSync(
 const fs = require('fs'), path = require('path')
 const args = process.argv.slice(2)
 fs.appendFileSync(${JSON.stringify(Z7_LOG)}, args.join(' ') + '\\n')
-const outAt = args.findIndex((a) => a.startsWith('-o'))
-const out = args[outAt].slice(2)
+const outArg = args.find((a) => a.startsWith('-o'))
+if (!outArg) { console.error('fake-7z: 参数里没有 -o<目录>：' + JSON.stringify(args)); process.exit(3) }
+const out = outArg.slice(2)
 const src = args[1]
-if (!fs.existsSync(src)) { console.error('fake-7z: 输入不存在'); process.exit(1) }
+if (!fs.existsSync(src)) { console.error('fake-7z: 输入不存在：' + src); process.exit(1) }
 if (/\.exe$/i.test(src)) {
   fs.mkdirSync(path.join(out, '$PLUGINSDIR'), { recursive: true })
   fs.writeFileSync(path.join(out, '$PLUGINSDIR', 'app-64.7z'), 'fake inner 7z')
@@ -258,24 +270,31 @@ fs.writeFileSync(Z7_LOG, '')
 const fakeExe = path.join(WORK, `Freebuff-${NSIS_VER}-win-x64.exe`)
 fs.writeFileSync(fakeExe, 'fake nsis payload')
 const c8 = run(['capture', '--exe', fakeExe], { HANHUA_7Z_CMD: `node "${fake7z}"`, HANHUA_FAKE_ASAR_VERSION: NSIS_VER })
-chk(c8.code === 0, `8) capture --exe 走通（rc=${c8.code}）`)
-const m8 = readMeta(NSIS_VER)
-chk(JSON.stringify(m8.components) === '["ui","electron"]', '8) 安装包同时给出 ui 与主进程两部分')
-chk(m8.source === 'installer', '8) 来源记为 installer')
-chk(fs.existsSync(path.join(snapDir(NSIS_VER), 'ui', 'assets', 'index-from-installer.js')), '8) ui 是从包里的 orchestrator/ui 拿的')
-const zcalls = fs.readFileSync(Z7_LOG, 'utf8').trim().split('\n')
-chk(zcalls.length === 2, `8) 7z 被调用两次（NSIS → $PLUGINSDIR/app-64.7z → 应用）实际 ${zcalls.length}`)
-chk(/app-64\.7z/.test(zcalls[1]), '8) 第二次解的是内层 app-64.7z')
+chk(c8.code === 0, `8) capture --exe 走通（rc=${c8.code}）`, diag(c8))
+// 上面的第一步没过就不再往下查（否则 readMeta 直接抛异常，整个自测以堆栈收场，
+// 真正的原因反而看不见了）；无论如何都把 7z 实际收到的参数打出来。
+const zcalls = fs.readFileSync(Z7_LOG, 'utf8').split('\n').filter(Boolean)
+if (c8.code !== 0) {
+  console.log(`      7z 调用记录：${zcalls.length ? '' : '（空——一次都没调到）'}`)
+  for (const l of zcalls) console.log(`      ${l}`)
+} else {
+  const m8 = readMeta(NSIS_VER)
+  chk(JSON.stringify(m8.components) === '["ui","electron"]', '8) 安装包同时给出 ui 与主进程两部分', JSON.stringify(m8.components))
+  chk(m8.source === 'installer', '8) 来源记为 installer', m8.source)
+  chk(fs.existsSync(path.join(snapDir(NSIS_VER), 'ui', 'assets', 'index-from-installer.js')), '8) ui 是从包里的 orchestrator/ui 拿的')
+  chk(zcalls.length === 2, `8) 7z 被调用两次（NSIS → $PLUGINSDIR/app-64.7z → 应用）实际 ${zcalls.length}`, zcalls.join('\n'))
+  chk(/app-64\.7z/.test(zcalls[1] || ''), '8) 第二次解的是内层 app-64.7z', zcalls.join('\n'))
+}
 
 // 文件名与包内 version 不一致时不能默默选一个：打出 WARN，并按包内那份登记
 const c8c = run(['capture', '--exe', fakeExe], { HANHUA_7Z_CMD: `node "${fake7z}"`, HANHUA_FAKE_ASAR_VERSION: '0.0.111' })
-chk(c8c.code === 0 && /WARN: 安装包文件名说 v0\.0\.112，包内 app\.asar 说 v0\.0\.111/.test(c8c.err), '8) 文件名与包内版本不一致 → 响亮提示')
+chk(c8c.code === 0 && /WARN: 安装包文件名说 v0\.0\.112，包内 app\.asar 说 v0\.0\.111/.test(c8c.err), '8) 文件名与包内版本不一致 → 响亮提示', diag(c8c))
 chk(fs.existsSync(path.join(snapDir('0.0.111'), 'snapshot.json')), '8) 按包内 app.asar 的版本登记')
 
 // 没有 7z 时必须 rc 2 且把三条替代办法说清楚（本机真装了 7-Zip 就只验证不会静默成功）
 const c8b = run(['capture', '--exe', fakeExe], { HANHUA_7Z_CMD: '', PATH: path.join(WORK, 'empty-path') })
 if (c8b.code === 2) {
-  chk(/7-Zip/.test(c8b.err) && /pristine\.js capture/.test(c8b.err) && /--from-release/.test(c8b.err), '8) 缺 7-Zip 时把三条替代办法列出来（rc 2）')
+  chk(/7-Zip/.test(c8b.err) && /pristine\.js capture/.test(c8b.err) && /--from-release/.test(c8b.err), '8) 缺 7-Zip 时把三条替代办法列出来（rc 2）', diag(c8b))
 } else {
   chk(c8b.code !== 0 || true, `8) 本机装了 7-Zip（rc=${c8b.code}），跳过「缺 7z」断言`)
 }
