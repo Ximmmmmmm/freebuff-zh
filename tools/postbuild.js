@@ -174,9 +174,30 @@ const MAIN_SENTINELS = {
     '仍要退出',
     '汉化包补丁：orchestrator 崩溃重启时沿用本次应用会话已发出的 launch id',
     'const launchId = apiLaunchToken ?? randomUUID()',
+    // 崩溃对话框 / 原生对话框 / 菜单 / 文件管理器报错（0.0.113 适配时补翻），
+    // 每条对应补丁里一组独立的改动，用于把「补丁只套了一半」这种半途而废挡住。
+    '获取兼容版本',
+    '无法停止已失败的编排器。',
+    '请确认已安装 Bun，或设置 FREEBUFF_BUN_PATH。',
+    '进程：${details.reason}）',
+    '所有图片',
+    '该应用不可用',
+    '导出为 Markdown…',
+    '移到新窗口',
+    '将标签页移到新窗口',
   ],
-  'electron/orchestrator-failure.cjs': ['编排器未能在规定时间内就绪。'],
-  'electron/mcp-consent-bridge.cjs': ['此连接器没有可运行的命令——已拒绝'],
+  'electron/orchestrator-failure.cjs': [
+    '编排器未能在规定时间内就绪。',
+    // Bun 崩溃对话框整段（0.0.113 适配时补翻）
+    '这是 Bun 内部的缺陷，而不是 Freebuff 的问题，完整报告见日志。',
+    'Freebuff 的运行时崩溃了',
+  ],
+  'electron/mcp-consent-bridge.cjs': [
+    '此连接器没有可运行的命令——已拒绝',
+    // 同意窗口：第二行说明与赞助任务批准按钮（0.0.113 适配时补翻）
+    '环境变量名会显示，其值不会。',
+    "['否', '是']",
+  ],
   'electron/linux-launch.cjs': ['无法启动所需的子进程。'],
   'electron/open-in.cjs': ['复制路径'],
 }

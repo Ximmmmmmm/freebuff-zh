@@ -40,6 +40,7 @@ const TRUNCATED_TEMPLATE_ANCHORS = [
   'for an hour of unlimited messages, charged once when the session starts. You have',
   'buys one hour of unlimited messages and tool calls.',
   "in your wallet. Used after today's pool.",
+  '(your device time).',
 ]
 
 // --- 行级扫描：dict.json 是机器稳定格式（2 空格缩进），可逐行拿行号报错 ------------

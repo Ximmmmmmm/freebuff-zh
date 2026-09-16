@@ -1,8 +1,8 @@
 --- a/electron/orchestrator-failure.cjs
 +++ b/electron/orchestrator-failure.cjs
-@@ -21,18 +21,18 @@
+@@ -31,18 +31,18 @@
  const PROCESS_MONITORS = { win32: 'Task Manager', darwin: 'Activity Monitor' }
-
+ 
  function describeProfileBusy(platform) {
 -  const monitor = PROCESS_MONITORS[platform] ?? 'your system monitor'
 +  const monitor = PROCESS_MONITORS[platform] ?? '你的系统监视器'
@@ -24,9 +24,40 @@
 +      `进程仍在占用工作区：请在 ${monitor} 中退出 "bun"，然后重新打开 Freebuff。`,
    }
  }
-
-@@ -43,15 +43,15 @@
-
+ 
+@@ -71,8 +71,8 @@
+  */
+ function describeBunCrash(failure, crash) {
+   const lines = [
+-    'Bun, the runtime Freebuff Desktop ships with, crashed before Freebuff could start. ' +
+-      'This is a bug inside Bun rather than in Freebuff, and the log has the full report.',
++    'Freebuff Desktop 自带的运行时 Bun 在 Freebuff 启动前就崩溃了。' +
++      '这是 Bun 内部的缺陷，而不是 Freebuff 的问题，完整报告见日志。',
+     '',
+     crash.panic,
+   ]
+@@ -80,15 +80,15 @@
+   if (hasCompatibilityBuild(failure)) {
+     lines.push(
+       '',
+-      'On this PC the standard build of that runtime is the one crashing. The compatibility build ' +
+-        'ships a different build of it and usually starts where this one does not: ' +
++      '在这台电脑上，崩溃的正是该运行时的标准版本。兼容版本附带的是它的另一份构建，' +
++        '通常能在标准版本起不来的地方正常启动：' +
+         COMPATIBILITY_BUILD_URL,
+     )
+   }
+   return {
+-    title: 'Freebuff failed to start',
++    title: 'Freebuff 启动失败',
+     type: 'error',
+-    message: "Freebuff's runtime crashed",
++    message: 'Freebuff 的运行时崩溃了',
+     detail: lines.join('\n'),
+     bunCrash: crash,
+     ...(hasCompatibilityBuild(failure) ? { compatibilityBuildUrl: COMPATIBILITY_BUILD_URL } : {}),
+@@ -105,15 +105,15 @@
+ 
    const detailParts = []
    if (failure.errorMessage) detailParts.push(failure.errorMessage)
 -  if (failure.kind === 'timeout') detailParts.push('The orchestrator did not become ready in time.')

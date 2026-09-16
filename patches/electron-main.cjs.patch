@@ -1,6 +1,11 @@
 --- a/electron/main.cjs
 +++ b/electron/main.cjs
-@@ -496,10 +496,10 @@ async function showOrchestratorFailure(failure, parent = mainWindow) {
+@@ -492,14 +492,14 @@
+   const buttons = []
+   const actions = []
+   if (compatibilityBuildUrl) {
+-    buttons.push('Get Compatibility Build')
++    buttons.push('获取兼容版本')
      actions.push(() => shell.openExternal(compatibilityBuildUrl))
    }
    if (failure.logPath) {
@@ -13,7 +18,7 @@
    actions.push(() => {})
  
    const options = {
-@@ -524,10 +524,13 @@ function startOrchestrator(requestedPort = 0) {
+@@ -524,10 +524,13 @@
    return new Promise((resolve, reject) => {
      const { bun, args, cwd, uiDir, wasmDir, packaged } = resolveOrchestrator()
      const capture = createStderrCapture(bun, args)
@@ -31,7 +36,39 @@
      apiLaunchToken = launchId
      let exited = false
      let ready = false
-@@ -1086,15 +1089,13 @@ function confirmQuit(parent) {
+@@ -569,7 +572,7 @@
+     }
+ 
+     if (!shellLifetime) {
+-      rejectStartup(failure('spawn', { errorMessage: 'The shell lifetime server is unavailable.' }))
++      rejectStartup(failure('spawn', { errorMessage: 'Shell 生命周期服务不可用。' }))
+       return
+     }
+     const env = {
+@@ -624,10 +627,10 @@
+       rejectStartup(
+         failure('spawn', {
+           errorMessage:
+-            `Failed to start the orchestrator with "${bun}": ${err.message}. ` +
++            `无法用 "${bun}" 启动编排器：${err.message}。` +
+             (packaged
+-              ? 'The bundled Bun runtime could not be launched.'
+-              : 'Make sure Bun is installed or set FREEBUFF_BUN_PATH.'),
++              ? '无法启动随包附带的 Bun 运行时。'
++              : '请确认已安装 Bun，或设置 FREEBUFF_BUN_PATH。'),
+         }),
+       )
+     })
+@@ -714,7 +717,7 @@
+         closed
+           ? failure('timeout')
+           : failure('cleanup', {
+-              errorMessage: 'The failed orchestrator could not be stopped. Restart Windows and try again.',
++              errorMessage: '无法停止已失败的编排器。请重启 Windows 后重试。',
+             }),
+       )
+     }
+@@ -1086,15 +1089,13 @@
    try {
      const response = askSync(parent, {
        type: 'question',
@@ -51,7 +88,7 @@
        // a stray Return keeps the agents alive
        defaultId: 0,
        cancelId: 0,
-@@ -1162,8 +1163,8 @@ ipcMain.handle('dialog:pickAttachments', async (event) => {
+@@ -1162,8 +1163,8 @@
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return []
    const res = await dialog.showOpenDialog(win, {
@@ -62,7 +99,7 @@
      properties: ['openFile', 'openDirectory', 'multiSelections', 'treatPackageAsDirectory'],
    })
    if (res.canceled) return []
-@@ -1192,8 +1193,8 @@ ipcMain.handle('dialog:pickImages', async (event) => {
+@@ -1192,13 +1193,13 @@
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return []
    const res = await dialog.showOpenDialog(win, {
@@ -72,8 +109,15 @@
 +    buttonLabel: '附加',
      properties: ['openFile', 'multiSelections'],
      filters: [
-       { name: 'Images', extensions: VIEWABLE_IMAGE_EXTENSIONS },
-@@ -1216,8 +1217,8 @@ ipcMain.handle('dialog:pickDirectory', async (event) => {
+-      { name: 'Images', extensions: VIEWABLE_IMAGE_EXTENSIONS },
++      { name: '图片', extensions: VIEWABLE_IMAGE_EXTENSIONS },
+       {
+-        name: 'All Images',
++        name: '所有图片',
+         extensions: [...VIEWABLE_IMAGE_EXTENSIONS, ...OTHER_IMAGE_EXTENSIONS],
+       },
+     ],
+@@ -1216,8 +1217,8 @@
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return null
    const res = await dialog.showOpenDialog(win, {
@@ -84,7 +128,52 @@
      properties: ['openDirectory', 'createDirectory'],
    })
    return res.canceled || res.filePaths.length === 0 ? null : res.filePaths[0]
-@@ -1363,7 +1364,7 @@ ipcMain.handle('shell:openIn', async (_event, request) => {
+@@ -1227,10 +1228,10 @@
+   const win = BrowserWindow.fromWebContents(event.sender)
+   if (!win) return false
+   if (typeof filename !== 'string' || typeof content !== 'string') {
+-    throw new Error('Invalid Markdown export')
++    throw new Error('Markdown 导出无效')
+   }
+   const result = await dialog.showSaveDialog(win, {
+-    title: 'Export thread as Markdown',
++    title: '将会话导出为 Markdown',
+     defaultPath: path.basename(filename),
+     filters: [{ name: 'Markdown', extensions: ['md'] }],
+     properties: ['createDirectory', 'showOverwriteConfirmation'],
+@@ -1323,17 +1324,17 @@
+ ipcMain.handle('shell:openIn', async (_event, request) => {
+   try {
+     if (!request || typeof request !== 'object' || Array.isArray(request)) {
+-      return { ok: false, error: 'Invalid open request' }
++      return { ok: false, error: '打开请求无效' }
+     }
+     const { targetId, root, relativePath, line } = request
+-    if (typeof targetId !== 'string') return { ok: false, error: 'Invalid open target' }
++    if (typeof targetId !== 'string') return { ok: false, error: '打开目标无效' }
+     if (line !== undefined && (!Number.isInteger(line) || line < 1 || line > 10_000_000)) {
+-      return { ok: false, error: 'Invalid line number' }
++      return { ok: false, error: '行号无效' }
+     }
+     const target = detectOpenTargets().find((candidate) => candidate.id === targetId)
+-    if (!target) return { ok: false, error: 'That application is not available' }
++    if (!target) return { ok: false, error: '该应用不可用' }
+     const resolved = resolveOpenTarget(root, relativePath)
+-    if (!resolved) return { ok: false, error: 'The workspace path is unavailable' }
++    if (!resolved) return { ok: false, error: '工作区路径不可用' }
+ 
+     if (target.id === 'copy-path') {
+       clipboard.writeText(resolved.requested)
+@@ -1346,7 +1347,7 @@
+       }
+     } else {
+       const args = launchArgs(target, resolved, line)
+-      if (!args || !target.executable) return { ok: false, error: 'That application cannot open this path' }
++      if (!args || !target.executable) return { ok: false, error: '该应用无法打开此路径' }
+       await new Promise((resolve, reject) => {
+         const child = spawn(target.executable, args, {
+           cwd: launchCwd(target, resolved),
+@@ -1363,7 +1364,7 @@
      }
      return { ok: true, path: resolved.requested, openedPath: resolved.opened, fallback: resolved.fallback }
    } catch (error) {
@@ -93,20 +182,22 @@
    }
  })
  
-@@ -1474,10 +1475,10 @@ ipcMain.handle('menu:tabContext', (event) => {
+@@ -1474,10 +1475,10 @@
        resolve(action)
      }
      const menu = Menu.buildFromTemplate([
 -      { label: 'Rename Tab', click: () => done('rename') },
-+      { label: '重命名标签页', click: () => done('rename') },
-       { label: 'Export as Markdown…', click: () => done('export-markdown') },
-       { label: 'Move to New Window', click: () => done('move-to-window') },
+-      { label: 'Export as Markdown…', click: () => done('export-markdown') },
+-      { label: 'Move to New Window', click: () => done('move-to-window') },
 -      { label: 'Close Tab', click: () => done('close') },
++      { label: '重命名标签页', click: () => done('rename') },
++      { label: '导出为 Markdown…', click: () => done('export-markdown') },
++      { label: '移到新窗口', click: () => done('move-to-window') },
 +      { label: '关闭标签页', click: () => done('close') },
      ])
      menu.popup({
        window: BrowserWindow.fromWebContents(event.sender) ?? undefined,
-@@ -1500,7 +1501,7 @@ function buildMenu(reloadApp) {
+@@ -1500,7 +1501,7 @@
              label: app.name,
              submenu: [
                { role: 'about' },
@@ -115,7 +206,7 @@
                { type: 'separator' },
                { role: 'services' },
                { type: 'separator' },
-@@ -1510,7 +1511,7 @@ function buildMenu(reloadApp) {
+@@ -1510,7 +1511,7 @@
                { type: 'separator' },
                {
                  // not `role: 'quit'`: that reaches app.quit() directly, with no chance to ask
@@ -124,7 +215,7 @@
                  accelerator: 'Command+Q',
                  click: () => requestQuit(),
                },
-@@ -1519,15 +1520,15 @@ function buildMenu(reloadApp) {
+@@ -1519,15 +1520,15 @@
          ]
        : []),
      {
@@ -143,7 +234,7 @@
            accelerator: 'CmdOrCtrl+Shift+T',
            click: () => sendMenuCommand('reopen-tab'),
          },
-@@ -1536,24 +1537,24 @@ function buildMenu(reloadApp) {
+@@ -1536,24 +1537,24 @@
          // other, and on a fresh install its menu lists only the project already open — so ⌘O is
          // where someone who has never heard the word "space" is going to look.
          {
@@ -153,8 +244,9 @@
            click: () => sendMenuCommand('open-project'),
          },
          { type: 'separator' },
-         { label: 'Move Tab to New Window', click: () => sendMenuCommand('pop-out-tab') },
+-        { label: 'Move Tab to New Window', click: () => sendMenuCommand('pop-out-tab') },
 -        { label: 'Close Tab', accelerator: 'CmdOrCtrl+W', click: () => sendMenuCommand('close-tab') },
++        { label: '将标签页移到新窗口', click: () => sendMenuCommand('pop-out-tab') },
 +        { label: '关闭标签页', accelerator: 'CmdOrCtrl+W', click: () => sendMenuCommand('close-tab') },
          { type: 'separator' },
          isMac
@@ -174,7 +266,7 @@
          { role: 'toggleDevTools' },
          { type: 'separator' },
          { role: 'resetZoom' },
-@@ -1563,15 +1564,15 @@ function buildMenu(reloadApp) {
+@@ -1563,15 +1564,15 @@
          { role: 'togglefullscreen' },
        ],
      },
@@ -193,7 +285,7 @@
              ],
            },
          ]),
-@@ -1718,7 +1719,7 @@ async function boot() {
+@@ -1718,7 +1719,7 @@
      if (err?.orchestratorFailure) {
        await showOrchestratorFailure(err.orchestratorFailure, win)
      } else {
@@ -202,18 +294,20 @@
      }
      app.quit()
      return
-@@ -1826,8 +1827,8 @@ else if (!app.requestSingleInstanceLock()) {
+@@ -1826,9 +1827,9 @@
        canRelaunch: !!relaunchExecPath,
      })
      const buttons = canRetryWithoutSandbox
 -      ? ['Relaunch Without Sandbox', 'Quit']
 -      : ['Show Log', 'Quit']
+-    const body = `${detail}\n\n(${details.type} process: ${details.reason})`
 +      ? ['不使用沙箱重启', '退出']
 +      : ['查看日志', '退出']
-     const body = `${detail}\n\n(${details.type} process: ${details.reason})`
++    const body = `${detail}\n\n（${details.type} 进程：${details.reason}）`
      // A launch failure this early can land before `ready`, where the dialog
      // module throws — and an exception here would replace the message we came to
-@@ -1836,7 +1837,7 @@ else if (!app.requestSingleInstanceLock()) {
+     // show with a silent crash, which is the exact failure being fixed.
+@@ -1836,7 +1837,7 @@
      // buttons, so the pre-ready path explains and quits rather than offering the
      // retry. Nothing is running yet, so there is nothing to tear down.
      if (!app.isReady()) {
@@ -222,7 +316,7 @@
        app.exit(1)
        return
      }
-@@ -1844,7 +1845,7 @@ else if (!app.requestSingleInstanceLock()) {
+@@ -1844,7 +1845,7 @@
      try {
        response = dialog.showMessageBoxSync({
          type: 'error',

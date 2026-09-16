@@ -1,6 +1,6 @@
 --- a/electron/mcp-consent-bridge.cjs
 +++ b/electron/mcp-consent-bridge.cjs
-@@ -98,19 +98,19 @@
+@@ -98,39 +98,39 @@
  function describeLaunch(spec) {
    const lines = []
    if (spec && typeof spec.command === 'string') {
@@ -24,9 +24,24 @@
      )
    } else if (isSponsored(spec)) {
      // The exact procedure comes from the authenticated pre-consent read. It
-@@ -128,9 +128,9 @@
-     lines.push(`Folder:  ${clamp(spec.sponsored.folder)}`)
-     lines.push(`Branch:  ${clamp(spec.sponsored.branch)}`)
+     // must be visible here: retaining only its hash would prevent a changed
+     // procedure from being accepted, but would not tell the human what they
+     // approved. Folder and branch make the local scope concrete.
+-    lines.push(`Task:  ${clamp(spec.sponsored.headline)}`)
++    lines.push(`任务：  ${clamp(spec.sponsored.headline)}`)
+     // The procedure is length-checked before display. Escape every unsafe
+     // source character after that check so an 8,000-character procedure stays
+     // complete even when visible escape sequences expand its rendered length.
+-    lines.push(`Procedure:  ${escapeDisplay(spec.sponsored.procedure)}`)
++    lines.push(`流程：  ${escapeDisplay(spec.sponsored.procedure)}`)
+     spec.sponsored.taskContext.forEach((message, index) => {
+-      lines.push(`User task ${index + 1}:  ${escapeDisplay(message)}`)
++      lines.push(`用户任务 ${index + 1}：  ${escapeDisplay(message)}`)
+     })
+-    lines.push(`Folder:  ${clamp(spec.sponsored.folder)}`)
+-    lines.push(`Branch:  ${clamp(spec.sponsored.branch)}`)
++    lines.push(`文件夹：  ${clamp(spec.sponsored.folder)}`)
++    lines.push(`分支：  ${clamp(spec.sponsored.branch)}`)
    } else if (spec && typeof spec.url === 'string') {
 -    lines.push(`Address:  ${clamp(spec.url)}`)
 +    lines.push(`地址：  ${clamp(spec.url)}`)
@@ -37,29 +52,33 @@
    return lines.join('\n')
  }
 @@ -183,7 +183,7 @@
-
+ 
  /** The identity sentence. The CLI says the same words (`sponsored-proposal-block.tsx`). */
  const SPONSORED_SENTENCE =
 -  ' wants to integrate itself into this project, on its own branch. Nothing is pushed until you review it.'
 +  ' 想要将它自己集成到此项目，并使用它自己的分支。在你审查之前，不会推送任何内容。'
  const sponsoredSentence = (advertiser) =>
    `${clampName(advertiser)}${SPONSORED_SENTENCE}`
-
-@@ -369,10 +369,10 @@
+ 
+@@ -369,27 +369,27 @@
          const explanation = sponsored
            ? ''
            : local
 -            ? 'This runs a program with the same permissions as you. Only continue if you recognise it.\n' +
-+            ? '这会以与你相同的权限运行一个程序。只有在你认识它的情况下才继续。\n' +
-               'Environment variable names are shown; their values are not.'
+-              'Environment variable names are shown; their values are not.'
 -            : 'This sends requests to that address, and it may ask you to sign in.\n' +
 -              'Only continue if you recognise it.'
++            ? '这会以与你相同的权限运行一个程序。只有在你认识它的情况下才继续。\n' +
++              '环境变量名会显示，其值不会。'
 +            : '这会向该地址发送请求，对方可能会要求你登录。\n' +
 +              '只有在你认识它的情况下才继续。'
          const choice = await confirm(parent, {
            type: 'warning',
            buttons: sponsored
-@@ -381,15 +381,15 @@
+-            ? ['No', 'Yes']
+-            : ['Cancel', local ? 'Run it' : 'Connect'],
++            ? ['否', '是']
++            : ['取消', local ? '运行' : '连接'],
            defaultId: 0,
            cancelId: 0,
            title: sponsored
