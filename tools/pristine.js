@@ -1017,8 +1017,10 @@ function cmdPublish(argv) {
     throw new UsageError(`Release ${tag} 不存在（快照要附在已发布的汉化包上）。先 bash tools/release.sh，或用 --tag 指向别的 tag。`)
   }
   run(`gh release upload ${q(tag)} ${q(file)} -R ${q(flags.repo)} --clobber`)
+  // 一行也要打（--quiet 只是「简短」）：发布日志里必须看得见快照真的附上去了，
+  // 否则「上一版原版有没有跟着发布」只能去 Release 页面手工核对。
+  console.log(`原版快照已附上：${tag} ← ${path.basename(file)}（${human(size)}）`)
   if (!flags.quiet) {
-    console.log(`原版快照已附上：${tag} ← ${path.basename(file)}（${human(size)}）`)
     console.log(`  别的机器：node tools/pristine.js import --from-release ${version}`)
     console.log(`  ⚠ 快照里是 Freebuff 的英文原版代码（与已发布的汉化包同源），按 README 声明同样仅限`)
     console.log(`    已合法获取 Freebuff 的用户自用；若不想发布它，删掉该资产即可，其余流程不受影响。`)

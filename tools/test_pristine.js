@@ -24,7 +24,17 @@ const { spawnSync } = require('child_process')
 
 const TOOL = path.join(__dirname, 'pristine.js')
 const WORK = path.join(__dirname, '..', 'work', 'test-pristine')
-fs.rmSync(WORK, { recursive: true, force: true })
+// Windows 上上一轮残留的目录偶发被索引 / 杀软占住：删不掉时直接抛异常，整个自测就会以
+// 「一行输出都没有的崩溃」收场（实测遇到过一次），真正的原因被埋掉。这里重试一次，
+// 再不行就明确说「旧目录没清干净」，让失败可读。
+for (let i = 0; i < 2; i++) {
+  try {
+    fs.rmSync(WORK, { recursive: true, force: true })
+    break
+  } catch (e) {
+    if (i === 1) console.log(`  ! 旧目录未能清干净（${e.code}）：${WORK}——用例可能受残留影响`)
+  }
+}
 fs.mkdirSync(WORK, { recursive: true })
 
 let fail = 0
