@@ -71,6 +71,11 @@ const ANCHORS = {
 // 与 replaceAt 同一实现的箭头声明（bundle 里两种都有，foldParts 引用的是箭头那个）
 const ARROW_ANCHOR = /([A-Za-z_$][\w$]*)=\((\w+),(\w+),(\w+)\)=>\{const (\w+)=\2\.slice\(\);return \5\[\3\]=\4,\5\}/
 
+// 消息 id 生成器（`m${++n}`）——抽出来的函数会调用它，harness 必须按**本版**的名字声明。
+// 0.0.114 里叫 Ec、0.0.120 里被压缩成 Pc：写死名字会让行为取证在换版后直接报
+// 「xxx is not defined」，退化成「仅凭哨兵放行」。这里按结构抽名字，minifier 再改名也不会失配。
+const ID_GEN_ANCHOR = /let [A-Za-z_$][\w$]*=0;const ([A-Za-z_$][\w$]*)=\(\)=>`m\$\{\+\+[A-Za-z_$][\w$]*\}`/
+
 /** 从 bundle 文本里按锚点抽出一个函数的完整源码（按大括号配平截取）。 */
 function findFn(src, anchor, label) {
   const m = src.match(anchor)
@@ -102,12 +107,15 @@ function probe(src) {
   }
   const arrow = src.match(ARROW_ANCHOR)
   if (!arrow) throw new Error('抽不到按位替换的箭头声明')
+  const idGen = src.match(ID_GEN_ANCHOR)
+  if (!idGen) throw new Error('抽不到消息 id 生成器的声明')
 
   const names = Object.fromEntries(Object.entries(fns).map(([k, v]) => [k, v.name]))
   const decl = [
     ...Object.values(fns).map((f) => f.body),
     'var ' + arrow[1] + '=' + arrow[0].slice(arrow[1].length + 1),
-    'var Ec=function(){return "m"+(++__id)}', // bundle 里的 id 生成器，抽出来的函数会引用
+    // bundle 里的 id 生成器，抽出来的函数会引用（名字随版本压缩而变，见 ID_GEN_ANCHOR）
+    'const ' + idGen[1] + '=()=>"m"+(++__id)',
   ].join('\n')
 
   const api = new Function(
@@ -212,16 +220,19 @@ function main() {
   const defectPresent = result.defectPresent
   const patchedOk = result.patchEffective
 
-  let verdict
-  if (expect === 'present') verdict = defectPresent
-  else if (expect === 'absent') verdict = patchedOk
-  else verdict = null
+  // 变量名不能叫 verdict：同一个函数作用域里上面的 try 调用的正是模块级的 verdict()，
+  // 而 let 声明会被提前到整块（TDZ），调用那一刻就会抛「Cannot access 'verdict'
+  // before initialization」——CLI 一路都误报成「抽不到锚点」。
+  let pass
+  if (expect === 'present') pass = defectPresent
+  else if (expect === 'absent') pass = patchedOk
+  else pass = null
 
-  if (verdict === null) {
+  if (pass === null) {
     console.log(`  结论：缺陷${defectPresent ? '在' : '不在'}；补丁行为${patchedOk ? '有效' : '未达标'}（未指定 --expect，仅报告）`)
     process.exit(0)
   }
-  if (verdict) {
+  if (pass) {
     console.log(
       expect === 'present'
         ? '  结论：✓ 缺陷可复现（补丁仍然必要）'

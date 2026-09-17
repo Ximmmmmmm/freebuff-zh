@@ -1,5 +1,50 @@
 # 更新日志
 
+## [0.0.120] · 2026-09-17
+
+**适配 0.0.120：上游新增「赞助式 Supabase 配置邀请」（schemaVersion 1）整块界面、文件预览的
+磁盘/未保存状态说明、以及额度说明里的「为什么有这个限制？」+ 国家/地区验证**——新增 42 条、
+下线 1 条、2 条模板随压缩改名手工迁移，替换数 1817 → 1870。主进程 `electron/*.cjs`
+经 `mainscan` 对差**零漏翻**，`patches/` 无需改动。
+
+- **适配 Freebuff v0.0.120**：targetVersion / packVersion 升至 0.0.120；渲染 bundle
+  `index-BHuq3B1m.js` → `index-R2ptq7SB.js`。装机版本跳过 0.0.115–0.0.119 直接到 0.0.120
+  （多开控制器在本机自动更新），`build.sh` 走的仍是「安装目录即英文原版」路径。
+- **模板变量自动重映射 67 条**，**歧义 2 条人工改名**（锚文本在 bundle 里命中多处且插值不一致）：
+  `` `resets in ${oo(u.resetAt,o)}` `` → `` `resets in ${ao(g.resetAt,o)}` ``、
+  `` `Could not select ${fe.name}: ${Ze}` `` → `` `Could not select ${fe.name}: ${Ge}` ``；
+  另一条死词条 `Showing the first 512 KB read-only`（上游已删）随之移除。
+- **新增文案集中在三处**：
+  - **赞助式 Supabase 配置邀请卡**（`supabase-setup-invitation`，schemaVersion 1 带来的整套新句）：
+    标题 `Sponsored Supabase setup invitation` / `Sponsored Supabase invitation`、
+    `` `Prepare this project for Supabase ${wD[o.angle]}.` `` / `` `Supabase may help with ${wD[o.angle]} in this project.` ``、
+    `This is an invitation only: …` 两条、Git 检查点那组（`This folder is not a Git repository yet.` /
+    `This Git repository needs a committed checkpoint.` / `Create a Git repository and commit a checkpoint, then recheck.` /
+    `Freebuff will not initialize Git or install anything.`）、
+    兼容性说明两条、`Y$e` 映射表 11 条（`Freebuff couldn't read this project's package manifest…` 等）、
+    按钮与加载态 `Recheck setup` / `Check compatibility` / `Rechecking…`；
+  - **文件预览状态**：`Disk version · unsaved edits preserved` / `Unsaved edits preserved` /
+    `File preview · read-only` / `Back to edits` / `` `${g} could not be loaded in this file preview.` ``、
+    `Couldn’t open this file in the main window.` / `This file isn’t available in this thread’s workspace.`；
+  - **额度说明与「限制访问」的出路**：`Why this limit?`、`Your allowance depends on your plan, country and network.`、
+    30 天锁定的那段长说明（`Using a cloud PC, or moved recently? …`）、`Verify your country ↗`、
+    `Loading verification link…` / `Could not load the verification link. Close this explanation and try again.`、
+    额度菜单项 ` Country & allowance`。
+- **上游对差工具会漏掉短句**：`tools/upstreamdiff.js` 这轮只报出 36 条，剩下 6 条（`Recheck setup`、
+  `Check compatibility`、`Rechecking…`、` Country & allowance`、`Supabase invitation`、以及被整句包含的
+  `This Git repository needs a committed checkpoint.`）是**逐条比对两版 bundle 的字面量**、再用
+  `build.sh` 的 MISSED 与 `uipos` 补出来的——短到两三个词、或与已翻长句重叠的片段，它按设计不单列。
+- **修 `tools/probe_stream_epoch.js` 的两处取证缺陷**（与词典无关，但会让行为取证失效）：
+  ① 消息 id 生成器的**压缩名随版本变**（0.0.114 是 `Ec`、0.0.120 是 `Pc`），harness 里写死 `Ec`
+  导致行为取证直接报 `Pc is not defined`，`postbuild` 退化成「仅凭哨兵放行」——改成按结构抽名字
+  （`ID_GEN_ANCHOR`）；② CLI 入口 `main()` 里 `let verdict` 与模块级 `verdict()` 同名，`let` 的 TDZ
+  让命令行运行一律抛 `Cannot access 'verdict' before initialization` 并被误报成「抽不到锚点」。
+  修完实测：原版**缺陷可复现**（补丁仍必要），产物**缺陷已消除且守卫仍在**。
+- **回归闸门**：新版比上一版包只多出 2 处英文片段（`,message:k instanceof Error?k.message:` 一族，
+  是提取器从压缩代码里切出来的片段，不是界面文案）——发布时按既有惯例用 `--allow-english` 放行。
+- **主进程无需改动**：`mainscan` 对差 0 条疑似漏翻；`uipos` 残余英文回到 14 条，全部属于
+  有意保留（模型名 / 品牌词 / JSON 样例 / `bun install` / CodeMirror 内部 aria-label）。
+
 ## [0.0.114] · 2026-09-16
 
 **适配 0.0.114：上游新增「首个标签页折扣」（first-tab discount）的 4 条文案**——新增 4 条、
