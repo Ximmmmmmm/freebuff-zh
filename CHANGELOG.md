@@ -30,18 +30,24 @@
     30 天锁定的那段长说明（`Using a cloud PC, or moved recently? …`）、`Verify your country ↗`、
     `Loading verification link…` / `Could not load the verification link. Close this explanation and try again.`、
     额度菜单项 ` Country & allowance`。
-- **上游对差工具会漏掉短句**：`tools/upstreamdiff.js` 这轮只报出 36 条，剩下 6 条（`Recheck setup`、
-  `Check compatibility`、`Rechecking…`、` Country & allowance`、`Supabase invitation`、以及被整句包含的
-  `This Git repository needs a committed checkpoint.`）是**逐条比对两版 bundle 的字面量**、再用
-  `build.sh` 的 MISSED 与 `uipos` 补出来的——短到两三个词、或与已翻长句重叠的片段，它按设计不单列。
+- **上游对差工具会漏掉短句**：`tools/upstreamdiff.js` 这轮只报出 36 条（其中 2 条还是提取器的
+  误报），剩下 6 条（`Recheck setup`、`Check compatibility`、`Rechecking…`、` Country & allowance`、
+  `Supabase invitation`、以及被整句包含的 `This Git repository needs a committed checkpoint.`）
+  是**逐条比对两版 bundle 的字面量**、再用 `build.sh` 的 MISSED 与 `uipos` 补出来的——
+  短到两三个词、或与已翻长句重叠的片段，它按设计不单列。补完后该工具对本版报「待补翻 1 条」，
+  且那一条就是上一段那类纯代码片段。
 - **修 `tools/probe_stream_epoch.js` 的两处取证缺陷**（与词典无关，但会让行为取证失效）：
   ① 消息 id 生成器的**压缩名随版本变**（0.0.114 是 `Ec`、0.0.120 是 `Pc`），harness 里写死 `Ec`
   导致行为取证直接报 `Pc is not defined`，`postbuild` 退化成「仅凭哨兵放行」——改成按结构抽名字
   （`ID_GEN_ANCHOR`）；② CLI 入口 `main()` 里 `let verdict` 与模块级 `verdict()` 同名，`let` 的 TDZ
   让命令行运行一律抛 `Cannot access 'verdict' before initialization` 并被误报成「抽不到锚点」。
   修完实测：原版**缺陷可复现**（补丁仍必要），产物**缺陷已消除且守卫仍在**。
-- **回归闸门**：新版比上一版包只多出 2 处英文片段（`,message:k instanceof Error?k.message:` 一族，
-  是提取器从压缩代码里切出来的片段，不是界面文案）——发布时按既有惯例用 `--allow-english` 放行。
+- **回归闸门的两个误报被修掉**（`tools/regress.js`）：新旧版对差曾经多出 2 处英文片段
+  （`,message:k instanceof Error?k.message:` 一族），它们是提取器从压缩代码里切出来的、
+  恰好带着 `message` 这个常见小词所以溜过了「是文案吗」的判据——把 `instanceof` 跟
+  `function` / `typeof` / `const` / `let` / `var` 一样写进 `CODEISH` 关键字组后，
+  闸门回到 **0 处、rc=0**（238 vs 238），发布不需要 `--allow-english` 放行。
+  顺带：`tools/upstreamdiff.js` 复用同一份提取器，那两条噪声也从它的清单里消失了。
 - **主进程无需改动**：`mainscan` 对差 0 条疑似漏翻；`uipos` 残余英文回到 14 条，全部属于
   有意保留（模型名 / 品牌词 / JSON 样例 / `bun install` / CodeMirror 内部 aria-label）。
 

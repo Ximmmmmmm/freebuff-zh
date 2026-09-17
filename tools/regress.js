@@ -59,7 +59,10 @@ const WORD = /[A-Za-z]{2,}/g;
 // 关键字要带词边界：以前写成 `let `（带尾空格）会把「Wa**llet** 」这种普通词里的 let 也当关键字，
 // 于是「Wallet 开头的整句」全被当成代码滤掉（0.0.114 适配时才发现：比对的合成句里带 wallet 的
 // 永远进不了清单）。`;` 留着：重叠配对会抽出 `"a");x=1;(` 这种跨代码边界的片段，靠它甩掉。
-const CODEISH = /[(){}\[\];=<>]|&&|\|\||=>|\?\.|\?\?|\b(?:function|typeof|const|let|var)\b|\[object|\\n|console\.|\.js\b/;
+// `instanceof` 是 0.0.120 适配时补进关键字组的：拼接式的片段（如 `,message:k instanceof
+// Error?k.message:`）里恰好带着 message 这个常见小词，其余判据都拦不住它，而它跟 function /
+// typeof 一样是 JS 关键字——不认它，回归闸门就会把「上游改了错误处理代码」误报成新增英文。
+const CODEISH = /[(){}\[\];=<>]|&&|\|\||=>|\?\.|\?\?|\b(?:function|typeof|const|let|var|instanceof)\b|\[object|\\n|console\.|\.js\b/;
 // 自然语言的强信号：至少出现一个常见小词
 const COMMON = new RegExp(
   '\\b(' +
