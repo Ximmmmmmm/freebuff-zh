@@ -23,12 +23,31 @@
 // 新增 / 下线；一段改写会同时表现为「一增一下线」，所以再按词重合度把两边配对成一组「改写」，
 // 免得把同一件事当成两条手工核对。
 //
-// 报告里「被同批更长的片段包含」的残段不会单列（撇号 / 引号错位抽出的半截句），计数也随之。
+// **两层扫描**（片段级 + 字面量级），因为片段级口径为了在 2.4 MB 压缩代码里少报噪音，要求
+// 「≥3 词 + 小写词占比 ≥0.6 + 含常见小词」，它拿不到两类东西：
+//   a) 三词以内的短标签——`Recheck setup`、` Country & allowance`（小写词占比正好 0.5）、`Rechecking…`
+//      （不足 2 词），0.0.120 适配时 6 条新文案就是这么漏掉的；
+//   b) 被同批更长片段包含的独立短句——报告里「被更长片段包含」的残段不会单列（撇号 / 引号错位
+//      抽出的半截句），可这条规则同时也藏掉了代码里**另一条真实存在**的短字符串；
+// 这两类都靠第二层补：只认有引号边界的完整字符串（`collectLiteralsFromSource`，判据是
+//      「像不像标识符」而不是「像不像句子」），它比片段级多收短标签，也能给出**准确的字符串
+//      边界**。两层的文本归一化口径相同，所以能直接去重：片段级已经报过的（含已覆盖、已写成
+//      改写组）不再重复列，**被 prune 藏起来的会在这一层补回来**，而字面量级的「已覆盖」用
+//      整串相等判（片段级的子串匹配是为了迁就抽取产物；字面量要的是「dict 里有没有正好这一条
+//      键」，否则 `…checkpoint.` 会被含它的长句键判成已覆盖，而代码里它是另一条独立字符串，
+//      实际没人翻）。
 //
-// 两个桶（口径不同，别混着看）：
-//   · 句子感强（含常见小词）——多半真是给人看的文案；
-//   · 短片段（≥2 词但不含常见小词）——可能是标签，也可能是术语 / MIME / 样式值，人工过目。
-//   只有「词典未覆盖」的新增才让退出码非 0，短片段桶允许有噪音。
+// 反过来，字面量级也帮片段级清理：片段级在撇号处就截断（`"Freebuff couldn't complete…"` 只抽出
+// `t complete…`），现在 `pruneSubsumed` 把字面量级的整串也当作「更长的东西」，这类半截句不再
+// 单列；但**本身也是完整字符串**的片段例外（`This Git repository needs a committed checkpoint.`
+// 是独立字符串，同时也是长句的前缀），否则就真丢了。
+//
+// 四个桶（口径不同，别混着看）：
+//   · 文案（片段级：含常见小词）／短片段（≥2 词但不含常见小词，人工过目）——片段级的两个桶；
+//   · 字面量（片段级没报到的完整短串）——进「待补翻」清单，拦住退出码；
+//   · 短标签（单词 + 自然语言标点，如 `Rechecking…`）——单列一节，**不拦退出码**，交给
+//     uipos / blindscan 兜底。
+//   只有「词典未覆盖」的新增才让退出码非 0，短片段 / 短标签两桶允许有噪音。
 //
 // 用法：
 //   node tools/upstreamdiff.js <上一版英文原版> <本版英文原版>
@@ -45,7 +64,7 @@
 
 const fs = require('fs')
 const path = require('path')
-const { collectFragmentsFromSource, resolveBundle, stripInterp, COMMON } = require('./regress.js')
+const { collectFragmentsFromSource, collectLiteralsFromSource, resolveBundle, stripInterp, COMMON } = require('./regress.js')
 
 const ROOT = path.join(__dirname, '..')
 const DEFAULT_ARCHIVE = path.join(ROOT, 'work', 'upstream')
@@ -94,17 +113,27 @@ function pairRewrites(removed, added) {
 // 拔掉被同批里更长片段完整包含的残段。提取器对「每个引号都当开引号」配对，于是文案里的
 // 撇号（`Today's`）也会开一段，抽出 `s unused allowance … balance.` 这种半截东西；它一定
 // 被同一句完整文案包含，单列出来只会让人多核对一遍。（只是显示层去重，不影响两边都有的判断。）
+//
+// 第二组「更长的东西」是字面量级的整串：片段级在撇号处就会截断（`"Freebuff couldn't complete…"`
+// 只抽出 `t complete…`），而字面量级按同类型引号闭合，拿到的是全句。两者一起看，才认得出哪个
+// 是残段。但**本身就是一条完整字符串**的例外——它在同一批里也算字面量，被当残段拔掉就真丢了
+// （`This Git repository needs a committed checkpoint.` 是独立字符串，同时也是长句的前缀）。
 const normEdge = (s) => s.replace(/^[^A-Za-z0-9]+/, '').replace(/[^A-Za-z0-9.!?]+$/, '')
 
-function pruneSubsumed(list) {
+function pruneSubsumed(list, literals = new Set()) {
   const norm = list.map(normEdge)
-  return list.filter((_, i) => !list.some((__, j) => j !== i && norm[j].length > norm[i].length && norm[j].includes(norm[i])))
+  const lits = [...literals]
+  return list.filter((x, i) => {
+    if (literals.has(x)) return true
+    if (list.some((__, j) => j !== i && norm[j].length > norm[i].length && norm[j].includes(norm[i]))) return false
+    return !lits.some((lit) => lit.length > norm[i].length && lit.includes(norm[i]))
+  })
 }
 
 // --- 词典覆盖 ------------------------------------------------------------------
 
 // 词典键里带着 `${...}` 与原始空白，与「抹掉插值、折叠空白」后的片段不同名，所以键也按同一套
-// 归一化后再做子串判断（例如键 `First-tab discount · up to ${x.amount} Freebucks off` 归一化后
+// 归一化后再做判断（例如键 `First-tab discount · up to ${x.amount} Freebucks off` 归一化后
 // 正好包含片段 `First-tab discount · up to Freebucks off`）。
 function dictKeys(dictPath) {
   const d = JSON.parse(fs.readFileSync(dictPath, 'utf8'))
@@ -115,7 +144,13 @@ function dictKeys(dictPath) {
   return keys
 }
 
+// 片段级用子串匹配：片段本身是抽取产物（抹掉插值、可能只是句子的一截），要求整串相等会大面积误报。
 const coveredBy = (frag, keys) => keys.some((k) => k.includes(frag))
+
+// 字面量级用整串相等：到这里已经是「一条完整字符串」，dict 里只有键**正好**是它，替换才会命中。
+// 用子串匹配的话，`This Git repository needs a committed checkpoint.` 会被含它的长句键判成
+// 已覆盖——可它在代码里是另一条独立字符串，实际没人翻（0.0.120 适配时踩过）。
+const coveredExactly = (lit, keySet) => keySet.has(lit)
 
 // --- 定位上下文 ----------------------------------------------------------------
 
@@ -187,6 +222,15 @@ function archiveEntries(fileDir, snapDir = DEFAULT_SNAPSHOTS) {
 // --- 报告 ---------------------------------------------------------------------
 
 const BUCKET = (frag) => (/ /.test(frag) && COMMON.test(frag) ? '文案' : '短片段')
+
+// 字面量级的桶：完整字符串有引号边界，判据比片段级松，但仍要把「命令 / 术语」与「UI 文案」
+// 分开——全小写又不含常见小词的短语（`bun install`、`sudo apt`）多半是命令，人工过目即可；
+// 首字母大写或含常见小词的才是真文案（`Resume queue`、`Recheck setup`、` First-tab discount …`）。
+// 单词标签（`Rechecking…`）单列：它们在压缩产物里与标识符长得太像，一律收进来会淹掉清单。
+const LITERAL_BUCKET = (lit) => {
+  if (!/ /.test(lit)) return '短标签'
+  return COMMON.test(lit) || /^[A-Z]/.test(lit) ? '文案' : '短标签'
+}
 
 function main(argv) {
   const flags = argv.filter((a) => a.startsWith('--'))
@@ -260,12 +304,22 @@ function main(argv) {
   const prevSet = collectFragmentsFromSource(prevSrc, opts)
   const curSet = collectFragmentsFromSource(curSrc, opts)
 
-  const addedAll = pruneSubsumed([...curSet].filter((x) => !prevSet.has(x)).sort())
-  const removedAll = pruneSubsumed([...prevSet].filter((x) => !curSet.has(x)).sort())
+  // 字面量级：同一份源码再扫一遍，拿「完整字符串」补片段级口径看不到的东西（主要是三词以内的
+  // 短标签），顺便给上面那步去残段提供准确的字符串边界。去重规则见文件头。
+  const prevLits = collectLiteralsFromSource(prevSrc)
+  const curLits = collectLiteralsFromSource(curSrc)
+  const litAdded = [...curLits.keys()].filter((t) => !prevLits.has(t))
+
+  const addedAll = pruneSubsumed([...curSet].filter((x) => !prevSet.has(x)).sort(), new Set(curLits.keys()))
+  const removedAll = pruneSubsumed([...prevSet].filter((x) => !curSet.has(x)).sort(), new Set(prevLits.keys()))
 
   const { pairs, usedR, usedA } = pairRewrites(removedAll, addedAll)
   const added = addedAll.filter((x) => !usedA.has(x))
   const removed = removedAll.filter((x) => !usedR.has(x))
+
+  // 只按「片段级已经报过的文本」去重（被 prune 藏起来的不算报过，正需要这一层补回来）。
+  const reportedFrag = new Set(addedAll)
+  const litOnly = litAdded.filter((t) => !reportedFrag.has(t))
 
   let keys = []
   try {
@@ -273,9 +327,16 @@ function main(argv) {
   } catch {
     console.error(`WARN: 读不到词典 ${dictPath}，跳过「已覆盖 / 待补翻」标注。`)
   }
+  const keySet = new Set(keys)
   const uncovered = keys.length ? added.filter((f) => !coveredBy(f, keys)) : []
   const covered = keys.length ? added.filter((f) => coveredBy(f, keys)) : added
+  const litUncovered = keys.length ? litOnly.filter((t) => !coveredExactly(t, keySet)) : []
+  const litCovered = keys.length ? litOnly.filter((t) => coveredExactly(t, keySet)) : litOnly
   const sortedUncovered = uncovered.slice().sort((a, b) => BUCKET(a).localeCompare(BUCKET(b)))
+  // 字面量级按桶分：文案进「待补翻」（拦退出码），单词标签单列（不拦）
+  const litProse = litUncovered.filter((t) => LITERAL_BUCKET(t) === '文案').sort()
+  const litLabels = litUncovered.filter((t) => LITERAL_BUCKET(t) === '短标签').sort()
+  const pending = sortedUncovered.length + litProse.length
 
   console.log('上游文案对差（英文原版 vs 英文原版，不依赖上一版汉化包）')
   console.log(`  旧：${prevLabel}`)
@@ -284,9 +345,13 @@ function main(argv) {
     `  上一版英文片段 ${prevSet.size} 处；本版 ${curSet.size} 处 → 新增 ${added.length}、` +
       `下线 ${removed.length}、疑似改写 ${pairs.length} 组`
   )
-  console.log(`  词典覆盖：新增里 ${covered.length} 条已覆盖 / ${uncovered.length} 条待补翻`)
+  console.log(
+    `  字面量级：本版 ${curLits.size} 条 / 上一版 ${prevLits.size} 条 → 新增 ${litAdded.length}` +
+      `（其中 ${litOnly.length} 条是片段级没报到的）`
+  )
+  console.log(`  词典覆盖：新增里 ${covered.length + litCovered.length} 条已覆盖 / ${uncovered.length + litUncovered.length} 条待补翻`)
 
-  if (sortedUncovered.length) {
+  if (pending) {
     console.log('\n## 新增文案 · 词典未覆盖（本版要翻的清单）')
     for (const f of sortedUncovered) {
       console.log(`  ⚠ [${BUCKET(f)}] ${f}`)
@@ -295,6 +360,19 @@ function main(argv) {
         if (ctx) console.log(`      @ ${ctx}`)
       }
     }
+    for (const t of litProse) {
+      console.log(`  ⚠ [字面量] ${t}`)
+      if (!noCtx) {
+        const ctx = contextOf(curSrc, t)
+        if (ctx) console.log(`      @ ${ctx}`)
+      }
+    }
+  }
+
+  if (litLabels.length) {
+    console.log('\n## 短标签 · 词典未覆盖（人工过目，不影响退出码）')
+    console.log('   单词标签在压缩产物里与标识符长得太像，一律收进来会淹掉清单；确认是文案就补进 dict.json。')
+    for (const t of litLabels) console.log(`  · ${t}`)
   }
 
   if (pairs.length) {
@@ -305,9 +383,10 @@ function main(argv) {
     }
   }
 
-  if (covered.length) {
+  if (covered.length || litCovered.length) {
     console.log('\n## 新增文案 · 词典已覆盖（核对译文是否仍然贴切）')
     for (const f of covered.slice().sort()) console.log(`  ✓ [${BUCKET(f)}] ${f}`)
+    for (const t of litCovered.slice().sort()) console.log(`  ✓ [字面量] ${t}`)
   }
 
   if (removed.length) {
@@ -320,16 +399,17 @@ function main(argv) {
   const proseUncovered = sortedUncovered.filter((f) => BUCKET(f) === '文案').length
   const fragUncovered = sortedUncovered.length - proseUncovered
   console.log(
-    `\n小结：待补翻 ${sortedUncovered.length} 条（文案 ${proseUncovered} + 短片段 ${fragUncovered}）、` +
-      `疑似改写 ${pairs.length} 组、下线 ${removed.length} 条`
+    `\n小结：待补翻 ${pending} 条（文案 ${proseUncovered} + 短片段 ${fragUncovered} + 字面量 ${litProse.length}）、` +
+      `短标签 ${litLabels.length} 条（人工过目，不拦退出码）、疑似改写 ${pairs.length} 组、下线 ${removed.length} 条`
   )
-  if (sortedUncovered.length) {
+  if (pending) {
     console.log('  处理：把待补翻的句子补进 dict.json（按字面量形态选 exact / template 分区）后重跑 bash build.sh；')
+    console.log('        标 [字面量] 的要保证 dict 里有一条键**整串**等于它（子串相同不算），否则替换不会命中；')
     console.log('        短片段里的术语 / 命令 / 库内部文案按 uipos / blindscan 的既有惯例保留英文即可。')
   }
-  return sortedUncovered.length ? 1 : 0
+  return pending ? 1 : 0
 }
 
 if (require.main === module) process.exit(main(process.argv.slice(2)))
 
-module.exports = { main, pairRewrites, similarity, dictKeys, archiveEntries, cmpVersion, BUCKET }
+module.exports = { main, pairRewrites, similarity, dictKeys, archiveEntries, cmpVersion, BUCKET, LITERAL_BUCKET }

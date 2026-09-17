@@ -145,12 +145,7 @@ function collectFragmentsFromSource(src, opts = {}) {
     add(buf);
   }
   // 模板：逐段取每两个相邻反引号之间的内容（转义反引号不算分隔）
-  const ticks = [];
-  for (let i = 0; i < src.length; i++) {
-    if (src[i] === '`' && src[i - 1] !== '\\') ticks.push(i);
-  }
-  for (let i = 0; i + 1 < ticks.length; i++) {
-    const seg = src.slice(ticks[i] + 1, ticks[i + 1]);
+  for (const [seg] of templateSegments(src)) {
     if (seg.length >= 8 && seg.length <= 600) add(seg);
   }
   return set;
@@ -241,12 +236,121 @@ function main() {
   process.exit(1);
 }
 
+// --- 字面量级提取 ---------------------------------------------------------------
+//
+// 为什么还需要一条「字面量级」通道：片段级判据（isProse）为「在 2.4 MB 压缩代码里只留句子、
+// 少报噪音」付了代价——它要求 ≥3 词、小写词占比 ≥0.6、且含常见小词，于是**短标签系统性漏报**：
+// `Recheck setup` / ` Country & allowance` / `Supabase invitation` 这类两词 Title case 标签的小写词
+// 占比正好 0.5，`Rechecking…` 之类的单词标签又不足 2 词（0.0.120 适配时 6 条新文案就是这么漏掉的）。
+//
+// 这里换一条通道：只认「有明确引号边界的完整字符串」，因此不必再靠「像不像句子」防噪音，
+// 改用「像不像标识符」来挡（路径 / 类名 / 键名 / MIME / data 属性）。
+//
+// 关键差别是**判断引号是开还是关**：片段级把每个引号都当开引号配对（重叠配对，防错位丢句），
+// 代价是撇号也会开一段、抽出 `s unused allowance …balance.` 这种半截句（片段级靠 upstreamdiff
+// 的 pruneSubsumed 藏起来）。字面量级只能给「真字符串」，所以先看前一个字符：跟在标识符 /
+// `)` `]` `}` `.` 后面的引号是**闭引号**——`"Today's …"` 里那个撇号正是这种情况。
+
+// 「前面这个字符说明引号是闭引号」：值终结符之后不可能再开一个字符串。
+// `.` 也在此列：`balance."` 这种位置在合法 JS 里不会是开引号（属性访问后不能直接跟字符串）。
+const VALUEISH = /[A-Za-z0-9_$)\].}]$/;
+// 但关键字之后可以：`return"x"` / `case"y"` / `typeof"z"`（压缩产物里常不留空格）。不认它们就会
+// 漏掉紧跟关键字的字符串——这类漏报很安静，正是这条通道要防的。
+const AFTER_KEYWORD = /\b(?:return|case|typeof|in|of|new|do|else|delete|void|throw|yield|await|default|instanceof)$/;
+
+function isOpeningQuote(src, i) {
+  const before = src.slice(Math.max(0, i - 12), i);
+  if (!VALUEISH.test(before)) return true;
+  return AFTER_KEYWORD.test(before);
+}
+
+// 单词标签的形状：字母开头 + 只含字母/数字/空格/撇号/连字符 + 以自然语言标点收尾。
+// 收得这么严是因为压缩产物里模板段会被反引号错配切出 `:W.controlKeyword,` / `,tooltip:L?` /
+// `+P.markClass:T,` 这类代码残片——它们含 `,` `:` `?` `"`，只判「含非标识符字符」拦不住。
+// 代价是 `Continue`（纯词、无标点）这类单词标签不在清单里：压缩代码里它与标识符无法区分，
+// 交给 uipos / blindscan 兜底。
+const LABELISH = /^[A-Za-z][A-Za-z0-9 '\u2019-]*[.\u2026!?:»→↗]$/;
+
+// 字面量级的「是不是给人看的文案」判据（片段级 isProse 的补充，不是替代）。
+// 无空格的一律从严（见 LABELISH）。注意判「无空格」而不是判词数：`align-items:center` 能抽出
+// 3 个词，但它是个值，不是文案。
+function isCopyLiteral(t) {
+  if (t.length < 2 || t.length > 200) return false;
+  if (/[\u4e00-\u9fff]/.test(t)) return false; // 已汉化
+  if (!/[A-Za-z]/.test(t)) return false;
+  if (CODEISH.test(t)) return false;
+  if (/[{}<>]/.test(t)) return false; // 花括号 / 尖括号残留 = 插值或被切过的代码
+  if (!/ /.test(t)) return LABELISH.test(t);
+  const words = t.match(WORD) || [];
+  if (words.length < 2) return false;
+  // camelCase 粘连（`fooBar baz`）与 kebab 密集（`agent-trigger has-byok`）都不是文案
+  if (/[a-z][A-Z]/.test(t)) return false;
+  const kebab = t.match(/[a-z][a-z0-9]*(?:-[a-z0-9]+)+/g) || [];
+  if (kebab.length >= 2 && kebab.join('').length / t.replace(/\s+/g, '').length > 0.6) return false;
+  return true;
+}
+
+// 模板字面量：逐段取每两个相邻反引号之间的内容（含嵌套模板的内层段）。不能用非重叠匹配的正则，
+// 否则奇数段会被跳过。返回 [内容, 内容起点] —— 起点供上游对差打上下文用。
+function templateSegments(src) {
+  const ticks = [];
+  for (let i = 0; i < src.length; i++) {
+    if (src[i] === '`' && src[i - 1] !== '\\') ticks.push(i);
+  }
+  const out = [];
+  for (let i = 0; i + 1 < ticks.length; i++) out.push([src.slice(ticks[i] + 1, ticks[i + 1]), ticks[i] + 1]);
+  return out;
+}
+
+// 返回 Map<归一化后的字面量, 首次出现位置>。归一化与片段级同一套（抹掉 ${...} 插值 + 折叠空白），
+// 这样两边的文本可以直接互相比对（上游对差靠这一点去重）。
+function collectLiteralsFromSource(src) {
+  const out = new Map();
+  const add = (raw, at) => {
+    const t = stripInterp(raw).replace(/\s+/g, ' ').trim();
+    if (out.has(t) || !isCopyLiteral(t)) return;
+    out.set(t, at);
+  };
+  for (let i = 0; i < src.length; i++) {
+    const q = src[i];
+    if ((q !== '"' && q !== "'") || src[i - 1] === '\\') continue;
+    if (!isOpeningQuote(src, i)) continue;
+    let j = i + 1;
+    let buf = '';
+    let closed = false;
+    while (j < src.length && buf.length <= 200) {
+      const c = src[j];
+      if (c === '\\') {
+        buf += c + (src[j + 1] ?? '');
+        j += 2;
+        continue;
+      }
+      // 只认同类型引号闭合：另一种引号在字符串**内容**里是合法字符（`"Freebuff can't …"`
+      // 里那个撇号）。片段级容忍这一点（它允许截断，反正 pruneSubsumed 会兜），字面量级
+      // 却会把它当成「一条完整字符串」，报出 `Freebuff can` 这种半截句。
+      if (c === q || c === '\n') {
+        closed = true;
+        break;
+      }
+      buf += c;
+      j++;
+    }
+    // 没读到闭合引号（撞上代码 / 超过 200 字符）的候选不要：它是被切过的一段，不是完整字符串
+    if (closed) add(buf, i + 1);
+  }
+  for (const [seg, at] of templateSegments(src)) add(seg, at);
+  return out;
+}
+
 // 提取器与输入解析被 tools/upstreamdiff.js 复用（描述：同一份「minified bundle 里的英文自然语言
-// 片段」判据只该有一处实现，0.0.106 那次重叠配对的修正就是在这里做的）。
+// 片段」判据只该有一处实现，0.0.106 那次重叠配对的修正就是在这里做的；0.0.120 适配后又把
+// 「短标签漏报」的补救做成字面量级通道，同样只此一处）。
 module.exports = {
   stripInterp,
   collectFragments,
   collectFragmentsFromSource,
+  collectLiteralsFromSource,
+  isCopyLiteral,
   resolveBundle,
   isProse,
   COMMON,

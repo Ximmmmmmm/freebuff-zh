@@ -1318,6 +1318,7 @@
     "request failed (${e})": "请求失败（${e}）",
     "Step 1 of 2 · Install the ${t.label} CLI": "第 1 步，共 2 步 · 安装 ${t.label} CLI",
     "Update the ${t.label} CLI · ${i.outdated.reason}": "更新 ${t.label} CLI · ${i.outdated.reason}",
+    "Checking the installed ${t.label} CLI…": "正在检查已安装的 ${t.label} CLI…",
     "Step 1 of 2 · Downloading Claude Code ${t.version} · ${n}%": "第 1 步，共 2 步 · 正在下载 Claude Code ${t.version} · ${n}%",
     "Step 1 of 2 · Verifying and installing Claude Code ${t.version}": "第 1 步，共 2 步 · 正在校验并安装 Claude Code ${t.version}",
     "Claude Code ${t.version} could not be installed": "无法安装 Claude Code ${t.version}",

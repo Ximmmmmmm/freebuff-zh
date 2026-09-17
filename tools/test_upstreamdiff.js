@@ -17,12 +17,17 @@
 //   3. 一段改写被配对成一组「疑似改写」，不再重复出现在新增/下线桶里；
 //   4. 上一版下线 → 进下线桶；
 //   5. 注释、无空格的值（CSS）、含代码符号 / 语句关键字的片段 → 一条都不进；
-//   6. 两桶口径：含常见小词的算「文案」，2 词短标签算「短片段」；Title case 的两词标签不在清单里
-//      （这是与 regress 共用的口径，短标签由 uipos / blindscan 兜底——这里把它钉住，免得无声变化）；
+//   6. 片段级两桶口径：含常见小词的算「文案」，2 词短标签算「短片段」（与 regress 共用）；
 //   7. 上下文能指到命中处；--no-ctx 时不打；
 //   8. 目录解析：给 ui/ 目录能自己找到主 bundle；坏路径 / 参数不足 → rc 2；
 //   9. --auto：从缓存目录挑**版本号最大**的两版（0.0.10 > 0.0.9），只有一版时 rc 2；
 //  10. 退出码：有待补翻 → 1；全部已覆盖 → 0。
+//  12. **字面量级**（片段级口径的补充，0.0.120 适配后补上）：两词 Title case 标签（`Resume queue`）
+//      进待补翻清单并拦住退出码——片段级要求「小写词占比 ≥0.6」，这类标签正好 0.5，以前就是
+//      这么漏掉的；路径 / 类名 / 键名 / MIME 仍一条都不进；单词 + 标点的标签（`Rechecking…`）
+//      单列进「短标签」节且**不拦退出码**；字面量的「已覆盖」判整串相等（子串相同不算）；
+//  13. 字面量级反过来帮片段级去残段：`"Don't close …"` 片段级只抽出撇号后的半截句
+//      （`t close this window …`），字面量级拿到全句，半截句不再单列。
 //
 // 用法：node tools/test_upstreamdiff.js        # 退出码非 0 表示回归
 'use strict'
@@ -69,6 +74,10 @@ const short = "bun install"
 const titleLabel = "Resume queue"
 const css = "align-items:center"
 const codeish = "return t.map(e=>e.name).join(',')"
+const trunc = "Don't close this window while the upload finishes."
+const pathish = "cm-citedLine"
+const keyish = "supabase_setup_invitation"
+const oneWord = "Rechecking…"
 `
 
 const prevFile = path.join(WORK, 'prev.js')
@@ -76,13 +85,18 @@ const curFile = path.join(WORK, 'cur.js')
 fs.writeFileSync(prevFile, PREV)
 fs.writeFileSync(curFile, CUR)
 
-// 合成词典：只覆盖 "First-tab discount in use" 一条，其余新增都算「待补翻」。
+// 合成词典：只覆盖 "First-tab discount in use" 与那条带撇号的整句，其余新增都算「待补翻」。
+// （第二条专门用来试字面量级的「整串相等」判据：片段级抽出的半截句 `t close this window …`
+// 不该因此被判成已覆盖，全句才该。）
 const dictFile = path.join(WORK, 'dict.json')
 fs.writeFileSync(
   dictFile,
   JSON.stringify(
     {
-      exact: { 'First-tab discount in use': '首个标签页折扣使用中' },
+      exact: {
+        'First-tab discount in use': '首个标签页折扣使用中',
+        "Don't close this window while the upload finishes.": '上传完成前请不要关闭这个窗口。',
+      },
       template: { 'Close tab (${t()}W)': '关闭标签页 (${t()}W)' },
       code: {},
       pattern: {},
@@ -118,6 +132,14 @@ const entries = (sec) =>
     .split('\n')
     .filter((l) => !/^\s+@ /.test(l))
     .join('\n')
+// 条目文本（去掉 ⚠ / ✓ / · 前缀与 [桶] 标记）——用来断「某条**自己**没被单列」：
+// 直接对整份报告做子串匹配会误判，因为长句条目里天然包含半截句（`Don't close …` 含 `t close …`）。
+const entryTexts = (sec) =>
+  sec
+    .split('\n')
+    .map((l) => l.replace(/^\s*[⚠✓·]\s*(\[[^\]]*\]\s*)?/, '').trim())
+    .filter((l) => l && !/^@ /.test(l) && !l.startsWith('##'))
+
 const need = section(out, '## 新增文案 · 词典未覆盖')
 const cov = section(out, '## 新增文案 · 词典已覆盖')
 const pair = section(out, '## 疑似改写')
@@ -151,11 +173,13 @@ chk(!out.includes('so it must never show up in the diff'), '5) 注释里的句�
 chk(!mainEntries.includes('align-items'), '5) 无空格的值（CSS）不进')
 chk(!mainEntries.includes('t.map(e=>e.name)'), '5) 含代码符号的片段不进')
 chk(!entries(need).includes('s unused allowance'), '5) 被整句包含的残段不单列（撇号错位抽出的半截句）')
+chk(!mainEntries.includes('cm-citedLine'), '5) 类名形态的单串不进（字面量级也要拦）')
+chk(!mainEntries.includes('supabase_setup_invitation'), '5) 键名形态的单串不进')
 
-// --- 6) 两桶口径 --------------------------------------------------------------
+// --- 6) 片段级两桶口径 --------------------------------------------------------
 chk(need.includes('[短片段] bun install'), '6) 2 词小写短标签进「短片段」桶')
-chk(/待补翻 2 条（文案 1 \+ 短片段 1）/.test(out), '6) 小结里的分桶计数正确')
-chk(!mainEntries.includes('Resume queue'), '6) 口径：Title case 的两词标签不在清单里（由 uipos / blindscan 兜底）')
+chk(/待补翻 3 条（文案 1 \+ 短片段 1 \+ 字面量 1）/.test(out), '6) 小结里的分桶计数正确')
+chk(need.includes('[字面量] Resume queue'), '6) 口径修正：Title case 的两词标签进字面量桶（以前会漏）')
 
 // --- 7) 上下文 ----------------------------------------------------------------
 chk(/@ .*First-tab discount/.test(need), '7) 默认带命中处上下文')
@@ -217,7 +241,32 @@ fs.writeFileSync(path.join(arc, '0.0.113-index-legacy.js'), 'const z = "Only in 
 const viaSnap = run(['--auto', '--archive', arc, '--snapshots', snaps, '--dict', dictFile])
 chk(viaSnap.out.includes('旧：0.0.113 · 快照 index-113.js'), '11) --auto 认得快照仓库里的基线')
 chk(!viaSnap.out.includes('Only in the legacy duplicate'), '11) 同版本的旧式归档被按版本去重掉（否则会自己跟自己比）')
-chk(viaSnap.code === 1 && /待补翻 2 条/.test(viaSnap.out), `11) 拿快照当基线结论与显式路径一致（实际 ${viaSnap.code}）`)
+chk(viaSnap.code === 1 && /待补翻 3 条/.test(viaSnap.out), `11) 拿快照当基线结论与显式路径一致（实际 ${viaSnap.code}）`)
 
-console.log(fail ? `\n${fail} 项失败` : '\n全部通过（11 组用例）')
+// --- 12) 字面量级：短标签单列且不拦退出码；字面量的「已覆盖」判整串相等 -----------------
+const labels = section(out, '## 短标签')
+chk(labels.includes('Rechecking…'), '12) 单词 + 标点的标签进「短标签」节')
+chk(!entries(need).includes('Rechecking…'), '12) 短标签不混进待补翻清单')
+chk(/短标签 1 条/.test(out), '12) 小结里单独计数短标签')
+chk(cov.includes('✓ [字面量] Don\'t close this window while the upload finishes.'), '12) 字面量级整串相等 → 判已覆盖')
+chk(
+  !need.split('\n').flatMap((l) => entryTexts(l)).includes('t close this window while the upload finishes.'),
+  '13) 字面量级拿到全句后，撇号截出的半截句不再单列'
+)
+chk(need.includes('[字面量] Resume queue'), '13) 字面量级把片段级没报到的整串补进清单')
+
+// 只有一条新短标签时不该拦住退出码（短标签是「人工过目」桶）
+const curLabel = path.join(WORK, 'cur-label.js')
+fs.writeFileSync(curLabel, PREV + 'const onlyLabel = "Rechecking…"\n')
+const labelOnly = run([prevFile, curLabel, '--dict', dictFile])
+chk(labelOnly.code === 0, `12) 只多一条短标签 → exit 0（实际 ${labelOnly.code}）`)
+chk(/短标签 1 条/.test(labelOnly.out) && /待补翻 0 条/.test(labelOnly.out), '12) 且报告里明说待补翻 0 条、短标签 1 条')
+
+// 单串形态的标签（无标点）仍然进不来：压缩代码里它与标识符无法区分
+const curWord = path.join(WORK, 'cur-word.js')
+fs.writeFileSync(curWord, PREV + 'const onlyWord = "Continue"\n')
+const wordOnly = run([prevFile, curWord, '--dict', dictFile])
+chk(!wordOnly.out.includes('Continue'), '12) 无标点的单词标签不进清单（交给 uipos / blindscan）')
+
+console.log(fail ? `\n${fail} 项失败` : '\n全部通过（13 组用例）')
 process.exit(fail ? 1 : 0)
