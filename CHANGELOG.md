@@ -1,5 +1,73 @@
 # 更新日志
 
+## [0.0.123] · 2026-09-18
+
+**适配 0.0.123：上游给赞助工作加了「本地 Git 配置」这一整关**（兼容性检查前先做 Git 检查、审阅并批准
+初始快照），提案卡片随之加了「账户配置 / 连接与验证」两步引导——新增 65 条（exact 57 / template 6 /
+pattern 2）、下线 6 条随上游改写的死词条，替换数 1871 → 1935。主进程 `electron/*.cjs` 经 `mainscan`
+对差**零漏翻**，`patches/` 无需改动，UI 行为补丁体检 KEEP，回归闸门 238 vs 238 新增 0 处。
+
+- **适配 Freebuff v0.0.123**：targetVersion / packVersion 升至 0.0.123；渲染 bundle
+  `index-R2ptq7SB.js` → `index-CsS7ws7U.js`。装机由多开控制器自动更新（0.0.120 → 0.0.123），而更新会连
+  `hanhua-backup-*` 一起清掉，所以 `build.sh` 走的仍是「安装目录当前的英文原版即 pristine」那条路径，
+  构建时顺手把 0.0.123 的原版快照登记进 `work/pristine/0.0.123/`（下次适配的基线）。
+- **模板变量自动重映射 66 条**，**歧义 1 条人工改名**：`` `Remove ${$e.configKey}` `` →
+  `` `Remove ${Pe.configKey}` ``（锚文本 `Remove ${…}` 在 bundle 里命中多处且插值不一致，remap 按设计
+  不猜）；另有 2 条随上游改写落进 MISSING/下线：`` `Create your ${t.advertiser_name} project` ``
+  与首个标签页折扣那条长 tooltip。
+- **新增文案集中在两处**：
+  - **赞助工作的 Git 配置卡**（`adInvitationGit*`，嵌在 schemaVersion 1 的邀请卡里）：状态表 9 条
+    （`This project is too large for automatic Git preparation. …` / `Git is not installed or cannot be found. Install Git and check again.` /
+    那条带 macOS/Linux 安装方式的长句 / `Git metadata could not be read. Repair the repository before continuing; Freebuff will not overwrite it.` /
+    `Git cannot access this folder. Check its permissions, then try again.` / `The Git inspection timed out. Try again.` /
+    `This folder cannot be safely prepared. Open the project directly and try again.` / `Set up local Git to track changes. No GitHub account or upload is needed.` /
+    `This repository needs an initial snapshot. Review the files before creating it.` /
+    `Git is ready. Continue to check the remaining sponsored setup requirements.` / `Git setup needs further inspection.`）、
+    审阅流程（`Review the initial snapshot. Only files you select will be committed locally. …` / `Commit name` / `Commit email` /
+    `These identify this local commit only. Your global Git settings will not change.` / `Approve local Git setup` /
+    `Set up local Git and continue` / `Check again` / `Review Git setup` / `Checking Git…` / `Code ready` /
+    `Setup steps` / 步骤标签 `Account` / `Verify`，后两个按既有约定进 `pattern`）、
+    报错与结果（`Could not inspect Git. Check again or request a new offer if this one expired.` /
+    `Could not prepare a file preview. Nothing was approved.` / `Setup is not available in this state. Check the explanation before continuing.` /
+    `Setup could not finish or the reviewed files changed. Review a fresh preview before trying again.` /
+    `Setup was interrupted. Check Git again before retrying; your files have been preserved.` /
+    `Local Git snapshot created. Sponsored work still requires a separate plan and approval.`）、
+    以及「目录在已有的 Git 仓库里」那一组（`This folder is inside an existing Git repository.` /
+    `… Open its root to continue.` / `Open repository root` / `Repository root opened. Continue in that project to check sponsored compatibility with the new workspace.` /
+    `Could not open this repository root. Check again.`；另有一条 `Opening ` 文本节点（后面接仓库根目录的
+    `<code>`）是 `uipos` 扫出来的，它与随后的 ` expands the project to that repository. No files will be changed or uploaded.`
+    拼成一句）；
+  - **提案卡上的「账户配置 / 连接与验证」引导**：`Finish setup and verify` / `Finish setup` / `Before you merge` /
+    `Account setup may be needed after the code is ready.` / 三步标题与说明（`1. Review the code` /
+    `2. Set up your account` / `3. Verify in your app` 与各自的 detail）/ `` `Connect ${t.advertiser_name}` `` /
+    `` `Set up ${t.advertiser_name}` `` / `Your code is ready. Create an account or sign in, then add your project settings.` /
+    `Create account ` / `Use existing account` / `Use the account setup instructions in the run’s notes.` /
+    `How to connect and verify` / `Live integration verification is not recorded by this card. …` / `Continue account setup`。
+- **上游改写的三句按新文改写**：`Freebuff will not initialize Git or install anything.` →
+  `Git setup requires a separate file review and approval. Freebuff will not install Git automatically.`；
+  `This Git repository needs a committed checkpoint. Commit a checkpoint, then check compatibility again.` →
+  `This Git repository needs a reviewed initial snapshot.`（旧的那条**短句** `This Git repository needs a committed checkpoint.` 仍在，保留）；
+  `This project is not a Git repository yet. Create a Git repository and commit a checkpoint, then check compatibility again.` →
+  `This folder needs a Git check before sponsored work can begin.`；首个标签页折扣 tooltip 加了 `Limited-time` 前缀
+  与「划掉的价格是原价」，并新增 `` `regular price ${Se}/hr` `` 这条 aria-label。删掉的死词条共 6 条
+  （上述 3 条 exact + 2 条 template + 1 条上游已删的折扣 tooltip）。
+- **发现两个对差通道共有的一个盲区（本版就漏了 6 条，已手工补上）**：`tools/regress.js` 的 `CODEISH`
+  把「含 `;`」的字面量一律当代码（本意是甩掉重叠配对抽出的 `");x=1;("` 这类跨代码边界片段），而英文文案
+  很常用分号——于是**带分号的句子在片段级（`isProse`）与字面量级（`isCopyLiteral`）里同时不可见**，
+  `upstreamdiff` 既不会把它们列进待翻清单、`blindscan` 也看不到。本版 6 条（`Git metadata could not be read…`、
+  `Setup was interrupted…`、`Live integration verification…`、`Review the changes and setup notes…`、
+  `Git is not installed or cannot be found…`（macOS/Linux 长句）、`Limited-time first-tab discount…`）正是这样
+  漏掉的：工具只报 50 条待补翻，实际要翻 56 条。这一次靠一次「含分号字面量全量对差」把两个版本都过了一遍，
+  除本版 6 条外还揪出**两条从 0.0.120 起就没翻**的连接器 setupNote（Figma 的
+  `Remote access is limited to Figma MCP Catalog clients; …` 与 Prismic 的 `This vendor repository is archived; …`），
+  一并补上；补完后该扫描为 0 条。修 `CODEISH` 本身是另一件事（它同时是发布闸门的判据，要连同 `regress` 的
+  238 vs 238 一起重新取证），留待单独一轮。
+- **渲染进程残留**（`uipos`）12 条，全部有意保留：8 个模型名、2 个 placeholder（`bun install` 与
+  `{ "mcpServers": … }` 样例）、CodeMirror 内部的 aria-label、品牌词 `Freebuff `。
+- **`remap` 报出的 2 条 MISSING 与 ud 的 3 条尾部噪音**都属于已知形态：前者是上游改写的旧词条（见上），
+  后者是 1 条模板残片（``,heading:`Connect `,description:``，其模板 `` `Connect ${t.advertiser_name}` `` 已翻）
+  与 2 条 CSS 类名（`btn primary proposal-advertiser-cta` 一族）——都不影响替换。
+
 ## [0.0.120] · 2026-09-17
 
 **适配 0.0.120：上游新增「赞助式 Supabase 配置邀请」（schemaVersion 1）整块界面、文件预览的
