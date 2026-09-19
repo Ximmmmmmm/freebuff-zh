@@ -1,5 +1,43 @@
 # 更新日志
 
+## [0.0.126] · 2026-09-19（已发布 `pack-v0.0.126`）
+
+**上游这一版给会话加了「上下文压缩」**（`POST /api/thread/<id>/compact`，入口在 token 用量弹层里的
+一个 quiet 按钮，只对 codebuff harness 显示），另加了一个 Discord 状态开关。词典新增 8 条、改写 2 条，
+替换数 1979 → 1987（exact 1310 / template 290 / code 9 / pattern 80），`all keys matched`。
+
+- **新增（上下文压缩 7 条）**：`Compact`（短标签，进 pattern）、`Compacting…`、`Compact context`、
+  `Available once this turn finishes.`、`` `Compacted · ${zr(Q.preTokens)} → ${zr(Q.postTokens)}` ``、
+  `Nothing older to condense yet.`、`Could not compact this thread.`。其中那条 `Compacted · …` 是**模板**：
+  它由压缩结果拼出来（`` `Compacted · ${zr(Q.preTokens)} → ${zr(Q.postTokens)}` `` / `"Nothing older to condense yet."`
+  同一处三元），片段级对差只能拆出 `Compacted · ` 这种短片段，靠 `upstreamdiff` 的字面量级 + 人工读新代码确认。
+- **新增（账户菜单 1 条）**：`" Show in Discord status"`（Discord Rich Presence 的开关）。这条字面量带前导空格
+  （图标与文字之间的分隔），按既有惯例连同空格收进 exact 并保留同形译文。
+- **改写 2 条**：① `resets in ${ao(m.resetAt,o)}` 随 remap 迁移为 `resets in ${lo(m.resetAt,o)}`
+  ——remap 把它报成 **AMBIGUOUS**（同一句骨架在 bundle 里命中 3 处、插值不同：`lo(m.resetAt,o)`、
+  `lo(d.blocked.resetsAt,s)`、`lo(t.resetAt,n)`），人工比对确认应取 `lo(m.resetAt,o)` 那处后改名，
+  另两处本来就有各自独立的词条；② 「首个标签页折扣」长句里 `shared across Desktop and CLI` 被上游改成
+  `shared across Web, Desktop and CLI.`，旧词条整条落 MISSED，按新句改写（译文同步加「Web、」）。
+- **新主进程文件 `electron/discord-presence.cjs`（Discord Rich Presence）**：它把当前状态推到用户的 Discord
+  个人资料上，主进程侧那三句是**用户可见文案**，词典够不着，因此新增
+  `patches/electron-discord-presence.cjs.patch`（`Agent at work` → 「代理正在工作」、
+  `Coding with Freebuff` → 「正在使用 Freebuff 编码」、按钮 `Get Freebuff` → 「获取 Freebuff」；
+  `large_text` 的 `Freebuff` 是品牌名，保留英文）。另三条不是文案：`handshake timed out` / `closed before ready`
+  是重试判定用的内部错误串、`discord presence connected` 是控制台日志——已按既有惯例进 `tools/mainscan.js` 的
+  `INTENTIONAL` 名单并写明理由，不再每版重复报。
+- **修掉「探针自己错」的一次静默误判**：构建在自检处中止，报 `行为取证未达标：token-epoch —— 补丁插入了但未生效`，
+  而补丁其实好好地插在产物里（`_hanhuaRetried`、`_hanhuaResetToken()` 都在，403 分支也正确）。根因在探针的 harness：
+  它把 ApiError 类名**写死成 `go`**（0.0.124 时的压缩名），而 0.0.126 里 minifier 把它改成了 `Ds`——抽出来的请求
+  包装器一引用 `Ds` 就 ReferenceError，第一次调用直接失败，于是「补丁有效的产物」被判成「补丁未生效」。
+  现在类名、错误消息构造、JSON 解析三个短名字全部**从 bundle 现场取**（`class X extends Error{…this.name="ApiError"}`
+  等锚点），并且**类名取不到就报「无法取证」rc 2**，而不是拿错名字硬跑出一个假结论。`test_probe_token_epoch`
+  5 组用例全过（含「打补丁前后结论相反」与真实原版 bundle 顺带取证）。
+- **验证**：`update.sh` 七步全绿——上游新增文案词典已全覆盖、回归闸门 238 vs 238 新增 0 处、主进程 `mainscan`
+  零漏翻、UI 行为补丁（`stream-epoch` / `token-epoch`）原版体检 KEEP、产物侧行为取证两项均通过；`uipos` 残留 15 条、
+  `blindscan` 疑似文案 279 条（与 0.0.123 / 0.0.124 持平，均为模型名 / 品牌词 / 库内部 / 示例）。
+- **资产**：`targetVersion` / `packVersion` 均为 `0.0.126`，发布为 `pack-v0.0.126`（含本版英文原版快照
+  `pristine-0.0.126.json.gz`，供别的机器取基线）。
+
 ## [0.0.124.1] · 2026-09-19（同版修正重发，已发布 `pack-v0.0.124.1`）
 
 **起因是一次实测复现**：装机是中文，界面却报「无法打开标签页: forbidden」。修法分两半——

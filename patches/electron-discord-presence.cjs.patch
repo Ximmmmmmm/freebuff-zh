@@ -1,0 +1,15 @@
+--- a/electron/discord-presence.cjs
++++ b/electron/discord-presence.cjs
+@@ -150,8 +150,10 @@
+ function activityFor({ busy, startedAt }) {
+   return {
+-    details: busy ? 'Agent at work' : 'Coding with Freebuff',
++    // 汉化包补丁：这两句与下面的按钮标签会原样出现在用户的 Discord 个人资料上，
++    // 属于界面文案（large_text 的 'Freebuff' 是品牌名，保留英文）。
++    details: busy ? '代理正在工作' : '正在使用 Freebuff 编码',
+     timestamps: { start: Math.floor(startedAt / 1000) },
+     assets: { large_image: 'freebuff', large_text: 'Freebuff' },
+-    buttons: [{ label: 'Get Freebuff', url: 'https://freebuff.com' }],
++    buttons: [{ label: '获取 Freebuff', url: 'https://freebuff.com' }],
+   }
+ }

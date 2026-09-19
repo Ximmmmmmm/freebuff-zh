@@ -217,6 +217,7 @@ keep('日志 / 控制台', [
   '[unserializable params]',
   '[restart ${restartAttempts}] ${header}',
   '[${new Date().toISOString()}] Starting Freebuff orchestrator',
+  'discord presence connected',
 ])
 keep('启动诊断（内部错误串，经 errorMessage 才有样式）', [
   'orchestrator stopped before becoming ready',
@@ -227,6 +228,10 @@ keep('启动诊断（内部错误串，经 errorMessage 才有样式）', [
   'only binary',
   'probe ran',
   'probe failed',
+  // Discord Rich Presence 的内部错误串：只用于重试判定与日志，从不展示给用户
+  // （用户可见的只有 activityFor 里那几句，已由 patches/electron-discord-presence.cjs.patch 翻译）。
+  'handshake timed out',
+  'closed before ready',
 ])
 keep('bridge / CDP 的 HTTP 协议错误（调用方按 kind 判定，不是给用户读的文案）', [
   'request body too large',
