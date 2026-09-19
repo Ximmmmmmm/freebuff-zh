@@ -48,6 +48,15 @@ const ANCHORS = {
   ],
   // 超时常量（请求包装器在超时分支里引用它）
   timeoutConst: [/const ([A-Za-z_$][\w$]*)=15e3;/, '超时常量'],
+  // ApiError 类：请求包装器用它区分「HTTP 错误」与「传输错误」，补丁按 .status 判断 403。
+  // harness 里必须用**同一个名字**重建它——早期实现把它写死成 `go`，0.0.126 里 minifier
+  // 把它改成了 `Ds`，于是抽出来的请求包装器一引用就 ReferenceError，探针把「补丁未生效」
+  // 误报成构建失败（构建闸门抓不到这种「探针自己错」的情形，只能靠这里动态取名）。
+  apiError: [/class ([A-Za-z_$][\w$]*)\s*extends Error\{constructor\([^)]*\)\{[^}]*this\.name="ApiError"[^}]*\}\}/, 'ApiError 类'],
+  // 请求错误消息构造与 JSON 解析：请求包装器直接按名字调用，改名也要跟着走（抽不到时退回旧名，
+  // 合成源码里本来就没有它们）。
+  messageHelper: [/function ([A-Za-z_$][\w$]*)\(t,e\)\{if\(t&&typeof t==="object"\)\{const\{error:n,message:i\}=t;/, '请求错误消息构造'],
+  jsonHelper: [/function ([A-Za-z_$][\w$]*)\(t\)\{try\{return JSON.parse\(t\)\}catch\{return null\}\}/, 'JSON 解析'],
 }
 
 // token-epoch 补丁注入的缓存失效函数。**固定名字**（带 _hanhua 前缀，不与 minifier 的短名相撞），
@@ -91,13 +100,22 @@ function build(src, failure) {
   if (!timeout) throw new Error('抽不到「超时常量」的锚点')
   const reset = src.match(RESET_ANCHOR) ? findFn(src, RESET_ANCHOR, '令牌缓存失效') : null
   const mg = src.match(ANCHORS.tokenCache[0])[4]
+  // 短名字从源码里取（minifier 每版都可能改），类名取不到就没法取证——那说明上游改写了
+  // ApiError 的写法，必须人工核对后更新锚点，而不是拿错名字硬跑出一个假结论。
+  const errMatch = src.match(ANCHORS.apiError[0])
+  if (!errMatch) throw new Error('抽不到「ApiError 类」的锚点')
+  const errName = errMatch[1]
+  const msgMatch = src.match(ANCHORS.messageHelper[0])
+  const jsonMatch = src.match(ANCHORS.jsonHelper[0])
+  const msgName = msgMatch ? msgMatch[1] : 'pG'
+  const jsonName = jsonMatch ? jsonMatch[1] : 'OG'
 
   const decl = [
     `const ${timeout[1]}=15e3`,
     // ApiError：请求包装器用它区分「HTTP 错误」与「传输错误」，补丁按 .status 判断 403
-    'class go extends Error{constructor(e,n,i=null){super(e);this.status=n;this.body=i;this.name="ApiError"}}',
-    'function pG(t,e){if(t&&typeof t=="object"){const{error:n,message:i}=t;if(typeof n==="string"&&n)return n;if(typeof i==="string"&&i)return i}return "请求失败（"+e+"）"}',
-    'function OG(t){try{return JSON.parse(t)}catch{return null}}',
+    `class ${errName} extends Error{constructor(e,n,i=null){super(e);this.status=n;this.body=i;this.name="ApiError"}}`,
+    `function ${msgName}(t,e){if(t&&typeof t=="object"){const{error:n,message:i}=t;if(typeof n==="string"&&n)return n;if(typeof i==="string"&&i)return i}return "请求失败（"+e+"）"}`,
+    `function ${jsonName}(t){try{return JSON.parse(t)}catch{return null}}`,
     `let ${mg};`,
     // 桥接替身：真身返回 window.freebuffDesktop，这里换成可注入的假对象
     `function ${bridge[1]}(){return __state.ui}`,
