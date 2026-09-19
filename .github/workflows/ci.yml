@@ -25,6 +25,8 @@ jobs:
         run: node tools/test_blindscan.js
       - name: mainscan 自测（主进程对差：注释 / 模板插值 / 正则 / 保留名单 / 退出码）
         run: node tools/test_mainscan.js
+      - name: forbidden 体检自测（asar 读取 / 补丁形态 / 判定表与容差 / 退出码 0-1-2）
+        run: node tools/test_forbidden_probe.js
       - name: upstreamdiff 自测（上游两版原版对差：插值改名 / 分桶 / 改写配对 / --auto）
         run: node tools/test_upstreamdiff.js
       - name: pristine 自测（原版快照：采集 / 校验 / 导出导入往返 / 损坏与冲突 / 退出码）
@@ -32,7 +34,9 @@ jobs:
       - name: UI 行为补丁自测（改名抗性 / 唯一命中 / 幂等）
         run: node tools/test_ui_code_patch.js
       - name: 行为取证探针自测（拿不到证据必须 rc 2，不冒充判决）
-        run: node tools/test_probe_stream_epoch.js
+        run: |
+          node tools/test_probe_stream_epoch.js
+          node tools/test_probe_token_epoch.js
       - name: 退场判定自测（决策表 / 退出码契约 / 删除清单完整性）
         run: node tools/test_ui_patch_status.js
       - name: 工具脚本语法冒烟

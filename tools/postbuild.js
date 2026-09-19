@@ -110,19 +110,33 @@ if (!fs.existsSync(idxPath)) {
 
         // 哨兵只证明“插进去了”，证不了“真的改变了行为”（apply 里的表达式写错、被上游
         // 改写后变成空操作，哨兵照样在）。所以再把装机 bundle 里的那几段纯函数原样抽出来
-        // 跑一遍事故时序（tools/probe_stream_epoch.js）：必须「未打标记仍丢事件 + 打上
-        // 标记不丢」同时成立。抽不到函数（上游结构变了）只警告：那种情况由 build.sh 的
-        // 补丁步与上面的哨兵先报。
+        // 跑一遍事故时序：必须「缺陷可复现的行为没了，而该保留的守卫还在」同时成立。
+        // 抽不到函数（上游结构变了）只警告：那种情况由 build.sh 的补丁步与上面的哨兵先报。
+        //
+        // 两组缺陷的取证机制不同：stream-epoch 那组是同步的，直接在内存文本上跑；
+        // token-epoch 那组的请求包装器是 async 的，探针因此是异步——这里用子进程跑它的
+        // CLI（与本文件已有的 node --check 同一手法），免得把整个自检改成异步。
+        const behavior = []
         try {
-          uiBehavior = probeVerdict(bundleText).patchEffective
+          behavior.push({ id: 'stream-epoch', ok: probeVerdict(bundleText).patchEffective })
         } catch (e) {
-          warn(`主 bundle 行为取证失败（${e.message}）—— 补丁效果未经实测，仅凭哨兵放行`)
+          warn(`stream-epoch 行为取证拿不到证据（${e.message}）—— 补丁效果未经实测，仅凭哨兵放行`)
         }
-        if (uiBehavior === false) {
-          bad('主 bundle 行为取证未达标 —— 补丁插入了但未生效（缺陷仍会复现，或守卫被整体拆掉）')
-        } else if (uiBehavior === true) {
-          ok('主 bundle 行为取证通过（缺陷已消除，且未打标记时守卫仍在）')
+        try {
+          execFileSync(process.execPath, [path.join(__dirname, 'probe_token_epoch.js'), bp, '--expect', 'absent'], {
+            stdio: 'pipe',
+          })
+          behavior.push({ id: 'token-epoch', ok: true })
+        } catch (e) {
+          // rc 1 = 取证成功但不达标（必须挡住）；rc 2 = 拿不到证据（只警告）
+          if (e.status === 1) behavior.push({ id: 'token-epoch', ok: false })
+          else warn(`token-epoch 行为取证拿不到证据（rc ${e.status ?? '?'}）—— 补丁效果未经实测，仅凭哨兵放行`)
         }
+        for (const b of behavior) {
+          if (b.ok) ok(`行为取证通过：${b.id}`)
+          else bad(`行为取证未达标：${b.id} —— 补丁插入了但未生效（缺陷仍会复现，或被改成了误伤）`)
+        }
+        uiBehavior = behavior.length ? behavior.every((b) => b.ok) : null
       }
     }
   }

@@ -32,11 +32,21 @@ const { execFileSync } = require('child_process')
 const { PATCHES, SENTINELS, applyPatches } = require('./apply_ui_code_patch.js')
 const { resolveBundle } = require('./blindscan.js')
 const streamEpoch = require('./probe_stream_epoch.js')
+const tokenEpoch = require('./probe_token_epoch.js')
 
 // 缺陷登记表：defect id → 探针模块。新增一组行为补丁时，在这里补上它的探针；
 // 没有探针的补丁组会被如实标成 UNKNOWN，而不是悄悄当成「无需行动」。
+// 探针的 verdict() 可以是同步的（stream-epoch）也可以是异步的（token-epoch，因为请求包装器
+// 是 async 的），下面统一 await。
 const PROBES = {
   [streamEpoch.ID]: streamEpoch,
+  [tokenEpoch.ID]: tokenEpoch,
+}
+
+// 每个缺陷组自己的探针与自测文件名（RETIRE 的删除清单要按组点名，而不是写死一组）。
+const PROBE_FILES = {
+  [streamEpoch.ID]: ['tools/probe_stream_epoch.js', 'tools/test_probe_stream_epoch.js'],
+  [tokenEpoch.ID]: ['tools/probe_token_epoch.js', 'tools/test_probe_token_epoch.js'],
 }
 
 const INSTALL = path.join(process.env.LOCALAPPDATA || '', 'Programs', '@codebufffreebuff-desktop')
@@ -83,7 +93,7 @@ function retireChecklist(group) {
   return [
     `    1. tools/apply_ui_code_patch.js —— 删掉 PATCHES 里的 ${ids.length} 条（${ids.join(' / ')}）。`,
     `       SENTINELS 与 postbuild 的哨兵断言都由 PATCHES 推导，会自动跟着少，不用手改。`,
-    `    2. tools/probe_stream_epoch.js 与 tools/test_probe_stream_epoch.js —— 本缺陷的探针与自测。`,
+    `    2. ${(PROBE_FILES[group.defect] || []).join(' / ') || '（本组没有探针文件）'} —— 本缺陷的探针与自测。`,
     `    3. tools/postbuild.js —— \`const { verdict: probeVerdict } = ...\` 那行 + 行为取证那一段（约 15 行）。`,
     `    4. tools/ui_patch_status.js —— 删掉缺陷登记表里的 '${group.defect}' 条目（若再无其它缺陷则整个工具可删）。`,
     `    5. tools/update.sh —— 2/7 体检步与小结两行（步骤数 7 → 6）。`,
@@ -93,7 +103,7 @@ function retireChecklist(group) {
   ]
 }
 
-function main() {
+async function main() {
   const args = process.argv.slice(2)
   const given = args.find((a) => !a.startsWith('--'))
 
@@ -127,8 +137,8 @@ function main() {
     console.error(`\nERROR: 这是一个**已打补丁的产物**（看到 ${seen.length} 条本次补丁的哨兵），不能用来判定退场。`)
     console.error('  已打补丁的 bundle 里缺陷一定复现不出，据此删补丁是错的。')
     console.error('  请指向英文原版：安装目录的 resources/hanhua-backup-*/ui，或安装目录当前的英文原文。')
-    console.error('  （想看产物自己是不是“真的修好了”，用 postbuild 的行为取证，或'+
-      ' node tools/probe_stream_epoch.js <产物 bundle> --expect absent）')
+    console.error('  （想看某组缺陷是不是“真的修好了”，用 postbuild 的行为取证，或按缺陷组跑'+
+      ' node tools/probe_stream_epoch.js / probe_token_epoch.js <产物 bundle> --expect absent）')
     process.exit(2)
   }
 
@@ -170,9 +180,14 @@ function main() {
       console.log(`  取证：${detail}`)
     } else {
       try {
-        const v = probeMod.verdict(src)
+        const v = await probeMod.verdict(src)
         for (const r of v.rows) {
-          console.log(`    ${r.label.padEnd(22)} 保留本地内容=${r.kept ? '是' : '否'}  增量生效=${r.delta ? '是' : '否'}  finish 生效=${r.finish ? '是' : '否'}`)
+          // rows 自带的 text 优先（新探针都有）；没有的就按 stream-epoch 的老字段渲染
+          console.log(
+            '    ' +
+              (r.text ||
+                `${r.label.padEnd(22)} 保留本地内容=${r.kept ? '是' : '否'}  增量生效=${r.delta ? '是' : '否'}  finish 生效=${r.finish ? '是' : '否'}`),
+          )
         }
         defect = v.defectPresent ? 'present' : 'absent'
       } catch (e) {
@@ -212,6 +227,11 @@ function main() {
   process.exit(retire ? 1 : rewrite ? 2 : unknown ? 3 : 0)
 }
 
-if (require.main === module) main()
+if (require.main === module) {
+  main().catch((e) => {
+    console.error(`ui_patch_status: 意外错误 ${(e && e.stack) || e}`)
+    process.exit(2)
+  })
+}
 
 module.exports = { decide, retireChecklist, PROBES, findPristine }

@@ -1,5 +1,61 @@
 # 更新日志
 
+## [0.0.124.1] · 2026-09-19（同版修正重发：**需重新发布才在装机生效**）
+
+**起因是一次实测复现**：装机是中文，界面却报「无法打开标签页: forbidden」。修法分两半——
+「怎么装、怎么查」（仓库与安装脚本，不动产物）与「渲染进程自己从那一次 403 里恢复」（**动产物**）。
+因为后者改了 `output/`，按「同一 targetVersion 内的修正重发」惯例把 `packVersion` 抬到 `0.0.124.1`
+（否则已装 0.0.124 的机器不会自动更新到这次修复）；`targetVersion` 仍 `0.0.124`。
+本次提交**不含已发布的包**：要让装机生效需先 `bash tools/release.sh` 出新包发布，或本机先
+`bash build.sh && bash apply.sh`（应用需已彻底退出，否则会被 `apply.sh` 的新闸门挡住）。
+
+- **先定位：`forbidden` 只有一个来源。** 装机 `resources/orchestrator/orchestrator.js`（10 MB）里
+  返回 `{"error":"forbidden"}` 的地方**只有一处**：写方法（POST/PUT/PATCH/DELETE）+ `/api/` 要求
+  请求头 `x-freebuff-launch-id` 与它启动时从 `FREEBUFF_LAUNCH_ID` 拿到的值**完全相等**（`/healthz`
+  不匹配则 401 `invalid launch id`，探针就拿这条当尺子）。界面那句文案来自词典的 `"Could not open tab"`
+  → 「无法打开标签页」，触发点是 `openTab` → `POST /api/threads`——**开一个新标签页本身就是一次写操作**，
+  所以它和「消息未发送」是同一个原因，不是新增的故障。现场另两条佐证：装机端口上
+  `curl -X POST .../api/thread/probe/rename` 原样返回 `403 {"error":"forbidden"}`；渲染 bundle 里
+  令牌是 `let mg; function ID(){ if(mg===void 0) mg = apiToken() ?? null }` —— **读一次永久缓存，
+  读到 null 也缓存**。
+- **触发条件：换文件时应用正跑着（混合态）。** 装机文件是运行中进程**按需从磁盘读**的，而两侧时机
+  不同：渲染侧（`ui/`）每个窗口加载/重载都重读，主进程（`app.asar` 里的 `main.cjs`）只在**进程启动时**
+  读一次。实测时间线就是现成例子：0.0.124 的自动更新把汉化覆盖回英文（02:44），主实例 10:12 启动
+  （内存里是**英文原版** `main.cjs`），10:20/10:25 才把汉化落盘——那个进程于是成了「界面中文、主进程
+  英文」；证据是它与 `hanhua-backup-20260919-102042/app.asar` 里的 `const launchId = randomUUID()`
+  与英文 `ui/index.html`（两份都对过）。本机 Bun 崩过并在 10:12 写下 `verdict: baseline`（主实例日志
+  里跑的是 `bun-baseline.exe`），而**各 slot 实例没有这份记忆**（slot-3 目录里没有 `bun-runtime.json`，
+  跑的是标准 `bun.exe`）；崩溃重启换新 launch id 之后，写操作就全线 403。
+- **`apply.sh` 新增闸门：应用在跑就拒绝换文件（`--force` 逃生）。** `restore.sh` 早就挡住这一条，
+  理由是「文件被占用、删一半」；`apply.sh` 当年只覆盖不删所以没加——但混合态的代价更贵。`--force`
+  热换后脚本会提醒：**彻底退出再启动**，别只重载窗口（重载只换渲染侧，主进程仍是旧的）。
+- **新增 `tools/forbidden_probe.js` + 自测（CI 跑）。** `node tools/forbidden_probe.js` 一条命令回答
+  「这台机器现在/下次会不会再中」：自带最小 asar 读取（不依赖 npx、离线可用；读取器拿真实
+  `app.asar` 核对过，80034 字节里正确读出 `const launchId = apiLaunchToken ?? randomUUID()`），
+  比对运行中实例的启动时间与装机文件的写入时间找混合态，并探 `/healthz` 确认该 orchestrator 要不要
+  令牌。退出码 0 / 1 / 2，**拿不到证据一律 2，不冒充「正常」**（与 `probe_stream_epoch` 同一套口径）。
+  自测 9 组：合成装机夹具 + 注入进程列表覆盖判定表与容差（实例只早一点点不算混合态）、真实装机存在时
+  额外核对一次解析器（防「自造自读」）。实测对本机给出 `✓ 没发现会触发 403 forbidden 的条件`
+  （slot-3 启动于 10:36，晚于装机文件写入时间 10:25）。
+- **改产物：渲染进程收到 403 时自己丢掉陈旧令牌（UI 行为补丁 `token-epoch` 组）。** 上面那些都是
+  「少出事」与「查得出」；真正的自愈在渲染侧——旧的主进程补丁只在**同一次会话内**钉住 launch id，
+  而渲染进程更早的缺陷是：令牌**读一次就永久缓存**（`let mg; function ID(){…mg = apiToken() ?? null}`，
+  读到 `null` 也缓存），所以只要 orchestrator 崩过一次重启（或跑着的是没带补丁的旧主进程），此后的写操作
+  就全线 403 直到窗口重载。两条补丁协同：`token-cache-resettable` 给那张缓存注入失效函数
+  `_hanhuaResetToken()`，`reset-and-retry-on-403` 在请求包装器拿到 **403** 时丢掉缓存、**立即用新
+  令牌重发同一次请求**（只重试一次；重试后再 403 就直接抛错）——所以连触发的那一次调用都是成功的，
+  用户再也看不到那句 forbidden，不必等下一次操作。只认 403：网络失败 / 5xx 与令牌无关，不丢缓存也
+  不重试（探针专测了这两条：不误伤、不无限重发）。那条补丁把函数签名与 catch 一起改（锚点从签名
+  跨到 catch），两处的小名字都由捕获组原样带回，minifier 改名不失配。
+- **新增 `tools/probe_token_epoch.js` + 自测（CI 跑）**：行为取证而不是文本哨兵——探针从 bundle 里
+  把取值函数与请求包装器（`async`）**原样抽出来**，假 orchestrator 按事故时序跑一遍：原版是「403 之后
+  那一次调用直接失败（只发一次请求，带的是旧令牌 T1）」，产物是「**同一次调用内**请求序列 T1→T2、
+  调用成功（用户无感）」，且「5xx 之后不重试、缓存未被丢掉」（不误伤）；另有一条「只重试一次」的
+  上限用例（令牌重读后仍被拒 → 直接抛错，不许无限重发）。`postbuild` 把它接成硬检查（用它自己的 CLI 开子进程跑，免得把自检改成异步），
+  `ui_patch_status.js` 的缺陷登记表也补上了这一组（退场判定会给 KEEP/REWRITE/RETIRE/UNKNOWN）。
+  实测：对 0.0.124 英文原版 `--expect present` → rc 0（缺陷可复现，补丁仍必要），对本次产物
+  `--expect absent` → rc 0（已自愈）；`bash build.sh` 自检打印「行为取证通过：token-epoch」。
+
 ## [0.0.124] · 2026-09-19
 
 **适配 0.0.124：上游新增「非高峰时段定价」与赞助邀请卡的「验收/兼容状态」**——降价时段的徽标与

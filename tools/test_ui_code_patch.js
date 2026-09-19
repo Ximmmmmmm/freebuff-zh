@@ -6,9 +6,12 @@
 // 故障），二是补丁被重复应用（幂等性坏了会一路叠对象展开）。这里用合成 bundle 把
 // 四条规则钉住：改名不失配、必须唯一命中、已应用则跳过、未知 `_hanhua` 前缀拒写。
 //
+// 合成 bundle 必须包含**每组补丁**的锚点：只写一半的话，另一半会被算成 MISSED，
+// 测试要么假红，要么（更糟）被改成只断言「某一组命中」，从此漏掉别组的失配。
+//
 // 覆盖：
-//   1. 干净 bundle → 三条全应用，+ 字节数为正；
-//   2. 已应用 → 三条全走「已应用，跳过」，文本逐字节不变（幂等）；
+//   1. 干净 bundle → 全部补丁应用，+ 字节数为正；
+//   2. 已应用 → 全部走「已应用，跳过」，文本逐字节不变（幂等）；
 //   3. minifier 改名（n/r/o → 任意长名字）→ 仍全部应用（锚点不依赖短名）；
 //   4. 锚点不见（上游改写）→ 计入 missed，CLI exit 1；
 //   5. 锚点重复出现 → 计入 missed 并给出「命中 N 处」理由，CLI exit 1；
@@ -46,6 +49,11 @@ const fresh = [
   'function reconnectTo(s){return{...s,stale:!0,turnStatus:void 0,historyRequest:void 0,historyLoading:!1}}',
   'function applyEvent(t,n,r){var o;if(n.streamSeq!==void 0&&r<=n.streamSeq)return t;return t}',
   'function merge(server,local){const a=server.at(-1),b=local.at(-1);return b.streamSeq>(a.streamSeq??0)?[...server.slice(0,-1),b]:server}',
+  // token-epoch 组的两处锚点（形态照抄真实 bundle：短名、同一行里的 `}catch(`）
+  'let mg;',
+  'function rt(){return typeof window>"u"?void 0:window.freebuffDesktop}',
+  'function ID(){var t,e;if(mg===void 0)try{mg=((e=(t=rt())==null?void 0:t.apiToken)==null?void 0:e.call(t))??null}catch{mg=null}return mg}',
+  'async function Zt(t,e,n=!1){const i=n?new AbortController:null;let r=!1;const s=n?setTimeout(()=>{r=!0,i==null||i.abort()},15e3):null;try{const o=ID(),a=await fetch(t,{...e,...o?{headers:{...e==null?void 0:e.headers,"x-freebuff-launch-id":o}}:{},...i?{signal:i.signal}:{}});if(!a.ok)throw new go(pG(a.status),a.status);return a}catch(o){throw o instanceof go?o:r?new go("too long",0):new go("connection failed",0)}finally{s&&clearTimeout(s)}}',
 ].join('\n')
 
 const renamed = fresh
@@ -58,7 +66,7 @@ const renamed = fresh
 // --- 1) 干净 bundle ---------------------------------------------------------------
 const r1 = applyPatches(fresh)
 chk(!r1.error, `1) 干净 bundle 不报错${r1.error ? '（' + r1.error + '）' : ''}`)
-chk(r1.applied.length === PATCHES.length && r1.missed.length === 0, `1) 三条补丁全部应用（applied=${r1.applied.length} missed=${r1.missed.length}）`)
+chk(r1.applied.length === PATCHES.length && r1.missed.length === 0, `1) ${PATCHES.length} 条补丁全部应用（applied=${r1.applied.length} missed=${r1.missed.length}）`)
 chk(r1.text.length > fresh.length, `1) 文本变长（${fresh.length} -> ${r1.text.length}）`)
 chk(SENTINELS.every((s) => r1.text.includes(s)), '1) 结果里能看到全部哨兵')
 
@@ -85,10 +93,12 @@ chk(r5.missed.length === 1 && /命中 2 处/.test(r5.missed[0].reason || ''), `5
 
 // --- 6) 括号计数错位：把锚点改成「结构不闭合」的形态 ------------------------------
 // find 能匹配上，但替换后会多出一个 `(`：片段级自检必须拒绝写入。
-const orig = PATCHES[2].apply
-PATCHES[2].apply = (m) => '(' + orig(m)
+// 按 id 取那一条，而不是按下标：新增补丁组时下标会整体移位（本用例以前恰好踩过）。
+const bracketTarget = PATCHES.find((p) => p.id === 'keep-local-in-flight')
+const orig = bracketTarget.apply
+bracketTarget.apply = (m) => '(' + orig(m)
 const r6 = applyPatches(fresh)
-PATCHES[2].apply = orig
+bracketTarget.apply = orig
 chk(!!r6.error && /括号计数/.test(r6.error), `6) 结构错位时拒绝写入（${r6.error || '没报错'}）`)
 
 // --- 7) 未知 _hanhua 前缀 -------------------------------------------------------
@@ -115,7 +125,7 @@ const runCli = (file) => {
 const pOk = path.join(WORK, 'ok.js')
 fs.writeFileSync(pOk, fresh)
 const c1 = runCli(pOk)
-chk(c1.code === 0 && /applied 3/.test(c1.out), `9) 干净 bundle → exit 0（实际 ${c1.code}）`)
+chk(c1.code === 0 && c1.out.includes(`applied ${PATCHES.length}`), `9) 干净 bundle → exit 0 且全部应用（实际 ${c1.code}）`)
 const pBad = path.join(WORK, 'gone.js')
 fs.writeFileSync(pBad, gone)
 const c2 = runCli(pBad)

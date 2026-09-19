@@ -51,6 +51,41 @@ const PATCHES = [
     sentinel: '.streamSeq>=0&&',
   },
   {
+    defect: 'token-epoch',
+    id: 'token-cache-resettable',
+    why:
+      '让「本机 orchestrator 的写入令牌」那张缓存能被丢掉。渲染进程把它读一次就永久缓存' +
+      '（preload.cjs 的 apiToken() → 这里的 ID()），而它对应的 id 是可能变的：orchestrator' +
+      '崩溃重启时主进程会换一个新的（主进程侧的 patches/electron-main.cjs.patch 已经让它在' +
+      '同一次应用会话里不再换），此外「换文件时应用还开着」留下的混合态里，跑着的仍是没带' +
+      '那条补丁的旧主进程。缓存一旦作废，此后每个写操作都被本机 orchestrator 判' +
+      ' 403 {"error":"forbidden"}（无法打开标签页 / 消息未发送 / 无法编辑消息…），只要窗口' +
+      '不重载就一直坏下去。这里只把缓存暴露成一个可丢的对象，丢弃时机见下一条补丁。',
+    find: /function ([A-Za-z_$][\w$]*)\(\)\{var ([\w$]+),([\w$]+);if\(([\w$]+)===void 0\)try\{/,
+    apply: (m) =>
+      `function ${INJECT_PREFIX}ResetToken(){${m[4]}=void 0}` +
+      `function ${m[1]}(){var ${m[2]},${m[3]};if(${m[4]}===void 0)try{`,
+    sentinel: `function ${INJECT_PREFIX}ResetToken(){`,
+  },
+  {
+    defect: 'token-epoch',
+    id: 'reset-and-retry-on-403',
+    why:
+      '上面那条的唯一触发点，也是缺陷真正被补齐的地方：请求包装器拿到 403 时先丢掉令牌缓存，' +
+      '再**立即用新令牌重发同一次请求**——于是用户连那一次 forbidden 提示都不会看到，也不必等' +
+      '下一次操作、更不必重载窗口（并发中正等其他请求的调用同样受益）。只认 403：网络失败 / ' +
+      '5xx 与令牌无关，不丢缓存也不重试，否则服务器每抖一下都要多打一次。重试只做一次（重试后' +
+      '再 403 就直接抛错，不会无限重发），判据是函数签名上的一个标记参数——本条补丁把签名与' +
+      'catch 一起改（锚点从签名跨到 catch），所以两处的小名字都由捕获组原样带回，minifier 改名不失配。',
+    find:
+      /async function ([A-Za-z_$][\w$]*)\(([\w$]+),([\w$]+),([\w$]+)=!1\)\{const ([\w$]+)=\4\?new AbortController:null;([\s\S]{0,1200}?)\}catch\(([\w$]+)\)\{throw \7 instanceof ([\w$]+)\?(\7):([\w$]+)\?new \8\(/,
+    apply: (m) =>
+      `async function ${m[1]}(${m[2]},${m[3]},${m[4]}=!1,${INJECT_PREFIX}Retried=!1){const ${m[5]}=${m[4]}?new AbortController:null;${m[6]}` +
+      `}catch(${m[7]}){if(${m[7]} instanceof ${m[8]}&&${m[7]}.status===403&&!${INJECT_PREFIX}Retried)return ${INJECT_PREFIX}ResetToken(),${m[1]}(${m[2]},${m[3]},${m[4]},!0);` +
+      `throw ${m[7]} instanceof ${m[8]}?${m[7]}:${m[9]}?new ${m[8]}(`,
+    sentinel: `${INJECT_PREFIX}ResetToken(),`,
+  },
+  {
     defect: 'stream-epoch',
     id: 'keep-local-in-flight',
     why:

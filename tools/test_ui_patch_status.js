@@ -19,6 +19,9 @@ const { execFileSync } = require('child_process')
 const { decide, retireChecklist } = require('./ui_patch_status.js')
 const { SENTINELS, PATCHES } = require('./apply_ui_code_patch.js')
 
+// 缺陷组数从 PATCHES 推导，不写死：新增一组行为补丁后，这个自测不该假红。
+const GROUPS = [...new Set(PATCHES.map((p) => p.defect))]
+
 const REPO = path.join(__dirname, '..')
 const WORK = path.join(REPO, 'work', 'test-ui-patch-status')
 fs.rmSync(WORK, { recursive: true, force: true })
@@ -60,6 +63,14 @@ for (const rel of named) {
 }
 chk(fakeGroup.patches.length >= 1 && fakeGroup.patches.every((p) => checklist.includes(p.id)), '2) 清单列出该缺陷组的每条补丁 id')
 
+// 清单按组点名：新增一组补丁时，最容易出的错就是把它自己的探针漏掉、或把别组的探针写进来。
+const tokenGroup = { defect: 'token-epoch', patches: PATCHES.filter((p) => p.defect === 'token-epoch') }
+chk(tokenGroup.patches.length >= 1, '2) token-epoch 组已登记补丁')
+const clToken = retireChecklist(tokenGroup).join('\n')
+chk(clToken.includes('tools/probe_token_epoch.js'), '2) token-epoch 组清单点名它的取证探针')
+chk(clToken.includes('tools/test_probe_token_epoch.js'), '2) token-epoch 组清单点名它的探针自测')
+chk(!clToken.includes('probe_stream_epoch.js'), '2) 清单不把别组的探针算进来（不串组）')
+
 // --- 3) CLI 退出码契约 ------------------------------------------------------------
 const runCli = (args) => {
   try {
@@ -88,7 +99,10 @@ fs.writeFileSync(junk, 'const x = 1;\n')
 const unknown = runCli([junk])
 chk(unknown.code === 3, `3) 无法取证 → rc 3（实际 ${unknown.code}）`)
 chk(/^ {2}判定：UNKNOWN$/m.test(unknown.out), '3) 该组判定行是 UNKNOWN')
-chk(/^小结：KEEP 0 \/ RETIRE 0 \/ REWRITE 0 \/ UNKNOWN 1$/m.test(unknown.out), '3) 小结里计入 UNKNOWN 而不是 RETIRE')
+chk(
+  new RegExp(`^小结：KEEP 0 / RETIRE 0 / REWRITE 0 / UNKNOWN ${GROUPS.length}$`, 'm').test(unknown.out),
+  `3) 小结里计入 UNKNOWN 而不是 RETIRE（当前 ${GROUPS.length} 组）`,
+)
 
 console.log(fail ? `\n${fail} 项失败` : '\n全部通过（3 组用例）')
 process.exit(fail ? 1 : 0)
