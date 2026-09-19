@@ -54,10 +54,24 @@ ASSET="hanhua-pack-${VER}.zip"
 
 # packVersion 防呆：客户端对「packVersion <= 已暂存」的包会静默跳过，因此
 # 发布前对比远端最新 pack-manifest，版本没升就拒绝（--force 才允许覆盖）。
+#
+# 取资产一律走 gh（api.github.com + 它自己跟重定向），**不要用 curl 直接拉
+# browser_download_url**：那个域名是 github.com / objects.githubusercontent.com，在
+# 直连不通的网络环境里 curl 会超时并留下空文件，于是「远端版本」静默变成空、防呆形同虚设
+# （0.0.124 发布时实测：curl 卡满 62 秒后 `Failed to connect to github.com port 443`，
+# 而同一条命令换成 gh 一秒内拿到）。区分「取不到」与「远端没发过」很重要——前者要出声。
+gh_asset() { # gh_asset <tag|latest> <资产名> → stdout 内容
+  local tag="$1" name="$2" id
+  id="$(gh api "repos/${REPO}/releases/${tag}" --jq ".assets[] | select(.name==\"${name}\") | .id" 2>/dev/null | head -1 || true)"
+  [ -n "${id}" ] || return 1
+  gh api -H 'Accept: application/octet-stream' "repos/${REPO}/releases/assets/${id}" 2>/dev/null || return 1
+}
 REMOTE_VER=""
-MURL="$(gh api "repos/${REPO}/releases/latest" --jq '.assets[] | select(.name=="pack-manifest.json") | .browser_download_url' 2>/dev/null || true)"
-if [ -n "${MURL}" ]; then
-  REMOTE_VER="$(curl -sL "${MURL}" 2>/dev/null | node -e 'let s = ""; process.stdin.on("data", (d) => s += d); process.stdin.on("end", () => { try { console.log(JSON.parse(s).packVersion || ""); } catch { console.log(""); } })' 2>/dev/null || true)"
+if gh api "repos/${REPO}/releases/latest" >/dev/null 2>&1; then
+  REMOTE_VER="$(gh_asset latest pack-manifest.json 2>/dev/null | node -e 'let s = ""; process.stdin.on("data", (d) => s += d); process.stdin.on("end", () => { try { console.log(JSON.parse(s).packVersion || ""); } catch { console.log(""); } })' 2>/dev/null || true)"
+  if [ -z "${REMOTE_VER}" ]; then
+    echo "  ! 远端已有 Release，但没读到它的 pack-manifest.json（网络 / 权限？）——本道防呆未能执行" >&2
+  fi
 fi
 if [ -n "${REMOTE_VER}" ]; then
   ORDER="$(printf '%s\n%s\n' "${VER}" "${REMOTE_VER}" | sort -V | head -1)"
@@ -159,19 +173,26 @@ GATE_RC=2
 if [ -z "${PREV_TAG}" ]; then
   echo "  ! 未找到上一版 Release（首次发布或 gh 不可用），跳过"
 else
-  PREV_URL="$(gh release view "${PREV_TAG}" -R "${REPO}" --json assets \
-    --jq '.assets[] | select(.name | startswith("hanhua-pack-")) | .url' 2>/dev/null || true)"
   GATE_TMP="$(mktemp -d)"
-  if [ -n "${PREV_URL}" ]; then
-    curl -sL -H 'Accept: application/octet-stream' "${PREV_URL}" -o "${GATE_TMP}/prev.zip" || true
+  # 上一版包的下载同样走 gh（理由见上面 gh_asset 那段注释）。gh release download 会
+  # 自己落到文件名上，失败时目录里就没有东西——比 curl 的「空文件」更难误判成「闸门通过」。
+  # 退路仍留 curl：gh 不可用 / 被限流时它在能直连的机器上照样管用。
+  gh release download "${PREV_TAG}" -R "${REPO}" -p 'hanhua-pack-*.zip' --clobber -D "${GATE_TMP}" >/dev/null 2>&1 || true
+  if [ ! -s "$(ls -1 "${GATE_TMP}"/hanhua-pack-*.zip 2>/dev/null | head -1)" ]; then
+    PREV_URL="$(gh release view "${PREV_TAG}" -R "${REPO}" --json assets \
+      --jq '.assets[] | select(.name | startswith("hanhua-pack-")) | .url' 2>/dev/null || true)"
+    if [ -n "${PREV_URL}" ]; then
+      curl -sL -H 'Accept: application/octet-stream' "${PREV_URL}" -o "${GATE_TMP}/hanhua-pack-${PREV_TAG#pack-v}.zip" || true
+    fi
   fi
-  if [ -s "${GATE_TMP}/prev.zip" ]; then
+  PREV_ZIP="$(ls -1 "${GATE_TMP}"/hanhua-pack-*.zip 2>/dev/null | head -1 || true)"
+  if [ -n "${PREV_ZIP}" ] && [ -s "${PREV_ZIP}" ]; then
     set +e
-    node "${HERE}/tools/regress.js" "${GATE_TMP}/prev.zip" "${HERE}/output"
+    node "${HERE}/tools/regress.js" "${PREV_ZIP}" "${HERE}/output"
     GATE_RC=$?
     set -e
   else
-    echo "  ! 未能下载 ${PREV_TAG} 的汉化包，跳过"
+    echo "  ! 未能下载 ${PREV_TAG} 的汉化包（gh 与 curl 都不通？），本道闸门未执行" >&2
   fi
   rm -rf "${GATE_TMP}"
 fi
