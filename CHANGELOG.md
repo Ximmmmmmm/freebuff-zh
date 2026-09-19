@@ -1,5 +1,73 @@
 # 更新日志
 
+## [0.0.124] · 2026-09-19
+
+**适配 0.0.124：上游新增「非高峰时段定价」与赞助邀请卡的「验收/兼容状态」**——降价时段的徽标与
+三处 tooltip（含首个标签页折扣那句尾注）、赞助验收状态表的四个新标签（`Verified` /
+`Verification failed` / `Setup needed` / `Couldn't verify`）与「重新验证 / 修订已过期」提示，
+外加一条只有邀请人名的卡片标题（上游把它拆成三个 JSX 子节点）。新增 20 条（exact 15 / template 7 /
+code 1 / pattern 2 里去掉重复计数后共 22 处改动点）、改写 1 条随上游拆分的半截模板，替换数 1935 → 1979。
+主进程 `electron/*.cjs` 经 `mainscan` 对差**零漏翻**，`patches/` 无需改动，UI 行为补丁体检 KEEP，
+回归闸门 238 vs 238 新增 0 处。
+
+- **适配 Freebuff v0.0.124**：targetVersion / packVersion 升至 0.0.124；渲染 bundle
+  `index-CsS7ws7U.js` → `index-CzdmryNF.js`。装机又是由自动更新覆盖（0.0.123 → 0.0.124），
+  `hanhua-backup-*` 一并被清掉，所以 `build.sh` 走的仍是「安装目录当前的英文原版即 pristine」那条路径，
+  构建时顺手把 0.0.124 的原版快照登记进 `work/pristine/0.0.124/`（`work/pristine/0.0.123/` 正好当上游对差基线）。
+- **模板变量自动重映射 67 条**，**歧义 5 条人工改名**（都命中同一个原因：锚文本在 bundle 里命中多处且插值不一致，
+  `remap` 按设计不猜）：`` `Could not select ${fe.name}: ${Ge}` `` → `` `${pe.name}` / `${Ze}` ``、
+  `` `resets in ${ao(g.resetAt,o)}` `` → `` `${ao(m.resetAt,o)}` ``、`` `resets in ${g}` `` → `` `${m}` ``、
+  `` `Dismiss notification: ${g.message}` `` → `` `${m.message}` ``、`` `Remove ${Pe.configKey}` `` → `` `${Re.configKey}` ``。
+  另 1 条 MISSING 是半截模板 `` `… buys one hour of unlimited messages and tool calls. Charged once, when the session starts.${te?` ``：
+  上游把这段嵌套模板三元改写成了两个独立模板（`${de?"Unlimited messages and tool calls.":…}`），
+  于是改写成**完整模板** `` `${Le} ${Ns} buys …starts.` ``（新变量名取自新 bundle），
+  同时把它从 `tools/lint_dict.js` 的 `TRUNCATED_TEMPLATE_ANCHORS` 登记表里退场——半截模板只在形态仍在时才是特例。
+- **新增文案集中在两处**：
+  - **非高峰时段定价**（新函数 `yv` / `f9e` 配 `offPeak` 时段表）：徽标 `Off-peak`、
+    `` `Off-peak pricing · ${t.regularPrice} Freebucks/hour at peak` ``、
+    `` `Peak pricing · ${t.price} Freebucks/hour off-peak` ``、
+    `` `Off-peak · normally ${r.regularPrice}/hr · until ${l.format(o)} ${d}` ``、`` `Off-peak ${r.price}/hr · ${f}` ``
+    与那条长 tooltip（`` `Off-peak: ${r.price} Freebucks/hour, daily ${f}. Regular price: ${r.regularPrice} Freebucks/hour. The price at session start is locked for the full hour.` ``
+    尾随 ` Your first-tab discount is also included in the displayed price.`）。注意这与既有的 DeepSeek
+    `Peak pricing: +${t.peak.surcharge} …` 加价提示是两码事，那条仍在、无需改动；
+  - **赞助邀请卡（`generic-setup-invitation`）与验收状态表**（新组件 + 新函数 `zRe`）：
+    `Verify again`、` · Stale revision`、`Verification failed`、`Setup needed`、`Couldn't verify`、`Verified`
+    （`Checking…` / `Code ready` 早就在词典里，这次把同一张表的另外四个补齐）、
+    `This sponsored invitation expired.`、`This run has no frozen acceptance-criteria contract.`、
+    `Verification has not finished.`、`Sponsored setup currently supports a compatible local project.`、
+    `This is an invitation only: nothing has started and you will not be charged. Compatibility must be checked before sponsored work can begin.`，
+    两条 aria-label 进 `pattern`（`Acceptance criteria verification` / `Expired sponsored invitation`），
+    以及额度说明里的 `Unlimited messages and tool calls.`。
+  - 卡片标题是**唯一一处需要倒装**的：上游把它拆成三个 JSX 子节点
+    （`children:["Sponsored ",o.advertiserName," invitation"]`），中文语序得反过来，所以用一条 `code` 分区词条
+    整段改写成 `[o.advertiserName," 的赞助邀请"]`；同名的 aria-label 模板
+    （`` `${o.advertiserName} invitation` ``）另加一条 template 词条。这条 `code` 词条带压缩变量名 `o`，
+    下次 minifier 改名时会落 MISSED（不会静默坏掉），届时按新名改一次即可。
+- **发现第三个盲区（本版只漏一条，已手工补上）**：**单词字面量**在两个对差通道里都不可见——片段级要求 ≥3 词、
+  字面量级要求 ≥2 词，而 `uipos` 只扫 `children:` / `label:` / `title:` / `placeholder:` / `aria-label` /
+  `data-tooltip` / `confirmLabel:` / `actionLabel:` 这些属性位。本版新加的验收状态表恰好是
+  `$2={pending:"Checking…",success:"Verified",failed:"Verification failed",setup_needed:"Setup needed",code_ready:"Code ready",couldnt_verify:"Couldn't verify"}`
+  ——`"Verified"` 正好是单词、又落在普通对象字面量（不是 UI 属性位），于是 `upstreamdiff` 的 22 条新增里没有它、
+  `uipos` 也扫不到：那 22 条的账刚好对得上（19 条已覆盖 + 3 条未覆盖）。这次是靠人工比对这块新状态表确认的。
+  剩下 3 条 upstreamdiff 未覆盖项里，2 条是噪音（`/api/ad/proposal/`、`/verify-again` 是 URL 路径；
+  `:pe?`` - -menu`:void 0,` 是压缩变量改名残片），1 条是新增模型 displayName `Claude Fable 5.1`（按约定保留英文）；
+  补上 `Verified` 后该对象六个状态标签全部有译文。另一点也值得记：新邀请卡的
+  `` `${o.advertiserName} invitation` `` 与 `"Sponsored "` 文本节点都是 **`uipos` 扫出来的**
+  （aria-label 桶与 text-node 桶各一条），不是靠对差工具。
+- **又一条陷在已知盲区里的新文案（靠 blindscan 揪出）**：`Git is ready, but the sponsored compatibility check could not finish. Continue to try again; your local snapshot is preserved.`——又是那个 `;`：0.0.123 记录的 `CODEISH` 盲区（含 `;` 的字面量在片段级与字面量级同时不可见）这次就吃了这一条，`upstreamdiff` 的待翻清单里没有它。它是 `blindscan` 的「两边都有」桶报出来的（切割成 `Git is ready` / `your local snapshot is preserved.` 两片）；随后又用一次**含分号字面量专项重扫**（对 `pristine 0.0.123 → 0.0.124` 两版、与产物三边比）确认全量只有这一条真文案（另一条命中是 shiki 的语言映射表，属库内部）。专项重扫的取字面量循环**必须复用 `regress.js` 那套引号配对 / `isOpeningQuote` 规则**：随手写的 `"([^"\\]|\\.){8,400}"` 会在遇到带转义的字符串后错位，把它整个跳过去（本次实测：正则版报 0 条，按 regress 规则报 2 条）。修 `CODEISH` 本身仍留待单独一轮。
+- **发布工具的一处静默跳过（直连不通的网络里才暴露）**：`tools/release.sh` 原来用 `curl` 拉
+  `browser_download_url` 取远端 `pack-manifest.json` 与上一版汉化包，而 `github.com` /
+  `objects.githubusercontent.com` 在直连不通的环境里会超时并留下空文件——于是 packVersion 防呆
+  读不到远端版本（规则静默失效）、闸门二直接打印「未能下载上一版包，跳过」。0.0.124 发布时实测：
+  `curl` 卡满 62 秒后 `(28) Failed to connect to github.com port 443`，而同一条命令换成走
+  api.github.com 的 `gh` 一秒内拿到。现在两处都改用 `gh`（`gh_asset` 按 release asset id +
+  `Accept: application/octet-stream` 读；闸门二用 `gh release download`），curl 只作退路，
+  且「取不到」时明确出声（`! … 本道闸门未执行`），与「远端就没发过包」区分开。本次 0.0.124 的
+  闸门二是事后用 `gh release download` 拉**线上真实资产**补跑的：238 vs 238、新增 0 处 ✓。
+- **渲染进程残留**（`uipos`）15 条，与 0.0.123 持平且全部有意保留：8 个模型名（含新增的 `Fable 5.1`）、
+  2 个 placeholder（`bun install` 与 `{ "mcpServers": … }` 样例）、CodeMirror 内部的 ` Action: ${u}…`
+  aria-label、品牌词 `Freebuff ` / `Limited-time` / `mcpServers`。主进程 `mainscan` 零疑似漏翻。
+
 ## [0.0.123] · 2026-09-18
 
 **适配 0.0.123：上游给赞助工作加了「本地 Git 配置」这一整关**（兼容性检查前先做 Git 检查、审阅并批准

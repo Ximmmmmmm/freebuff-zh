@@ -38,7 +38,6 @@ const SECTIONS = ['exact', 'template', 'code', 'pattern']
 const TRUNCATED_TEMPLATE_ANCHORS = [
   'an hour, more than the',
   'for an hour of unlimited messages, charged once when the session starts. You have',
-  'buys one hour of unlimited messages and tool calls.',
   "in your wallet. Used after today's pool.",
   '(your device time).',
 ]

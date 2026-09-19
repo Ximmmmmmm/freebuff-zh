@@ -4,20 +4,21 @@
 ![GitHub last commit](https://img.shields.io/github/last-commit/Ximmmmmmm/freebuff-zh)
 ![GitHub Repo stars](https://img.shields.io/github/stars/Ximmmmmmm/freebuff-zh?style=social)
 ![GitHub forks](https://img.shields.io/github/forks/Ximmmmmmm/freebuff-zh?style=social)
-[![Target](https://img.shields.io/badge/目标-Freebuff%20Desktop%20v0.0.123-blue)](https://freebuff.com)
+[![Target](https://img.shields.io/badge/目标-Freebuff%20Desktop%20v0.0.124-blue)](https://freebuff.com)
 [![lint](https://github.com/Ximmmmmmm/freebuff-zh/actions/workflows/ci.yml/badge.svg)](https://github.com/Ximmmmmmm/freebuff-zh/actions/workflows/ci.yml)
 
 **中文关键词 / Keywords**: Freebuff 汉化、Freebuff 中文版、Freebuff Chinese localization、AI coding agent 中文、Freebuff 翻译、Electron 汉化、localization pack
 
-Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.123）的**简体中文汉化包**，直接修改已打包产物，无需源码、不涉及任何联网改动。
+Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.124）的**简体中文汉化包**，直接修改已打包产物，无需源码、不涉及任何联网改动。
 
 > **English**: A Simplified-Chinese localization pack for Freebuff Desktop — the free AI coding agent. Patches the packaged app directly, no source build required. If you're a Chinese-speaking Freebuff user, this is for you.
 
 ## ✨ 特性
 
-- **覆盖全面**：渲染进程约 1935 处文案 + 主进程菜单 / 对话框 / 同意窗口全面中文化；connectors / MCP 面板（状态标签、详情面板与目录里 100 条连接器介绍）与 v0.0.104 新增的 BYOK（自带密钥）API 提供商界面已全量中文化
-- **词典驱动**：`dict.json`（exact 1289 / template 283 / code 8 / pattern 77），幂等应用、可审计
-- **可复现构建**：`build.sh` 从原版 + 词典 + 补丁**逐字节重建**汉化产物  （v0.0.77 曾对照 Release 产物验证；v0.0.83 / v0.0.87 / v0.0.88 / v0.0.90 / v0.0.91 / v0.0.92 / v0.0.103 / v0.0.104 / v0.0.105 / v0.0.106 / v0.0.107 / v0.0.108 / v0.0.109 / v0.0.110 / v0.0.112 / v0.0.113 / v0.0.114 / v0.0.120 / v0.0.123 适配经防呆自检通过）
+- **覆盖全面**：渲染进程约 1979 处文案 + 主进程菜单 / 对话框 / 同意窗口全面中文化；connectors / MCP 面板（状态标签、详情面板与目录里 100 条连接器介绍）与 v0.0.104 新增的 BYOK（自带密钥）API 提供商界面已全量中文化
+- **词典驱动**：`dict.json`（exact 1304 / template 289 / code 9 / pattern 79），幂等应用、可审计
+- **可复现构建**：`build.sh` 从原版 + 词典 + 补丁**逐字节重建**汉化产物  （v0.0.77 曾对照 Release 产物验证；v0.0.83 / v0.0.87 / v0.0.88 / v0.0.90 / v0.0.91 / v0.0.92 / v0.0.103 / v0.0.104 / v0.0.105 / v0.0.106 / v0.0.107 / v0.0.108 / v0.0.109 / v0.0.110 / v0.0.112 / v0.0.113 / v0.0.114 / v0.0.120 / v0.0.123 / v0.0.124 适配经防呆自检通过）
+- **v0.0.124 适配**：上游新增「非高峰时段定价」（徽标 `Off-peak`、`` `Off-peak pricing · ${t.regularPrice} Freebucks/hour at peak` `` / `` `Peak pricing · ${t.price} Freebucks/hour off-peak` `` 两条 tagline、`` `Off-peak · normally ${r.regularPrice}/hr · until ${l.format(o)} ${d}` `` 与 `` `Off-peak ${r.price}/hr · ${f}` `` 两条 detail、那条「会话开始时价格锁一整小时」的长 tooltip 与尾随的首个标签页折扣注脚）与赞助邀请卡的「验收 / 兼容状态」（新组件 `generic-setup-invitation`：四个状态标签 `Verified` / `Verification failed` / `Setup needed` / `Couldn't verify`、`Verify again`、` · Stale revision`、`This run has no frozen acceptance-criteria contract.`、`Verification has not finished.`、`This sponsored invitation expired.`、`Sponsored setup currently supports a compatible local project.` 与邀请卡正文那段）——新增 20 条（exact 15 / template 7 / code 1 / pattern 2，含两处合计）、改写 1 条随上游拆分的半截模板，替换数 1935 → 1979，模板变量自动重映射 67 条、歧义 5 条人工改名。另有一条漏掉的新文案 `Git is ready, but the sponsored compatibility check could not finish. Continue to try again; your local snapshot is preserved.` 陷在 0.0.123 记录的 `CODEISH` 盲区里（含 `;` 的字面量对差两条通道都看不到），是 `blindscan` 报出来的，随后用一次含分号字面量专项重扫确认全量只有这一条（重扫的取字面量循环要复用 `regress.js` 的引号配对规则，随手写的正则会因错配引号把它跳过去）。卡片标题 `Sponsored {广告主} invitation` 被上游拆成三个 JSX 子节点，中文语序要倒过来，因此用一条 `code` 词条整段改写（同名 aria-label 走 template）。这一版还发现**第三个盲区**：单词字面量在片段级（≥3 词）与字面量级（≥2 词）两个通道里都不可见、`uipos` 又只扫属性位——新验收状态表里的 `"Verified"` 正好落在普通对象字面量里，`upstreamdiff` 的 22 条新增里没有它（19 已覆盖 + 3 未覆盖的账刚好对得上），靠人工比对状态表确认后补进 exact；`upstreamdiff` 剩下 3 条里 2 条是 URL / 压缩变量噪音、1 条是新增模型 displayName（按约定保留英文）。主进程 `mainscan` 零漏翻，`patches/` 无需改动，行为补丁体检 KEEP，回归闸门 238 vs 238 新增 0 处
 - **v0.0.123 适配**：上游给赞助工作加了「本地 Git 配置」这一整关（兼容性检查前先做 Git 检查、审阅初始快照、批准本地提交），提案卡随之加了「账户配置 / 连接与验证」两步引导——新增 65 条（exact 57 / template 6 / pattern 2）、下线 6 条随上游改写的死词条，替换数 1871 → 1935，模板变量自动重映射 66 条、歧义 1 条人工改名（`Remove ${…}` 压缩改名）。这一版还揪出两个对差通道**共有的一个盲区**：`tools/regress.js` 的 `CODEISH` 把「含 `;`」的字面量一律当代码（本意是甩掉重叠配对抽出的 `");x=1;("` 跨边界片段），而英文文案常用分号——于是带分号的句子在片段级（`isProse`）与字面量级（`isCopyLiteral`）里**同时不可见**，本版 6 条（`Git metadata could not be read…`、`Setup was interrupted…`、`Live integration verification…`、`Review the changes and setup notes…`、`Git is not installed or cannot be found…`（macOS/Linux 长句）、`Limited-time first-tab discount…`）就是这样躲过 `upstreamdiff` 的（它只报 50 条，实际要翻 56 条），顺带也解释了两条**从 0.0.120 起就没翻**的连接器 setupNote（Figma / Prismic）。这次是用一次「含分号字面量全量对差」逐条揪出来的，补完后该扫描为 0 条。主进程 `mainscan` 零漏翻，`patches/` 无需改动，行为补丁体检 KEEP，回归闸门 238 vs 238 新增 0 处
 - **v0.0.120 适配**：上游新增「赞助式 Supabase 配置邀请」（schemaVersion 1）整套界面、文件预览的磁盘/未保存状态说明、以及额度说明里的「为什么有这个限制？」与「Verify your country ↗」国家/地区验证流程（含 30 天锁定那段长说明）——新增 42 条、下线 1 条，替换数 1817 → 1870（发布后靠新加的字面量级对差又揪出 1 条漏翻 `` `Checking the installed ${t.label} CLI…` ``，补上后为 1871）；模板变量自动重映射 67 条、歧义 2 条人工改名（`Remove ${…}` 那一族与 `resets in ${…}`）。本轮把上游对差工具漏掉的 6 条短句逐条补了出来（`Recheck setup` / `Check compatibility` / `Rechecking…` / ` Country & allowance` / `Supabase invitation`，以及被整句包含的 `This Git repository needs a committed checkpoint.`——两三个词或与已翻长句重叠的片段按设计不单列；事后给该工具补了「字面量级」这一层，这类短文案不再需要手工挖），并修掉 `tools/probe_stream_epoch.js` 的两处取证缺陷（消息 id 生成器的压缩名 0.0.120 从 `Ec` 变 `Pc`，写死名字会让行为取证退化成「仅凭哨兵放行」；CLI 入口的 `let verdict` 与模块函数 `verdict()` 同名触发 TDZ）。主进程 `mainscan` 零漏翻，`patches/` 无需改动，行为补丁体检 KEEP
 - **v0.0.114 适配**：上游新增「首个标签页折扣」（`firstTabDiscount`）的 4 条文案——`HM()` 拼出的两条 tooltip（`` `First-tab discount: up to ${e.amount} Freebucks off one session at a time, shared across Desktop and CLI. Prices shown include the discount.` `` 与 `Your first-tab discount is in use. Parallel sessions pay the regular price. The discount becomes available when that session ends.`）与 agent 菜单里那行 `` `First-tab discount · up to ${…} Freebucks off` `` / `First-tab discount in use`——新增 4 条、下线 0 条，替换数 1813 → 1817；模板变量自动重映射 37 条、歧义 2 条人工改名（`Remove ${…}` / `Could not select ${…}: ${…}` 这对老面孔，首跑正是它俩把构建卡在 MISSED 上）。主进程 `electron/*.cjs` 与 0.0.113 产物**逐字节一致**，`patches/` 无需改动，行为补丁体检 KEEP。本轮还把两件事固化成了工具：`tools/mainscan.js`（主进程英文对差，接进 `update.sh` 第 5 步与 CI）与 `tools/upstreamdiff.js`（上游新增文案对差，不依赖汉化包，接进第 6 步；英文原版由 `build.sh` 登记成快照 `work/pristine/<版本>/`，从下一版适配起自动给出待翻清单）与 `tools/pristine.js`（快照仓库：上一版原版可 export / import / 发布后从 Release 取，换机器也不丢基线）
@@ -39,7 +40,7 @@ Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.123）的**简体中文汉�
   `mainscan.js` 再把**主进程** `electron/*.cjs` 与产物对一遍——菜单 / 原生对话框 /
   `shell:openIn` 报错 / MCP 同意窗口历来只靠手写补丁，漏一条不会有任何构建报错
   （0.0.113 适配时一次扫出 29 处，有的从 0.0.104 以前就在）
-- **上游新增文案清单**：`tools/upstreamdiff.js` 拿**两版英文原版**对差（不依赖上一版汉化包），列出本版上游新写 / 改写 / 下线的文案，并把「词典未覆盖」的那批单独拎出来当待翻清单——`build.sh` 每次把本版英文原版登记成快照 `work/pristine/<版本>/`，`update.sh` 第 6 步自动取最新两版比一次；只有一版基线时它会打印补齐办法，不当静默跳过。比对分**两层**：片段级（≥3 词、要含常见小词，句子感强）之外再加一层**完整字符串**（字面量级），否则两词 Title case 标签（`Recheck setup` / ` Country & allowance`）与单词标签（`Rechecking…`）这类短文案会漏掉；短标签单列、不拦退出码，字面量的「已覆盖」判整串相等（子串相同不算）
+- **上游新增文案清单**：`tools/upstreamdiff.js` 拿**两版英文原版**对差（不依赖上一版汉化包），列出本版上游新写 / 改写 / 下线的文案，并把「词典未覆盖」的那批单独拎出来当待翻清单——`build.sh` 每次把本版英文原版登记成快照 `work/pristine/<版本>/`，`update.sh` 第 6 步自动取最新两版比一次；只有一版基线时它会打印补齐办法，不当静默跳过。比对分**两层**：片段级（≥3 词、要含常见小词，句子感强）之外再加一层**完整字符串**（字面量级），否则两词 Title case 标签（`Recheck setup` / ` Country & allowance`）与单词标签（`Rechecking…`）这类短文案会漏掉；短标签单列、不拦退出码，字面量的「已覆盖」判整串相等（子串相同不算）。但两层各有一条词数下限（≥3 / ≥2），**单词字面量两边都进不来**——0.0.124 新增的验收状态表里 `success:"Verified"` 就是这样漏掉的（它既不在 UI 属性位、也不是多词句），这类只能靠人工看新代码；反过来，新组件里那两条 `` `${o.advertiserName} invitation` `` / `"Sponsored "` 是 `uipos` 的 aria-label 桶与 text-node 桶扫出来的
 - **英文原版快照可跨机器搬**：`tools/pristine.js` 管快照仓库（`capture` 从备份 / 装机原版 / NSIS 安装包采集，`export` / `import` 单文件搬运，`publish` / `--from-release` 走自己的 Release，`list` 逐文件 sha1 校验并顺带探官方发布源上还有哪些版本的安装包）。上一版原版在本机是会被抹掉的（自动更新覆盖装机原版，更新缓存装完即删）：换机器或清过 `work/` 之后，`node tools/pristine.js import --from-release latest` 一条命令就能把基线拿回来
 - **版本迁移自动化**：`tools/update.sh` 一键串起重映射 → 构建 → UI 残留扫描 → 主进程英文扫描 → 上游新增文案 + 回归闸门。其中
   `tools/remap.js` 自动把 template 词典条目的 `${...}` 变量名迁移到新 bundle，也包括以未闭合
@@ -90,7 +91,7 @@ bash apply.sh /path/to/unpacked   # 传入产物所在目录（仓库根目录�
 
 ```bash
 bash build.sh                       # 构建最新产物（自动打入 packVersion 版本戳）
-bash tools/release.sh               # 打包 + 生成 pack-manifest.json + 发布 Release（需 gh CLI 已登录）
+bash tools/release.sh               # 打包 + 生成 pack-manifest.json + 发布 Release（需 gh CLI 已登录；取远端资产一律走 gh，不依赖 github.com 直连）
 bash tools/release.sh --no-upload   # 只打包到 dist/，打印手工上传步骤
 ```
 
@@ -166,7 +167,7 @@ bash build.sh <app.asar> <ui-dir>   # 或显式指定原版文件
 - **有意保留英文的部分**：编程语言名（Python、TypeScript…）、主题名（Ayu Dark…）、键盘键名
   （Enter、Delete…）、模型名（Opus 5 / GPT-5.6-* / GPT-6-Astra / Sonnet 5…）、内部枚举/类型名、
   库内部错误信息、`Freebucks` 品牌词（含推广 tagline `0 Freebucks`）——改动会破坏逻辑或破坏
-  品牌一致性，故不翻译。当前界面属性位置残留英文为 **14 条**，均属上述类别
+  品牌一致性，故不翻译。当前界面属性位置残留英文为 **15 条**，均属上述类别
   （可用 `node tools/uipos.js output/ui/assets/index-*.js` 复核）。
 - 汉化不涉及任何联网、上传或凭据改动。
 - **界面汉化 ≠ AI 回复中文**：本包只翻译界面文案；AI 用什么语言回复由服务端提示词与注入的指令决定。想让 AI 无论输入什么语言都固定用简体中文回复，只需家目录有 `~\.AGENTS.md` 语言规则——配套[多开控制器](https://github.com/Ximmmmmmm/freebuff-controller)启动时会自动写入（默认回复中文，无需操作；不依赖汉化包与 Freebuff 版本，仅对新会话生效），也可手动创建。
