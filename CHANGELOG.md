@@ -1,13 +1,18 @@
 # 更新日志
 
-## [0.0.124.1] · 2026-09-19（同版修正重发：**需重新发布才在装机生效**）
+## [0.0.124.1] · 2026-09-19（同版修正重发，已发布 `pack-v0.0.124.1`）
 
 **起因是一次实测复现**：装机是中文，界面却报「无法打开标签页: forbidden」。修法分两半——
 「怎么装、怎么查」（仓库与安装脚本，不动产物）与「渲染进程自己从那一次 403 里恢复」（**动产物**）。
 因为后者改了 `output/`，按「同一 targetVersion 内的修正重发」惯例把 `packVersion` 抬到 `0.0.124.1`
 （否则已装 0.0.124 的机器不会自动更新到这次修复）；`targetVersion` 仍 `0.0.124`。
-本次提交**不含已发布的包**：要让装机生效需先 `bash tools/release.sh` 出新包发布，或本机先
-`bash build.sh && bash apply.sh`（应用需已彻底退出，否则会被 `apply.sh` 的新闸门挡住）。
+**已发布**为 `pack-v0.0.124.1`，资产三份：`hanhua-pack-0.0.124.1.zip`（sha512 与
+`pack-manifest.json` 里那条核对一致，控制器下载后校验会过）、`pack-manifest.json`、
+`pristine-0.0.124.json.gz`（本版英文原版快照，供别的机器取「上一版原版」当对差基线）。
+发布时两道闸门都过：主进程零漏翻（29 个文件的英文全在 INTENTIONAL 名单里）、回归闸门
+238 vs 238 新增 0 处。本机装机也按此更新过一遍（`bash build.sh && bash apply.sh`，应用需已
+彻底退出，否则会被 `apply.sh` 的新闸门挡住），复验为：三个文件 sha256 与 `output/` 一致、
+装机 bundle 的 403 自愈探针达标、`forbidden_probe` rc 0。
 
 - **先定位：`forbidden` 只有一个来源。** 装机 `resources/orchestrator/orchestrator.js`（10 MB）里
   返回 `{"error":"forbidden"}` 的地方**只有一处**：写方法（POST/PUT/PATCH/DELETE）+ `/api/` 要求
