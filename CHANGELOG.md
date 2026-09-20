@@ -1,5 +1,35 @@
 # 更新日志
 
+## [0.0.127] · 2026-09-20（已发布 `pack-v0.0.127`）
+
+**上游这一版没有新写任何界面文案**——片段级 1515 vs 1515、字面量级 1966 vs 1966 全等，`electron/` 下 30 个
+文件与 0.0.126 **逐字节相同**（`diff -rq` 无输出），所以这一轮的活几乎全在验证侧。真正要翻的只有**一条含分号的新句**：
+
+- **新增 1 条：离线条幅的 `api_unreachable` 分支**。
+  `Can't reach Freebuff's servers on this network — try another connection; turns resume when it's back`
+  出现在同一个三元的另一支旁边（0.0.126 就已翻好的 `No internet — turns resume when you reconnect` 是它的兄弟分支），
+  收进 exact。这条 **`upstreamdiff` 报不出来**：又是 0.0.123 记账的 `CODEISH` 盲区——含 `;` 的字面量在片段级
+  （`isProse`）与字面量级（`isCopyLiteral`）**同时不可见**，于是「新增 0、下线 0」看起来完全干净。它是 `blindscan`
+  的「两边都有」桶报出来的（长句被切成 `Can't reach Freebuff's servers on this network` 与
+  `turns resume when it's back` 两片，各自都不含分号），`uipos` 的 `label` 桶同期从 15 条涨到 16 条也印证了同一句。
+- **用一次「遮蔽分号」的全量字面量对差确认全量只此一条**（临时脚本，见下）：换掉 `;` 后逐版本比对**所有**字符串
+  字面量及其模板段，0.0.126 → 0.0.127 **只多 1 条**、少 0 条，正是这句；补翻后重扫为 0。
+- **遮蔽分号的手法（为什么不是重写提取器）**：字面量的边界判定只跟引号 / 反斜杠 / 换行有关，`;` 只是内容里的
+  普通字符——所以在**喂给 `tools/regress.js` 自己的 `collectLiteralsFromSource` 之前**把全文的 `;` 换成一个等长的
+  占位字符，配对结果与位置完全不变，而 `CODEISH` 不再把它当代码；报告时再换回来。这样取字面量的仍是那套经过实战的
+  引号配对实现，而不是又写一个正则（0.0.124 的教训：随手写的 `"([^"\\]|\\.){8,400}"` 会在带转义的字符串后错位，
+  实测把整条跳过去、报 0 条）。
+- **模板变量重映射 5 条、歧义 0 条、MISSING 0 条**：`"R" → "P" ; "R" → "P"`、`"Ui(P)" → "Ui(R)"`、
+  `"L.trim()" → "$.trim()"`、`"Pn($)" → "Pn(L)"`、半截模板 `(P==null?void 0:P.balance)??0` →
+  `(R==null?void 0:R.balance)??0`。`upstreamdiff` 报的那**唯一一组「疑似改写」**其实就是最后这条半截模板的变量改名
+  （`:R?` vs `:P?`），不是真改写——两版文案完全一致，只有压缩名在变。
+- **验证**：`update.sh` 七步全绿——上游新增文案词典已全覆盖、回归闸门 238 vs 238 新增 0 处、`mainscan` 零漏翻、
+  UI 行为补丁 5 组锚点全 KEEP、产物侧行为取证（`stream-epoch` + `token-epoch`）两项均过；替换数 1987 → 1988
+  （exact 1311 / template 290 / code 9 / pattern 80），`all keys matched`。残留扫描回到基线：`uipos` 15 条（模型名 /
+  品牌词 / 库内部 / 示例）、`fieldscan` 1 条（`tagline: 0 Freebucks`）、`blindscan` 279 条。
+- **资产**：`targetVersion` / `packVersion` 均为 `0.0.127`，发布为 `pack-v0.0.127`（附本版英文原版快照
+  `pristine-0.0.127.json.gz`，给别的机器当基线）。
+
 ## [0.0.126] · 2026-09-19（已发布 `pack-v0.0.126`）
 
 **上游这一版给会话加了「上下文压缩」**（`POST /api/thread/<id>/compact`，入口在 token 用量弹层里的
