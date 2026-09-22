@@ -20,7 +20,7 @@ sha512(base64) = AVn95mkystlrpVc4h1eVNLi//iQrF9U5bLbNgX7VkKSqNYNO+/THnLqoS+wn6t9
   付费套餐徽标与墙（`Paid plan` / `Included with a paid plan.` / `See plans →`），以及那个
   `Send` 按钮（单词级，由 6b 步的 `uipos_gap` 报出来）。替换数 1960 → 1961、`all keys matched`；
   `missed_diagnose` 1630 条词条全部命中本版 UI bundle；待补翻 0 条——`upstreamdiff` 的小结仍会列
-  1 条，那是已登记的 CSS 类名 `model-badge muted`（该工具不读登记表，属于已知的报告口径差异）。
+  1 条，那是已登记的 CSS 类名 `model-badge muted`（当时该工具不读登记表——这一轮之后已拉平：现在也读，见下）。
 - **修掉提取器的「括号盲区」**（`tools/regress.js`）：括号以前一律当代码符号，于是**带插入语的文案
   在片段级与字面量级两条通道里都看不见**——本版新增的反馈框占位符 `What went wrong? (optional)`
   就是这么漏的（12 条清单里它是最后才由 `uipos` 的属性位置体检报出来的）。现在只有「紧贴标识符」

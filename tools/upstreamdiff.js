@@ -57,8 +57,15 @@
 //         --dict <path>      词典（默认仓库根 dict.json），用来标注「已覆盖 / 待补翻」
 //         --no-ctx         不打印命中处上下文
 //         --verbose        展开全部下线条目
+//         --allow-file <json>  「有意保留英文」登记表（默认仓库根 intentional-english.json）
+//         --no-allow       忽略登记表（临时想看未过滤的全清单）
 // 退出码：0 = 新增文案在词典里都已覆盖；1 = 有「词典未覆盖」的新增（正是本版要翻的清单）；
 //         2 = 输入不足 / 无法解析（例如只有一版原版缓存）。
+//
+// **登记表也读**（fragments + uiStrings 两节都认）：`regress.js` 与 `uipos_gap.js` 都把
+// intentional-english.json 当作「有意保留英文」的正规路径，只有本工具原先不读它——于是已登记的
+// 条目（如 CSS 类名 `model-badge muted`）在它的小结里永远算作「待补翻 1 条」，两只工具对同一件事
+// 说法不一致。0.0.132 适配后拉平：登记过的条目单列一节（带理由），不进待补翻计数，也不拦退出码。
 // 自测：node tools/test_upstreamdiff.js（CI 会跑）。
 'use strict'
 
@@ -70,6 +77,39 @@ const ROOT = path.join(__dirname, '..')
 const DEFAULT_ARCHIVE = path.join(ROOT, 'work', 'upstream')
 const DEFAULT_SNAPSHOTS = path.join(ROOT, 'work', 'pristine')
 const DEFAULT_DICT = path.join(ROOT, 'dict.json')
+const DEFAULT_ALLOW = path.join(ROOT, 'intentional-english.json')
+
+// 文本归一化：与报告里的条目同一套（抹插值 + 折叠空白 + 去首尾），登记表两侧才能对上：
+// fragments 是按「去掉插值的骨架」逐字节写的，uiStrings 是按 uipos 的 `${…}` 形态写的，
+// 归一化之后再比，两种写法都能命中。
+const normText = (s) => stripInterp(String(s)).replace(/\s+/g, ' ').trim()
+
+// 「有意保留英文」登记表。与 tools/regress.js 的 loadAllowlist 同一套约定（同名参数、
+// 同一默认路径、丢失即空表不报错、非法 JSON 直接 rc 2）——差别只在本工具连 uiStrings 一起认：
+// regress 比的是产物侧片段（对应 fragments），本工具还会报界面位置的短串（对应 uiStrings）。
+function loadAllowlist(file) {
+  const p = file || DEFAULT_ALLOW
+  if (!fs.existsSync(p)) return { path: p, entries: new Map() }
+  let doc
+  try {
+    doc = JSON.parse(fs.readFileSync(p, 'utf8'))
+  } catch (e) {
+    console.error(`ERROR: 登记表不是合法 JSON：${p}\n  ${e.message}`)
+    process.exit(2)
+  }
+  const entries = new Map()
+  for (const [from, list] of [
+    ['fragments', doc.fragments],
+    ['uiStrings', doc.uiStrings],
+  ]) {
+    for (const it of list || []) {
+      const text = typeof it === 'string' ? it : it && it.text
+      if (!text) continue
+      entries.set(normText(text), { why: (it && it.why) || '', from })
+    }
+  }
+  return { path: p, entries }
+}
 
 // --- 比对 ---------------------------------------------------------------------
 
@@ -247,14 +287,17 @@ function main(argv) {
   const noCtx = flags.includes('--no-ctx')
   const verbose = flags.includes('--verbose')
   const auto = flags.includes('--auto')
+  const noAllow = flags.includes('--no-allow')
 
   const archive = valueOf('--archive', DEFAULT_ARCHIVE)
   const snapshots = valueOf('--snapshots', DEFAULT_SNAPSHOTS)
   const dictPath = valueOf('--dict', DEFAULT_DICT)
-  if (archive === null || snapshots === null || dictPath === null) return 2
+  const allowPath = valueOf('--allow-file', DEFAULT_ALLOW)
+  if (archive === null || snapshots === null || dictPath === null || allowPath === null) return 2
+  const allow = noAllow ? { path: null, entries: new Map() } : loadAllowlist(allowPath)
 
   // 位置参数（--auto 时不需要）
-  const positional = argv.filter((a, i) => !a.startsWith('--') && !['--archive', '--snapshots', '--dict'].includes(argv[i - 1]))
+  const positional = argv.filter((a, i) => !a.startsWith('--') && !['--archive', '--snapshots', '--dict', '--allow-file'].includes(argv[i - 1]))
 
   let prevInput = positional[0]
   let curInput = positional[1]
@@ -334,9 +377,19 @@ function main(argv) {
   const litCovered = keys.length ? litOnly.filter((t) => coveredExactly(t, keySet)) : litOnly
   const sortedUncovered = uncovered.slice().sort((a, b) => BUCKET(a).localeCompare(BUCKET(b)))
   // 字面量级按桶分：文案进「待补翻」（拦退出码），单词标签单列（不拦）
-  const litProse = litUncovered.filter((t) => LITERAL_BUCKET(t) === '文案').sort()
-  const litLabels = litUncovered.filter((t) => LITERAL_BUCKET(t) === '短标签').sort()
-  const pending = sortedUncovered.length + litProse.length
+  const litProseAll = litUncovered.filter((t) => LITERAL_BUCKET(t) === '文案').sort()
+  const litLabelsAll = litUncovered.filter((t) => LITERAL_BUCKET(t) === '短标签').sort()
+
+  // 登记过的（有意保留英文）先挑出来：它们既不进「待补翻」也不拦退出码，单列一节带理由。
+  // 三个桶都要过一遍：片段级两个桶 + 字面量级的「文案」与「短标签」（登记表里既有 CSS 类名那种
+  // 片段，也有品牌名 / 模型名那种界面位置的单词串）。
+  const isReg = (t) => allow.entries.has(normText(t))
+  const sortedUncoveredReg = sortedUncovered.filter(isReg)
+  const sortedUncoveredReal = sortedUncovered.filter((f) => !isReg(f))
+  const litProse = litProseAll.filter((t) => !isReg(t))
+  const litLabels = litLabelsAll.filter((t) => !isReg(t))
+  const registered = [...sortedUncoveredReg, ...litProseAll.filter(isReg), ...litLabelsAll.filter(isReg)]
+  const pending = sortedUncoveredReal.length + litProse.length
 
   console.log('上游文案对差（英文原版 vs 英文原版，不依赖上一版汉化包）')
   console.log(`  旧：${prevLabel}`)
@@ -350,10 +403,15 @@ function main(argv) {
       `（其中 ${litOnly.length} 条是片段级没报到的）`
   )
   console.log(`  词典覆盖：新增里 ${covered.length + litCovered.length} 条已覆盖 / ${uncovered.length + litUncovered.length} 条待补翻`)
+  if (allow.path && (pending || registered.length || litLabels.length)) {
+    console.log(`  登记表：${path.relative(process.cwd(), allow.path)}（${allow.entries.size} 条）`)
+  } else if (noAllow) {
+    console.log('  登记表：已忽略（--no-allow）——下面是未过滤的全清单')
+  }
 
   if (pending) {
     console.log('\n## 新增文案 · 词典未覆盖（本版要翻的清单）')
-    for (const f of sortedUncovered) {
+    for (const f of sortedUncoveredReal) {
       console.log(`  ⚠ [${BUCKET(f)}] ${f}`)
       if (!noCtx) {
         const ctx = contextOf(curSrc, f)
@@ -373,6 +431,16 @@ function main(argv) {
     console.log('\n## 短标签 · 词典未覆盖（人工过目，不影响退出码）')
     console.log('   单词标签在压缩产物里与标识符长得太像，一律收进来会淹掉清单；确认是文案就补进 dict.json。')
     for (const t of litLabels) console.log(`  · ${t}`)
+  }
+
+  // 登记表命中项单列：进这里就表示「确认过是有意保留英文」，下次不再重复报。
+  if (registered.length) {
+    console.log('\n## 已登记为「有意保留英文」（不进待补翻，也不拦退出码）')
+    for (const t of registered) {
+      const e = allow.entries.get(normText(t))
+      console.log(`  ✓ [${e.from}] ${t}`)
+      console.log(`      ↳ ${e.why || '（登记表里没写理由，建议补上）'}`)
+    }
   }
 
   if (pairs.length) {
@@ -396,16 +464,19 @@ function main(argv) {
     if (show.length < removed.length) console.log(`  … 其余 ${removed.length - show.length} 条（--verbose 展开）`)
   }
 
-  const proseUncovered = sortedUncovered.filter((f) => BUCKET(f) === '文案').length
-  const fragUncovered = sortedUncovered.length - proseUncovered
+  const proseUncovered = sortedUncoveredReal.filter((f) => BUCKET(f) === '文案').length
+  const fragUncovered = sortedUncoveredReal.length - proseUncovered
   console.log(
     `\n小结：待补翻 ${pending} 条（文案 ${proseUncovered} + 短片段 ${fragUncovered} + 字面量 ${litProse.length}）、` +
+      `已登记 ${registered.length} 条（有意保留英文，不进待补翻）、` +
       `短标签 ${litLabels.length} 条（人工过目，不拦退出码）、疑似改写 ${pairs.length} 组、下线 ${removed.length} 条`
   )
   if (pending) {
     console.log('  处理：把待补翻的句子补进 dict.json（按字面量形态选 exact / template 分区）后重跑 bash build.sh；')
     console.log('        标 [字面量] 的要保证 dict 里有一条键**整串**等于它（子串相同不算），否则替换不会命中；')
-    console.log('        短片段里的术语 / 命令 / 库内部文案按 uipos / blindscan 的既有惯例保留英文即可。')
+    console.log('        短片段里的术语 / 命令 / 库内部文案按 uipos / blindscan 的既有惯例保留英文即可；')
+    console.log('        确认是「有意保留英文」（品牌名 / 模型名 / 命令 / CSS 类名）→ 登进 intentional-english.json')
+    console.log('        （逐条写理由），下次就不再进这份清单——登记过的会单列到「已登记」一节。')
   }
   return pending ? 1 : 0
 }

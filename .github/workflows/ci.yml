@@ -27,7 +27,7 @@ jobs:
         run: node tools/test_mainscan.js
       - name: forbidden 体检自测（asar 读取 / 补丁形态 / 判定表与容差 / 退出码 0-1-2）
         run: node tools/test_forbidden_probe.js
-      - name: upstreamdiff 自测（上游两版原版对差：插值改名 / 分桶 / 改写配对 / --auto）
+      - name: upstreamdiff 自测（上游两版原版对差：插值改名 / 分桶 / 改写配对 / --auto / 登记表与 --no-allow）
         run: node tools/test_upstreamdiff.js
       - name: pristine 自测（原版快照：采集 / 校验 / 导出导入往返 / 损坏与冲突 / 退出码）
         run: node tools/test_pristine.js
