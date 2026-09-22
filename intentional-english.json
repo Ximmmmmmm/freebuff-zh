@@ -1,0 +1,95 @@
+{
+  "comment": "回归闸门（tools/regress.js）用来判定「新版产物里新出现的英文片段是有意保留、还是漏翻」的登记表。加了版号的片段才有豁免：命令行的 --allow-english 是一并把所有未知片段放行的逃生口，而这张表是**逐条写理由**的常规路径——放行过什么、为什么放行，留在仓库里可审，换机器/CI 发布也不会因为忘了敲参数而卡住或盲目放行。",
+  "how": [
+    "闸门报出「新版独有」的英文片段后，先判断能不能翻：能翻的补进 dict.json（UI）或 patches/electron-*.patch（主进程），不要往这张表里塞。",
+    "确实是「有意保留」的（第三方库内部诊断、送给模型的上下文 payload、CSS 类名拼接等）再登记进来，并在 why 里写清理由与判断依据。",
+    "每条 text 必须与闸门输出的片段**逐字节一致**（闸门会把整条片段去掉插值后的骨架拿来比对）。",
+    "uiStrings 是给单词级差集体检（tools/uipos_gap.js）用的：那些位置的词数少于 2 个，upstreamdiff 与 regress 都看不见，只有这道体检会报（品牌名 / 模型名 / 命令 / JSON 片段 / 第三方库文案）。uipos 把模板插值渲染成 `${…}`，登记时照那个形式写。",
+    "能翻的不要塞进来：先补进词典（UI）或 patches/electron-*.patch（主进程）。",
+    "随着上游改动，登记项可能自己消失；闸门会把「本版已看不见的登记项」列出来提醒清理，但不会因此失败。"
+  ],
+  "fragments": [
+    {
+      "text": "Failed to get offset for index:",
+      "why": "react-window 内部 console.warn（列表虚拟化的诊断输出，只在开发者控制台可见，不是界面文案）。按项目惯例日志/控制台串保留英文。"
+    },
+    {
+      "text": "Failed to scroll to index after attempts.",
+      "why": "同上，react-window 内部 console.warn。"
+    },
+    {
+      "text": "The `smooth` scroll behavior is not fully supported with dynamic size.",
+      "why": "同上，react-window 内部 console.warn（isDynamicMode 分支）。"
+    },
+    {
+      "text": "Regions: Style changes to implement:",
+      "why": "网页标注（annotate page）里拼给模型的上下文 payload，与同一处的 `Preview element (untrusted page context): ` / ` Component: ` / ` Feedback: ` 同类——它们从 0.0.120 起就保持英文（属于模型输入，不是给人读的界面文案），翻译只会让模型侧的上下文中英混杂。"
+    },
+    {
+      "text": "streak-day on",
+      "why": "CSS 类名拼接（`className: filled ? \"streak-day on\" : \"streak-day\"`），是给样式表看的，翻掉就没有对应样式了。"
+    }
+  ],
+  "uiStrings": [
+    {
+      "text": "Discord",
+      "why": "品牌名（Discord 状态开关指向的是 Discord 这个产品）"
+    },
+    {
+      "text": "Freebucks",
+      "why": "计费单位名（Freebuff 的虚拟币，不译）"
+    },
+    {
+      "text": "Freebuff",
+      "why": "品牌名（应用自身名字，不译）"
+    },
+    {
+      "text": "bun install",
+      "why": "命令（用户要照拄运行的命令行，翻译掉就不再是命令）"
+    },
+    {
+      "text": "mcpServers",
+      "why": "JSON 字段名（MCP 配置文件的键名，不是给人读的标签）"
+    },
+    {
+      "text": "{",
+      "why": "JSON 示例片段（写配置的示例里取到的单个大括号，不是文案）"
+    },
+    {
+      "text": "Action: ${…}${…}.",
+      "why": "CodeMirror 内部的 aria-label（`cm-diagnosticAction` 按钮，带 access key 的组装串；第三方库文案，按项目惯例不译）"
+    },
+    {
+      "text": "Fable 5.1",
+      "why": "模型名（模型名按约定保留英文，与选择器里其他模型一致）"
+    },
+    {
+      "text": "GPT-5.6-Luna",
+      "why": "模型名（同上）"
+    },
+    {
+      "text": "GPT-5.6-Sol",
+      "why": "模型名（同上）"
+    },
+    {
+      "text": "GPT-5.6-Terra",
+      "why": "模型名（同上）"
+    },
+    {
+      "text": "GPT-6-Astra",
+      "why": "模型名（同上）"
+    },
+    {
+      "text": "Opus 4.8",
+      "why": "模型名（同上）"
+    },
+    {
+      "text": "Opus 5",
+      "why": "模型名（同上）"
+    },
+    {
+      "text": "Sonnet 5",
+      "why": "模型名（同上）"
+    }
+  ]
+}

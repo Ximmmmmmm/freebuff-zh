@@ -18,7 +18,7 @@ Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.131）的**简体中文汉�
 - **覆盖全面**：渲染进程约 1988 处文案 + 主进程菜单 / 对话框 / 同意窗口全面中文化；connectors / MCP 面板（状态标签、详情面板与目录里 100 条连接器介绍）与 v0.0.104 新增的 BYOK（自带密钥）API 提供商界面已全量中文化
 - **词典驱动**：`dict.json`（exact 1310 / template 288 / code 9 / pattern 80），幂等应用、可审计
 - **可复现构建**：`build.sh` 从原版 + 词典 + 补丁**逐字节重建**汉化产物  （v0.0.77 曾对照 Release 产物验证；v0.0.83 / v0.0.87 / v0.0.88 / v0.0.90 / v0.0.91 / v0.0.92 / v0.0.103 / v0.0.104 / v0.0.105 / v0.0.106 / v0.0.107 / v0.0.108 / v0.0.109 / v0.0.110 / v0.0.112 / v0.0.113 / v0.0.114 / v0.0.120 / v0.0.123 / v0.0.124 / v0.0.126 / v0.0.127 / v0.0.128 / v0.0.131 适配经防呆自检通过）
-- **v0.0.131 适配**：上游连跨三版（0.0.129 / 0.0.130 / 0.0.131）大改：终端分屏、任务与技能选择器、项目预览、网页标注，以及一整套**浏览器子系统**（Cookie 导入、原生浏览器窗口、页面录制、视口预设），设置页重构为 `General / Appearance / Connectors / Projects / Skills / API Providers` 导航。对差账：片段级 1512 → 1430（新增 108 / 下线 183），字面量级 1963 → 1917（新增 207，其中 95 条片段级没报到）；`electron/` 新增 6 个文件（`browser-*.cjs` / `browser-recorder.html`）。词典 exact 1297 / template 230 / code 14 / pattern 67，替换总数 1929，模板变量重映射 0 条（230 SAME）、歧义 0 条、MISSING 0 条，`all keys matched`；补完后「待补翻」剩下的 28 条全是压缩产物噪音、react-window 内部日志与页面标注 payload。两条自动通道都看不见的**单词级新文案**（`Settings` / `Projects` / `General` / `Missions` / `Theme` / `Reset` / `Width` / `Height` / `Availability` / `Browser` / `System` 与设备预设 `Desktop · 1280 × 720` 等 14 条）是 `uipos` 报出来的（52 → 35，其余是品牌名 / 模型名）。主进程新增 `patches/electron-browser-*.patch` 四份（对话框、右键菜单、Cookie 导入与录制的用户可见报错），并把智能体侧协议报错与磁盘路径登记进 `mainscan.js` 的 `INTENTIONAL`——`mainscan` 疑似文案 16 → **0**；**踩坑记住**：词典条目必须能在 UI bundle 命中（UI 侧 MISSED 是硬失败），只在主进程出现的文案只能写成补丁。回归闸门 238 vs 238 新增 5 处，全部有意保留（react-window 三条内部 `console.warn`、标注 payload 里的 `Regions: …`、CSS 类名 `streak-day on`），用 `--allow-english` 放行。另修好两处**工具自己错**：`semantic_guard` 的模板字面量引号配对、`probe_token_epoch` 从 fix 现场读辅助函数名（并加自检）
+- **v0.0.131 适配**：上游连跨三版（0.0.129 / 0.0.130 / 0.0.131）大改：终端分屏、任务与技能选择器、项目预览、网页标注，以及一整套**浏览器子系统**（Cookie 导入、原生浏览器窗口、页面录制、视口预设），设置页重构为 `General / Appearance / Connectors / Projects / Skills / API Providers` 导航。对差账：片段级 1512 → 1430（新增 108 / 下线 183），字面量级 1963 → 1917（新增 207，其中 95 条片段级没报到）；`electron/` 新增 6 个文件（`browser-*.cjs` / `browser-recorder.html`）。词典 exact 1297 / template 230 / code 14 / pattern 67，替换总数 1929，模板变量重映射 0 条（230 SAME）、歧义 0 条、MISSING 0 条，`all keys matched`；补完后「待补翻」剩下的 28 条全是压缩产物噪音、react-window 内部日志与页面标注 payload。两条自动通道都看不见的**单词级新文案**（`Settings` / `Projects` / `General` / `Missions` / `Theme` / `Reset` / `Width` / `Height` / `Availability` / `Browser` / `System` 与设备预设 `Desktop · 1280 × 720` 等 14 条）是 `uipos` 报出来的（52 → 35，其余是品牌名 / 模型名）。主进程新增 `patches/electron-browser-*.patch` 四份（对话框、右键菜单、Cookie 导入与录制的用户可见报错），并把智能体侧协议报错与磁盘路径登记进 `mainscan.js` 的 `INTENTIONAL`——`mainscan` 疑似文案 16 → **0**；**踩坑记住**：词典条目必须能在 UI bundle 命中（UI 侧 MISSED 是硬失败），只在主进程出现的文案只能写成补丁。回归闸门 238 vs 238 新增 5 处，全部有意保留（react-window 三条内部 `console.warn`、标注 payload 里的 `Regions: …`、CSS 类名 `streak-day on`），逐条登进 `intentional-english.json`（写明理由，仓库内可审）。另修好两处**工具自己错**：`semantic_guard` 的模板字面量引号配对、`probe_token_epoch` 从 fix 现场读辅助函数名（并加自检）
 - **v0.0.128 适配**：上游把「非高峰时段定价」的说明整段收窄——`Kz(...)` 里 `detail` 字段整个删掉、tooltip 只剩一句，**没有新写任何文案**：片段级 1515 → 1512（下线 3）、字面量级 1966 → 1963（新增 1 / 下线 4），`electron/` 下 30 个文件与 0.0.127 **逐字节相同**（`diff -rq` 无输出，`patches/` 无需改动），`index.html` 只换了 bundle 文件名。**改写 1 条**：长 tooltip `` `Off-peak: ${r.price} Freebucks/hour, daily ${f}. Regular price: ${r.regularPrice} Freebucks/hour. The price at session start is locked for the full hour.` `` → `` `Off-peak: ${r.price} Freebucks/hour, daily ${f}.` ``（变量名没变，所以 `remap` 报的是 MISSING 而不是 RENAMED）。**下线 3 条死词条**：两条 `detail` 模板（`` `Off-peak · normally ${…}/hr · until ${…} ${…}` `` / `` `Off-peak ${…}/hr · ${…}` ``，`detail` 字段已从返回值里消失）与 exact 里的 `" Your first-tab discount is also included in the displayed price."`（连它那个 `firstTabDiscount` 三元一起被上游删了）。这一版唯一的「新字面量」就是改写后那条 tooltip 的碎片（`Off-peak: Freebucks/hour, daily .`）：`upstreamdiff` 片段级报「新增 0」、字面量级报「新增 1 / 待补翻 0」——它是新模板的固定段而不是新句子，两本账对得上。替换数 1988 → 1985（exact 1310 / template 288 / code 9 / pattern 80，`all keys matched`）；模板变量重映射 0 条、歧义 0 条、MISSING 3 条（即上述死词条，删完复扫为 0）。`update.sh` 七步全绿：上游新增文案词典已全覆盖、回归闸门 238 vs 238 新增 0 处、`mainscan` 零漏翻、UI 行为补丁 5 组锚点全 KEEP、两道行为取证通过；残留扫描回到基线（`uipos` 15 条 / `fieldscan` 1 条 / `blindscan` 279 条）
 - **v0.0.127 适配**：上游这一版**没新写任何界面文案**——片段级 1515 vs 1515、字面量级 1966 vs 1966 全等，`electron/` 下 30 个文件与 0.0.126 逐字节相同（`diff -rq` 无输出）。真正要翻的只有一条含分号的新句：`Can't reach Freebuff's servers on this network — try another connection; turns resume when it's back`（离线条幅的 `api_unreachable` 分支，紧挨着 0.0.126 已翻好的 `No internet — turns resume when you reconnect`）。**`upstreamdiff` 看不见它**：又是 0.0.123 记账的 `CODEISH` 盲区——含 `;` 的字面量在片段级（`isProse`）与字面量级（`isCopyLiteral`）同时不可见，所以两边都报「新增 0」，是 `blindscan` 把它切成两片报出来的（`uipos` 的 `label` 桶同期 15 → 16 印证同一句）。随后用一次**遮蔽分号的全量字面量对差**确认全量只此一条：做法不是重写提取器，而是在喂给 `tools/regress.js` 自己的 `collectLiteralsFromSource` 之前把全文的 `;` 换成一个等长占位字符——字面量边界只跟引号 / 反斜杠 / 换行有关，配对与位置完全不变，`CODEISH` 却不再把它当代码（报告时换回来；0.0.124 的教训是随手写的正则会因错配引号把整条跳过去）。模板变量重映射 5 条、歧义 0 条、MISSING 0 条（`"R"→"P"`、`"Ui(P)"→"Ui(R)"`、`"L.trim()"→"$.trim()"`、`"Pn($)"→"Pn(L)"`、半截模板 `(P==null?void 0:P.balance)??0` → `(R==null?void 0:R.balance)??0`），`upstreamdiff` 报的唯一一组「疑似改写」其实就是最后这条半截模板的变量改名（`:R?` vs `:P?`）。替换数 1987 → 1988，`all keys matched`；上游新增文案词典已全覆盖、`mainscan` 零漏翻、行为补丁体检 KEEP、回归闸门 238 vs 238 新增 0 处、`uipos` 15 条 / `blindscan` 279 条（回到基线）
 - **v0.0.126 适配**：上游给会话加了「上下文压缩」（`POST /api/thread/<id>/compact`，入口在 token 用量弹层里的一个 quiet 按钮，只对 codebuff harness 显示）与一个 Discord 状态开关——新增 8 条（exact 6 / template 1 / pattern 1）、改写 2 条：压缩那组是 `Compact`（短标签，进 pattern）、`Compacting…`、`Compact context`、`Available once this turn finishes.`、`` `Compacted · ${zr(Q.preTokens)} → ${zr(Q.postTokens)}` ``、`Nothing older to condense yet.`、`Could not compact this thread.`，账户菜单那条是带前导空格的 `" Show in Discord status"`（按既有惯例连同空格收进 exact）。两条改写里，`resets in ${ao(m.resetAt,o)}` 被 remap 报成 AMBIGUOUS（同一句骨架在 bundle 里命中 3 处、插值不同），人工比对确认取 `lo(m.resetAt,o)` 那处后改名；「首个标签页折扣」长句被上游整段改成 `shared across Web, Desktop and CLI.`，按新句改写。新主进程文件 `electron/discord-presence.cjs`（Discord Rich Presence）把当前状态推到用户的 Discord 个人资料上，那三句是用户可见文案、词典够不着，因此新增 `patches/electron-discord-presence.cjs.patch`（`Agent at work` / `Coding with Freebuff` / `Get Freebuff`；`large_text` 的品牌名保留英文），另三条内部错误串与日志（`handshake timed out` / `closed before ready` / `discord presence connected`）进 `mainscan.js` 的 `INTENTIONAL` 名单并写明理由。这一版还修掉一次**「探针自己错」的静默误判**：`probe_token_epoch` 的 harness 把 ApiError 类名写死成 `go`（0.0.124 时的压缩名），0.0.126 里 minifier 改成了 `Ds`，抽出来的请求包装器一引用就 ReferenceError → 有效的补丁被判成「未生效」、构建在自检处中止；现在类名与两个辅助函数名都从 bundle 现场取，类名取不到就报「无法取证」rc 2 而不是给假结论。替换数 1979 → 1987，模板变量重映射 36 条、歧义 1 条人工改名；上游新增文案词典已全覆盖，主进程 `mainscan` 零漏翻，行为补丁体检 KEEP，回归闸门 238 vs 238 新增 0 处，`uipos` 15 条 / `blindscan` 279 条（与上版持平）
@@ -45,19 +45,28 @@ Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.131）的**简体中文汉�
   `mainscan.js` 再把**主进程** `electron/*.cjs` 与产物对一遍——菜单 / 原生对话框 /
   `shell:openIn` 报错 / MCP 同意窗口历来只靠手写补丁，漏一条不会有任何构建报错
   （0.0.113 适配时一次扫出 29 处，有的从 0.0.104 以前就在）
-- **上游新增文案清单**：`tools/upstreamdiff.js` 拿**两版英文原版**对差（不依赖上一版汉化包），列出本版上游新写 / 改写 / 下线的文案，并把「词典未覆盖」的那批单独拎出来当待翻清单——`build.sh` 每次把本版英文原版登记成快照 `work/pristine/<版本>/`，`update.sh` 第 6 步自动取最新两版比一次；只有一版基线时它会打印补齐办法，不当静默跳过。比对分**两层**：片段级（≥3 词、要含常见小词，句子感强）之外再加一层**完整字符串**（字面量级），否则两词 Title case 标签（`Recheck setup` / ` Country & allowance`）与单词标签（`Rechecking…`）这类短文案会漏掉；短标签单列、不拦退出码，字面量的「已覆盖」判整串相等（子串相同不算）。但两层各有一条词数下限（≥3 / ≥2），**单词字面量两边都进不来**——0.0.124 新增的验收状态表里 `success:"Verified"` 就是这样漏掉的（它既不在 UI 属性位、也不是多词句），这类只能靠人工看新代码；反过来，新组件里那两条 `` `${o.advertiserName} invitation` `` / `"Sponsored "` 是 `uipos` 的 aria-label 桶与 text-node 桶扫出来的
+- **上游新增文案清单**：`tools/upstreamdiff.js` 拿**两版英文原版**对差（不依赖上一版汉化包），列出本版上游新写 / 改写 / 下线的文案，并把「词典未覆盖」的那批单独拎出来当待翻清单——`build.sh` 每次把本版英文原版登记成快照 `work/pristine/<版本>/`，`update.sh` 第 6 步自动取最新两版比一次；只有一版基线时它会打印补齐办法，不当静默跳过。比对分**两层**：片段级（≥3 词、要含常见小词，句子感强）之外再加一层**完整字符串**（字面量级），否则两词 Title case 标签（`Recheck setup` / ` Country & allowance`）与单词标签（`Rechecking…`）这类短文案会漏掉；短标签单列、不拦退出码，字面量的「已覆盖」判整串相等（子串相同不算）。但两层各有一条词数下限（≥3 / ≥2），**单词字面量两边都进不来**——0.0.124 新增的验收状态表里 `success:"Verified"` 就是这样漏掉的（它既不在 UI 属性位、也不是多词句），这类只能靠人工看新代码（0.0.131 起由 `tools/uipos_gap.js` 兜住：本版产物 − 上一版产物 − `intentional-english.json`，不再靠人从 `uipos` 的几十条里肉眼挑）；反过来，新组件里那两条 `` `${o.advertiserName} invitation` `` / `"Sponsored "` 是 `uipos` 的 aria-label 桶与 text-node 桶扫出来的
 - **英文原版快照可跨机器搬**：`tools/pristine.js` 管快照仓库（`capture` 从备份 / 装机原版 / NSIS 安装包采集，`export` / `import` 单文件搬运，`publish` / `--from-release` 走自己的 Release，`list` 逐文件 sha1 校验并顺带探官方发布源上还有哪些版本的安装包）。上一版原版在本机是会被抹掉的（自动更新覆盖装机原版，更新缓存装完即删）：换机器或清过 `work/` 之后，`node tools/pristine.js import --from-release latest` 一条命令就能把基线拿回来
-- **版本迁移自动化**：`tools/update.sh` 一键串起重映射 → 构建 → UI 残留扫描 → 主进程英文扫描 → 上游新增文案 + 回归闸门。其中
+- **版本迁移自动化**：`tools/update.sh` 一键串起重映射 → 补丁体检（UI 行为 + 主进程锚点预检）→ 构建 → UI 残留扫描 → 主进程英文扫描 → 上游新增文案 + 回归闸门 → 单词级界面文案差集 + 字面量占用。其中
   `tools/remap.js` 自动把 template 词典条目的 `${...}` 变量名迁移到新 bundle，也包括以未闭合
   `${条件?` 结尾的「半截模板」嵌套词条（对 v0.0.75→v0.0.76 的 13 条改名全量命中验证），
   不再逐条手工核对
 - **发布回归闸门**：`tools/regress.js` 把新构建与上一版已发布包对一遍——比对前抹掉 `${...}`
   插值（变量改名不误报）、模板逐段取（嵌套模板不漏），只要出现新增英文自然语言片段就中止
   发布，拦住「词典全命中但某句变回英文」这类静默回归（`update.sh` / `release.sh` 自动调用）；
-  `release.sh` 发布前还有一道**主进程闸门**（`tools/mainscan.js`），`electron/*.cjs` 里还有
-  没译的界面文案就中止发布（确认有意保留时 `--allow-english` 放行）
+  `release.sh` 发布前还有三道闸门：**主进程闸门**（`tools/mainscan.js`）——`electron/*.cjs` 里还有
+  没译的界面文案就中止发布；**单词级文案闸门**（`tools/uipos_gap.js`）——上面几条对差通道都有词数下限
+  （≥3 词 / ≥2 词），`Settings` / `Theme` / `Reset` 这类单词文案它们看不见，这道闸门拿「本版产物 −
+  上一版产物 − 登记表」补上；**字面量占用闸门**（`tools/lint_collisions.js`）——词条会不会在
+  `electron/*.cjs` 里当路径 / 比较值 / IPC 通道名用（`Cookies` 那种：翻掉会让 Cookie 导入静默
+  找不到文件，而构建全绿、界面正常，只有真去用那个功能才暴露）。确认有意保留英文时，逐条登进
+  `intentional-english.json`（写明理由、仓库内可审）而不是敲 `--allow-english` 全放行
 - **构建防呆自检**：`build.sh` 在解包前先跑 `tools/lint_dict.js`（词典结构 / 半截模板键，
-  此前只在 CI 跑、本地流程形同虚设），之后对补丁后的主进程做 `node --check`、词典替换次数为 0 即中止，
+  此前只在 CI 跑、本地流程形同虚设）与 `tools/missed_diagnose.js`（词条命中体检：够不着本版 UI bundle
+  的条目按「只在主进程出现 / 只在上一版出现 / 两边都没有」归类，解包前就报清该往哪边补——
+  0.0.131 那次 38 条主进程专属文案被塞进词典，构建跑到第 4 步才以 `MISSED` 中止，提示的方向是错的），
+  之后对补丁后的主进程做 `node --check`、词典替换次数为 0 即中止；补丁套不上时直接给分诊命令
+  （`tools/patch_preflight.js`：行号漂移 vs 上游改写；漂移用 `tools/reanchor_patch.js --all --write` 一条命令修好），
   构建后由 `tools/postbuild.js` 断言 `ui/index.html` 汉化标记与译文哨兵——杜绝历史上出现过的
   「补丁静默跳过」「悬空模板启动崩溃」两类事故
 - **词典质量门禁**：`tools/lint_dict.js` 校验结构与 `${...}` 占位符一致性、查重复键，
@@ -135,15 +144,28 @@ bash build.sh <app.asar> <ui-dir>   # 或显式指定原版文件
 
 ```
 ├── dict.json          # 翻译词典（exact / template / code / pattern 四类）
+├── intentional-english.json # 「有意保留英文」登记表（逐条写理由；回归/单词级/占用三道闸门共用）
 ├── manifest.json      # 词典适配的 Freebuff 版本（多开控制器读取做兼容检查）
 ├── patches/           # 人工补丁：词典覆盖不到的手工修改（主进程 7 个文件；index.html 由 tools/apply_ui_patch.js 直改）
 ├── tools/             # 构建 / 版本迁移 / 找漏翻脚本（见 docs/更新维护.md）
-│   ├── update.sh      # 一键版本迁移（7 步）：重映射 → 补丁体检 → 构建 → UI 残留扫描 → 主进程扫描 → 上游新增文案 + 回归闸门 → 汇总
+│   ├── update.sh      # 一键版本迁移：重映射 → 补丁体检（UI 行为 + 主进程锚点预检）→ 构建 →
+│   │                  #   UI 残留扫描 → 主进程扫描 → 上游新增文案 + 回归闸门 →
+│   │                  #   单词级界面文案差集 + 字面量占用 → 汇总
 │   ├── remap.js       # template 词典条目随 minifier 改名自动迁移
 │   ├── postbuild.js   # 构建产物自检（index.html 标记 / 主进程语法与译文哨兵）
 │   ├── lint_dict.js   # 词典质量门禁（结构 / 重复键 / 占位符一致性）
+│   ├── missed_diagnose.js # 词条命中体检（只在主进程 / 只在上一版 / 两边都没有；build.sh 第 0b 步）
 │   ├── test_remap.js  # remap / lint 自测（合成「变量改名」bundle，CI 跑）
+│   ├── test_missed_diagnose.js # 词条命中体检自测（四类归属 / 退出码，CI 跑）
+│   ├── uipos_gap.js   # 单词级界面文案差集（本版产物 − 上一版产物 − 登记表；补两条对差通道的盲区）
+│   ├── test_uipos_gap.js # 差集自测（解析口径 / 两侧差集 / 登记表 / 退出码，CI 跑）
+│   ├── lint_collisions.js # 字面量占用（词条会不会在 electron/ 里当路径 / 比较值 / IPC 通道名）
+│   ├── test_lint_collisions.js # 占用检查自测（三种形态 + 假阳性防线，CI 跑）
+│   ├── patch_preflight.js # 主进程补丁锚点预检（行号漂移 vs 上游改写，附修法）
+│   ├── reanchor_patch.js  # 补丁重锚定（只改 @@ 头；目标＝快照 + 词典，与 build.sh 口径一致）
+│   ├── test_patch_preflight.js # 预检 / 重锚定自测（分诊 / 幂等 / 镜像口径，CI 跑）
 │   ├── regress.js     # 发布回归闸门（新旧产物英文片段比对，release/update 调用）
+│   ├── test_regress.js # 回归闸门自测（登记表逐条豁免 / --allow-english / 退出码，CI 跑）
 │   ├── blindscan.js   # 盲区扫描：原版 vs 产物，找 uipos/fieldscan/regress 都扫不到的英文
 │   ├── mainscan.js    # 主进程扫描：electron/*.cjs 原版 vs 产物（跳过注释，三桶分类）
 │   ├── test_mainscan.js # mainscan 自测（CI 跑）

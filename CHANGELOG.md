@@ -1,5 +1,56 @@
 # 更新日志
 
+## [0.0.131.1] · 2026-09-22（已发布 `pack-v0.0.131.1`）
+
+同一 `targetVersion`（0.0.131）内的修正重发：补上 19 条单词级 / 模板级漏翻，并把 0.0.131 适配里
+靠临时脚本、肉眼挑、事后才发现的地方全部固化成**工具与闸门**（各自带 CI 自测）。
+`targetVersion` 不变、`packVersion` 追加第四段，控制器按四段比较会把已装 `pack-v0.0.131` 的机器
+判定为「有新包可应用」并自动拉取。
+
+发布资产（`hanhua-pack-0.0.131.1.zip` 30,427,232 B / `pack-manifest.json` / `pristine-0.0.131.json.gz`），
+发布时四道闸门（主进程扫描 / 回归闸门 / 单词级文案差集 / 字面量占用）全过；线上包下载回来后独立哈希，
+与本地包、与 manifest 声明三方一致：
+
+```
+sha512(base64) = ogzMscUMSTJzk+a1DvV9100fd6TSco7m/JC7+0zaMig09uBOppDOMnwNzUzWkjXJ2cckvIKGrxacJiv6as9Xsg==
+```
+
+- **词典补翻**：`uipos_gap` 第一次跑就揪出 19 处单词级 / 模板级漏翻（exact +9 / template +6 /
+  code +1 / pattern +1）；同时清掉 7 条被「同译文的兄弟词条」藏住的死词条（`Resume the queue` /
+  `The queue is paused.` / `Get more sessions` / `Created` …，`apply.js` 的幂等判据一并修正，见下一条）。
+  构建后 `uipos_gap` 回扫本版独有 **0 处**，回归闸门 238 vs 238 新增 0 处。
+- **词典条目命中体检前置**（`tools/missed_diagnose.js`，`build.sh` 第 0b 步）：以前「词典条目必须能在
+  UI bundle 命中」是个隐式约束，38 条主进程专属文案要构建跑到第 4 步才以 `MISSED` 中止，提示方向
+  还是错的。现在解包前就按「命中 / 只在主进程 / 只在上一版 / 两边都没有」四类报出来，并说清该往
+  词典还是补丁补。
+- **修好 `remap.js` 的模板捕获**（`tools/test_remap.js` 那 10 项失败）：`STRICT_CAP` 忘了 `${…}`
+  外壳所以永远命不中，实际全靠惰性捕获兜底，而惰性捕获在相邻插值（`${a}${b}`）处会把边界切错。
+  两种捕获形态已钉成显式回归用例，真实 bundle 仍是 230 SAME 无回归。
+- **单词级文案盲区**（`tools/uipos_gap.js`）：片段级要 ≥3 词、字面量级要 ≥2 词、`regress` 只认句子，
+  于是 `Settings` / `Theme` / `Reset` 这类单词文案三条通道全看不见。新工具做「本版产物 − 上一版
+  产物 − 登记表」的差集，接进 `update.sh` 6b 步与 `release.sh` 闸三；第一次跑就揪出 19 处漏翻
+  （已补进词典，回扫本版独有 0 处）。
+- **字面量占用检查**（`tools/lint_collisions.js`）：`Cookies` 在主进程既是筛选器标签又是磁盘目录名，
+  翻掉会让 Cookie 导入静默找不到文件。现在按「文件系统调用参数 / 比较位置 / IPC 通道名」三种形态
+  直接失败，并对跨文件复用的字面量标注位置形态（`数组元素` / `键值` / `调用参数`）；只扫字面量位置，
+  不用 `includes()` 扫全文（`discordEnabled` 之于 `Enabled` 那类假阳性已被自测钉住）。
+- **补丁锚点预检 + 重锚定转正**（`tools/patch_preflight.js`、`tools/reanchor_patch.js`）：上游在补丁
+  覆盖区前插几行就会让后面所有 hunk 的行号整体偏移，`git apply` 报「未干净套用」——但「行号漂移」
+  与「上游改写」的处置完全不同。现在逐 hunk 分诊：漂移一条命令重锚定（只改 `@@` 头、幂等），
+  改写则明确要求人工重维护。目标文本用「快照 + 词典」镜像，与 `build.sh` 打补丁时的状态一致
+  （直接比对英文原版会把上下文带中文的 `consent-window.html` 误判成上游改写）。
+- **「有意保留英文」仓库内可审**（`intentional-english.json`）：以前唯一的办法是发布时敲
+  `--allow-english`（一把全放行，放行了什么、为什么，仓库里一行记录都没有），现在逐条登记、
+  闸门会把理由一并打印、登记项失效时提醒清理；`--allow-english` 退回临时排障用途。
+
+CI 新增五道自测：`test_missed_diagnose.js`、`test_regress.js`、`test_uipos_gap.js`、
+`test_lint_collisions.js`、`test_patch_preflight.js`（连同修好的 `test_remap.js`，本地 14 个自测
+全绿）。另外顺手修了两处**脚本真 bug**：`release.sh` 闸门二结束就把临时目录删了，导致闸门三拿到
+失效的上一版包路径、悄悄退化成「看全量」；`apply.js` 的幂等判据以「本次运行写进去的译文」为凭据，
+同译文的兄弟词条会把死词条藏起来。
+
+
+
 ## [0.0.131] · 2026-09-22（已发布 `pack-v0.0.131`）
 
 **上游连跳三个版本（0.0.129 / 0.0.130 / 0.0.131），是本项目适配过最大的一次改动**：终端分屏、任务（mission）与技能

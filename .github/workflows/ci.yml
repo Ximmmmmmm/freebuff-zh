@@ -39,6 +39,16 @@ jobs:
           node tools/test_probe_token_epoch.js
       - name: 退场判定自测（决策表 / 退出码契约 / 删除清单完整性）
         run: node tools/test_ui_patch_status.js
+      - name: 词条命中体检自测（只在主进程 / 只在上版 / 哪都没有 / 退出码）
+        run: node tools/test_missed_diagnose.js
+      - name: 回归闸门自测（登记表逐条豁免 / 未登记仍拦 / --allow-english / 退出码）
+        run: node tools/test_regress.js
+      - name: 单词级界面文案差集自测（解析口径 / 两侧差集 / 登记表 / 退出码）
+        run: node tools/test_uipos_gap.js
+      - name: 字面量占用自测（路径 / 比较 / IPC 三形态与假阳性防线）
+        run: node tools/test_lint_collisions.js
+      - name: 补丁预检自测（行号漂移 vs 上游改写的分诊 / 重锚定幂等 / 镜像口径）
+        run: node tools/test_patch_preflight.js
       - name: 工具脚本语法冒烟
         run: |
           for f in tools/*.js; do

@@ -48,19 +48,26 @@ const CMP_BEFORE = /(?:===|!==|==|!=|\.includes\s*\(|\.startsWith\s*\(|\.endsWit
 
 let src = fs.readFileSync(file, 'utf8')
 const before = src
+// 「本次运行开始前」的文件快照。只用来回答一个问题：某条词条的译文是**本来就在文件里**
+// （说明这个文件已经翻过一遍，重跑时该词条可以放过），还是**本次运行才写进去的**
+// （说明原文已经消失，该词条是真 MISSED）。拿当前 src 判断是不行的：别的分区 / 同译文的
+// 兄弟词条刚把同一句译文写进去，死词条就会拿它当挡箭牌，永远不报。
+const initialSrc = src
+const alreadyTranslated = (zh) => initialSrc.includes('"' + zh + '"')
 let totalReplaced = 0
 const missed = []
 const semanticBlocked = []
 
 const applyExact = (source, dictSection) => {
+  // 本次真替换过的译文（zh → 处数）。未命中的词条要等整节跑完再判，理由见下面的
+  // 幂等判断：同译文的兄弟词条不允许互相顶包。
+  const replacedZh = new Map()
+  const unmatched = []
   for (const [en, zh] of Object.entries(dictSection || {})) {
     const re = new RegExp('"' + esc(en) + '"', 'g')
     const n = countOf(source, re)
     if (n === 0) {
-      // 幂等检查必须限定在完整的双引号字面量，不能用“译文在文件任意位置
-      // 出现”掩盖一个真正漏翻的 key。
-      const reZh = new RegExp('"' + esc(zh) + '"', 'g')
-      if (countOf(source, reZh) === 0) missed.push(en)
+      unmatched.push([en, zh])
       continue
     }
     // 白名单标签（semantic_guard.CONSISTENT_LABELS）是「同表同值、进程内派生」的界面标签：
@@ -74,10 +81,23 @@ const applyExact = (source, dictSection) => {
         return match
       }
       totalReplaced++
+      replacedZh.set(zh, (replacedZh.get(zh) || 0) + 1)
       // 使用 replace callback，zh 中的 $&、$1、反斜杠都按普通文本写入，
       // 不会被 String.replace 的 replacement 语法再次解释。
       return '"' + zh + '"'
     })
+  }
+  // 未命中的词条在这里统一判定：幂等检查限定在完整的双引号字面量（不能用“译文在文件任意
+  // 位置出现”掩盖一个真漏翻的 key），而且**不能**被「同译文的兄弟词条」顶包——0.0.131
+  // 实测：dict 里同时有 "Resume queue"/"Resume the queue" 与 "Queue paused."/
+  // "The queue is paused." 两组同译文词条，上游把带 the 的两句改写成不带 the 之后，
+  // 旧词条本该报 MISSED，却因为兄弟词条刚把同一句译文写进文件而被当成「已经翻过」放行，
+  // 死词条就一直躺在词典里（而 build.sh 的 MISSED 是「全命中」的唯一凭据）。
+  for (const [en, zh] of unmatched) {
+    // 幂等只认「进入本次运行之前文件里就带着这句译文」；本次运行写进去的一概不算，
+    // 否则同译文的兄弟词条（或已经把整句连同插值一起改写过的 template 分区）会把
+    // 死词条掩护过去。replacedZh 另外暴露「两个词条共用同一句译文」这种可疑配对。
+    if (!alreadyTranslated(zh) || replacedZh.get(zh)) missed.push(en)
   }
   return source
 }

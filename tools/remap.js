@@ -192,8 +192,10 @@ for (const [key, zh] of Object.entries(dict.template)) {
   // 吞进大段无关代码（捕获校验会拦下，但会漏掉真身）。
   // 末段是半截模板时，尾巴用「`${` + 到反引号/右花括号为止」的宽松捕获：
   // 半截表达式没有常规的「点号链 + 调用」形态，也不能带右花括号。
-  // `${` 必须包进捕获组：捕获值会直接回填成新 key/译文的插值文本（普通插值同理，
-  // 捕获的本来就是完整的 `${expr}`）。
+  // `${` / `}` 必须包进捕获组：捕获值会直接回填成新 key/译文的插值文本。少了外壳，
+  // 重建出的 key 会丢插值槽（下面的「插值槽数」自证能拦下，但那只是事后兜底）；
+  // 更要紧的是，外壳同时把边界钉死——否则相邻插值（`${a}${b}`）会被惰性捕获切错，
+  // 切出来的片段括号不平衡，整条词条只能降级 AMBIGUOUS 交人工（0.0.131 适配时实测）。
   const TAIL_CAP = '[^`}]{1,200}'
   const mk = (cap) =>
     new RegExp(
@@ -202,17 +204,31 @@ for (const [key, zh] of Object.entries(dict.template)) {
           .map((p) => {
             if (p.t === 'lit') return escRe(p.v)
             if (p.partial) return '(\\$\\{' + TAIL_CAP + ')'
-            return '(' + cap + ')'
+            return '(\\$\\{' + cap + '\\})'
           })
           .join('') +
         '`',
       'g',
     )
+  // 三种候选形态，从严到宽，第一个能在 bundle 里命中的胜出：
+  //   strict   点号链 + 可选调用——形态最确定，不会跨插值乱切；
+  //   balanced 一层花括号平衡（三元分支、对象字面量参数）——相邻插值靠它切开；
+  //   lazy     老行为兜底（不跨反引号的惰性捕获），形态更花哨的表达式只能靠它。
   const STRICT_CAP =
     '[A-Za-z_$][\\w$]*(?:\\.[A-Za-z_$][\\w$]*)*(?:\\([^`]{0,200}?\\))?'
+  const BALANCED_CAP = '(?:[^{}`]|\\{[^{}`]*\\})*'
   const LAZY_CAP = '[^`]{0,400}?'
-  let re = mk(STRICT_CAP)
-  if (!re.test(src)) re = mk(LAZY_CAP)
+  let re = null
+  for (const cap of [STRICT_CAP, BALANCED_CAP, LAZY_CAP]) {
+    const cand = mk(cap)
+    if (cand.test(src)) {
+      re = cand
+      break
+    }
+  }
+  // 三种都没命中也要按懒捕获再走一遍：交给下面 matches.length === 0 → MISSING，
+  // 而不是在这里静默跳过（否则「命不中」和「没检查」就分不出来了）。
+  if (!re) re = mk(LAZY_CAP)
   re.lastIndex = 0
 
   const matches = []

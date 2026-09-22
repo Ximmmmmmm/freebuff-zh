@@ -170,6 +170,39 @@ const r2 = remap(path.join(WORK, 'dict-unchanged.json'))
 chk(count(/SAME\s+(\d+)/, r2.out) === samples.length, `未改名时全部 SAME（${samples.length}）`)
 chk(count(/MISSING\s+(\d+)/, r2.out) === 0, '未改名时 MISSING = 0')
 
+// --- 3.5) 捕获形态：相邻插值 / 全插值骨架必须能自动迁移 -----------------------------
+// 老实现只有一条「不跨反引号的惰性捕获」兜底（strict 那版忘了包 `${…}` 外壳，永远命不中）：
+// 相邻插值 `\${a}\${b}` 会被从中间切开，切出的片段括号不平衡 → 整条词条降级 AMBIGUOUS 交人工；
+// 骨架里没有锚文本（整条都是插值）时必然如此。这类词条在真实 bundle 里遇到 minifier 改名
+// 就会退回英文，所以钉死它们能自动迁移。
+const SHAPES = [
+  '${aa}${bb?">":"<"}',
+  'Selected output (${JSON.stringify(obj.cwd)}${tail}):',
+  '${p}${q}',
+]
+for (const [i, k] of SHAPES.entries()) {
+  const nk = renameKey(k, 90 + i)
+  const b = path.join(WORK, `shape-${i}.js`)
+  fs.writeFileSync(b, `var s${i}=\`${nk}\`;\n`)
+  const d = path.join(WORK, `shape-${i}.json`)
+  fs.writeFileSync(
+    d,
+    JSON.stringify(
+      { exact: { __placeholder__: '占位' }, template: { [k]: `译文${i}` }, code: { __placeholder__: '' }, pattern: { __placeholder__: '占位' } },
+      null,
+      2,
+    ) + '\n',
+  )
+  const r = node([path.join(REPO, 'tools', 'remap.js'), b, '--dict', d, '--write'])
+  const nRen = count(/RENAMED\s+(\d+)/, r.out)
+  const nAmb = count(/AMBIGUOUS\s+(\d+)/, r.out)
+  chk(nRen === 1 && nAmb === 0, `捕获形态 ${JSON.stringify(k.slice(0, 32))} → RENAMED ${nRen} / AMBIGUOUS ${nAmb}`)
+  if (nRen === 1) {
+    const migrated = JSON.parse(fs.readFileSync(d, 'utf8')).template
+    chk(Object.prototype.hasOwnProperty.call(migrated, nk), '  新 key 已写回且与 bundle 逐字节一致')
+  }
+}
+
 // --- 4) lint 的 E5 负面用例 -------------------------------------------------------
 const negative = (label, mutate) => {
   const d = JSON.parse(dictText)

@@ -2,7 +2,8 @@
 # 一键版本迁移：应用自动更新到新版本后跑一次，把能自动的都自动掉。
 #
 #   1/7 模板变量重映射：tools/remap.js 把 template 词典条目的 ${...} 变量名迁移到新 bundle
-#   2/7 UI 行为补丁体检：该保留 / 该重维护 / 该退场？（tools/ui_patch_status.js，退场时附删除清单）
+#   2/7 补丁体检：UI 行为补丁该保留 / 该重维护 / 该退场？（tools/ui_patch_status.js，退场时附删除
+#       清单）；主进程补丁的锚点与分诊（tools/patch_preflight.js：行号漂移 vs 上游改写）
 #   3/7 可复现构建：bash build.sh（内含语法校验 + 构建产物自检）+ 构建后行为取证
 #   4/7 UI 残留扫描：leftover / prose / uipos / fieldscan / blindscan 扫描构建出的主 bundle
 #   5/7 主进程英文扫描：tools/mainscan.js 对差 electron/*.cjs——词典只替换双引号字面量，
@@ -12,6 +13,9 @@
 #       tools/upstreamdiff.js 比**上一版英文原版 vs 本版英文原版**（不依赖汉化包，本版原版由
 #       build.sh 每次构建登记成快照 work/pristine/<版本>/），先给出「本版上游新写了哪些文案」
 #       的待翻清单；tools/regress.js 比**上一版汉化包 vs 本版产物**，揪出「变回英文」的静默回归。
+#   6b/7 单词级界面文案差集 + 字面量占用：uipos_gap 拿本版产物减上一版产物减登记表，捞两
+#        道对差通道（有词数下限）看不见的单词文案；lint_collisions 查词条会不会在
+#        electron/*.cjs 里当路径 / 比较值 / IPC 通道名用（翻掉就静默改行为）
 #   7/7 汇总：打印剩余人工事项清单，扫描全文归档到 work/（报告里含上游新增文案清单）
 #
 # 之后只差两步：把报告里的新增文案补进 dict.json（重跑 build），再 bash apply.sh 安装。
@@ -95,7 +99,7 @@ fi
 # 判定交给 tools/ui_patch_status.js：锚点维度（能不能套用）× 缺陷维度（原版还能不能复现
 # 出缺陷），逐组给出 KEEP / REWRITE / RETIRE / UNKNOWN，退场时附上删除清单。
 echo
-echo "== 2/7 UI 行为补丁体检（原版：该保留还是退场）=="
+echo "== 2/7 补丁体检（UI 行为：该保留还是退场）=="
 PATCH_STATUS=skipped
 if [ -n "${UI_BUNDLE}" ] && [ -f "${UI_BUNDLE}" ]; then
   set +e
@@ -125,6 +129,28 @@ fi
   echo
   echo "## UI 行为补丁体检（原版）：${PATCH_STATUS}"
 } >> "${REPORT}"
+
+# 主进程补丁的锚点预检：build.sh 第 3 步套不上时只会说「补丁未干净套用」，而「行号漂移」
+# （上游在前面插了几行，一条命令重锚定就好）与「上游改写」（上下文真的没了，只能人工重维护）
+# 处置完全不同。这一步在动 build 之前就把两者分开——0.0.131 适配时是我临时写脚本才做到的，
+# 而且当时还把 consent-window.html 的「空上下文行」误判成改写。顺便把补丁体检统一在本步骤。
+echo
+echo "== 2b/7 主进程补丁锚点预检（该重锚定还是人工重维护）=="
+PATCH_ANCHOR=skipped
+{
+  echo
+  echo "## 主进程补丁锚点预检（patches/electron-*.patch vs 快照 + 词典）"
+} >> "${REPORT}"
+set +e
+ANCHOR_OUT="$(node "${HERE}/tools/patch_preflight.js" --verbose 2>&1)"
+ANCHOR_RC=$?
+set -e
+printf '%s\n' "${ANCHOR_OUT}" | tee -a "${REPORT}"
+case "${ANCHOR_RC}" in
+  0) PATCH_ANCHOR=ok ;;
+  1) PATCH_ANCHOR=broken ;;
+  *) PATCH_ANCHOR=skip ;;
+esac
 
 # --- 3/7 构建 --------------------------------------------------------------------
 echo
@@ -269,6 +295,58 @@ else
   echo "    发布时 release.sh 会拉 GitHub 上已发布的包再比一次。"
 fi
 
+# --- 6b/7 单词级界面文案差集 + 字面量占用 ------------------------------------------------
+# 为什么还要一道（两道对差通道之外的第三个视角）：
+#   ① upstreamdiff 的片段级要 ≥3 词、字面量级要 ≥2 词，regress 的片段提取只认句子——
+#      `Settings` / `Theme` / `Missions` 这类**单词文案三条通道全都看不见**（0.0.131 那次
+#      14 条是人工从 uipos 的 52 条里肉眼挑出来的）。uipos_gap 把它变成差集：本版产物 −
+#      上一版产物 − intentional-english.json 的 uiStrings。
+#   ② 词典按「完整字面量」替换，分不清「给人看的标签」和「代码里的值」。0.0.131 实测
+#      `Cookies` 在 browser-import.cjs 里是路径后缀（`path.join(root, 'Cookies')`），
+#      翻掉会让 Cookie 导入静默找不到文件——当时靠临时脚本才发现。lint_collisions
+#      把这条规则固化下来（路径参数 / 比较位置 / IPC 通道名三种形态直接失败）。
+echo
+echo "== 6b/7 单词级界面文案差集 + 字面量占用 =="
+{
+  echo
+  echo "## 界面位置英文差集（uipos_gap：本版产物 ← 上一版产物，减登记表）"
+} >> "${REPORT}"
+GAP_RC=2
+if [ -f "${FINAL_BUNDLE}" ]; then
+  GAP_ARGS=(--bundle "${FINAL_BUNDLE}")
+  [ -n "${BASE}" ] && GAP_ARGS+=(--prev "${BASE}")
+  set +e
+  GAP_OUT="$(node "${HERE}/tools/uipos_gap.js" "${GAP_ARGS[@]}" 2>&1)"
+  GAP_RC=$?
+  set -e
+  printf '%s\n' "${GAP_OUT}" | tee -a "${REPORT}"
+else
+  echo "  ! 没找到 output 主 bundle，跳过" | tee -a "${REPORT}"
+fi
+{
+  echo
+  echo "## 字面量占用检查（lint_collisions：词条会不会在代码里当值用）"
+} >> "${REPORT}"
+COLLIDE_RC=2
+# pristine.js path 给的是快照根目录，本工具要的是含 electron/*.cjs 的那一层
+# 快照目录按 targetVersion 命名（packVersion 理论上可能带后缀，这里按目录口径取）
+COLLIDE_VER="$(node -e 'const m = require(process.argv[1]); console.log(m.targetVersion || m.packVersion)' "${HERE}/manifest.json")"
+COLLIDE_ROOT="$(node "${HERE}/tools/pristine.js" path "${COLLIDE_VER}" --require-electron 2>/dev/null || true)"
+COLLIDE_TREE=""
+if [ -n "${COLLIDE_ROOT}" ] && [ -d "${COLLIDE_ROOT}/electron" ]; then
+  COLLIDE_TREE="${COLLIDE_ROOT}/electron"
+else
+  COLLIDE_TREE="$(ls -1dt "${HERE}"/work/pristine/*/electron 2>/dev/null | head -1 || true)"
+fi
+if [ -n "${COLLIDE_TREE}" ] && [ -d "${COLLIDE_TREE}" ]; then
+  set +e
+  node "${HERE}/tools/lint_collisions.js" --electron "${COLLIDE_TREE}" 2>&1 | tee -a "${REPORT}"
+  COLLIDE_RC=${PIPESTATUS[0]}
+  set -e
+else
+  echo "  ! 找不到含 electron/ 的原版快照，跳过（本版快照：bash build.sh 会登记）" | tee -a "${REPORT}"
+fi
+
 # --- 7/7 汇总 ----------------------------------------------------------------------
 echo
 echo "== 7/7 本次更新小结 =="
@@ -289,11 +367,29 @@ case "${GATE_RC}" in
   1) echo "  · 回归闸门：⚠ 发现新增英文片段（清单见报告）——补翻 dict.json 后重跑 build.sh" ;;
   *) echo "  · 回归闸门：跳过（本地缺上一版包，发布时还会再比一次）" ;;
 esac
+case "${GAP_RC:-2}" in
+  0)  echo "  · 单词级界面文案（uipos_gap）：未登记的新增英文 0 处 ✓" ;;
+  1) echo "  · 单词级界面文案（uipos_gap）：⚠ 有本版新增的界面位置英文——能翻的补 dict.json，"
+      echo "      品牌名 / 模型名 / 代码串登进 intentional-english.json 的 uiStrings（逐条写理由）" ;;
+  *) echo "  · 单词级界面文案（uipos_gap）：跳过（缺本版产物）" ;;
+esac
+case "${COLLIDE_RC:-2}" in
+  0)  echo "  · 字面量占用（lint_collisions）：没有词条被代码占用 ✓" ;;
+  1) echo "  · 字面量占用（lint_collisions）：⚠ 有词条在代码里当值用（路径 / 比较 / IPC）——"
+      echo "      从 dict.json 撤掉，改写成 patches/electron-*.patch，或把两处用法拆开" ;;
+  *) echo "  · 字面量占用（lint_collisions）：跳过（找不到原版 electron/ 快照）" ;;
+esac
 case "${MAIN_RC}" in
   0)    echo "  · 主进程英文扫描：未发现漏翻 ✓" ;;
   1)    echo "  · 主进程英文扫描：⚠ 有疑似漏翻（清单见报告）——补进 patches/electron-*.patch 后重跑 bash build.sh" ;;
   skip) echo "  · 主进程英文扫描：跳过（app.asar 解包不可用）" ;;
   *)    echo "  · 主进程英文扫描：⚠ 未能完成（mainscan 自身报错，明细见报告）" ;;
+esac
+case "${PATCH_ANCHOR:-skip}" in
+  ok)     echo "  · 主进程补丁锚点预检：全部能干净套用 ✓" ;;
+  broken) echo "  · 主进程补丁锚点预检：⚠ 有补丁套不上（分诊与修法见报告）——行号漂移用"
+          echo "      node tools/reanchor_patch.js --all --write 重锚定；上游改写则按新版原文改补丁正文" ;;
+  *)      echo "  · 主进程补丁锚点预检：跳过（缺原版 electron/ 快照或补丁目录）" ;;
 esac
 case "${PATCH_STATUS}" in
   keep)    echo "  · UI 行为补丁（原版体检）：KEEP ✓ 锚点命中、上游仍带该缺陷，补丁继续保留" ;;
@@ -328,6 +424,18 @@ cat <<TIP
        npx -y @electron/asar extract <原版 app.asar> /tmp/ms-pristine
        npx -y @electron/asar extract output/app.asar /tmp/ms-built
        node tools/mainscan.js /tmp/ms-pristine /tmp/ms-built
+
+报告里「界面位置英文差集」带 ⚠ 时（单词级文案，upstreamdiff 与 regress 都看不见）：
+  那些位置的词数少于 2 个，所以三条通道全漏。能翻的补进 dict.json；品牌名 / 模型名 /
+  JSON 示例这类登进 intentional-english.json 的 uiStrings（逐条写理由、仓库内可审，
+  换机器或 CI 发布也不会忘）。单独重跑：
+    node tools/uipos_gap.js --bundle output/ui/assets/index-<hash>.js --prev dist/hanhua-pack-<上一版>.zip
+
+报告里「字面量占用检查」带 ⚠ 时（词条在代码里当值用，翻掉静默改行为）：
+  典型形态是目录名 path.join(root, 'Cookies')、比较值 x === 'Enabled'、IPC 通道名这类；
+  构建仍会全绿，只有真去用那个功能才会暴露（Cookie 导入找不到文件）。处置：从 dict.json
+  撤掉该词条，改写进 patches/electron-*.patch（只改该翻的那处），或把两处用法拆开。
+  单独重跑：node tools/lint_collisions.js --electron work/pristine/<版本>/electron
 
 报告里「UI 行为补丁体检」红了或带 ⚠ 时（与词典无关）：
   · REWRITE（锚点失配、缺陷仍在）→ 在新版原版里重新定位同一处语义，更新 find/apply；

@@ -8,13 +8,19 @@
 #   bash tools/release.sh --force       # 覆盖同 packVersion 发布（默认拒绝不升版本的发布）
 #   bash tools/release.sh --allow-english # 两道英文闸门只报告不拦截（确认新英文是有意保留时）
 #
-# 发布前的两道英文闸门（都要过）：
+# 发布前的四道闸门（都要过）：
 #   1. 主进程扫描（tools/mainscan.js）：原版 `electron/*.cjs` vs 本次产物——词典只替双引号
 #      字面量，主进程的菜单 / 原生对话框 / `shell:openIn` 报错 / MCP 同意窗口全靠 patches/，
 #      漏一条不会有任何构建报错。原版取自本机最新 hanhua-backup-*（与 build.sh 同源），
 #      没有就拿原版快照仓库里的 `work/pristine/<targetVersion>/`（省一次解包，也不要求
 #      发布机装过 Freebuff——`pristine.js import --from-release` 取一份就有了）；
-#   2. 回归闸门（tools/regress.js）：本次产物 vs 上一版已发布包，揪「变回英文」的静默回归。
+#   2. 回归闸门（tools/regress.js）：本次产物 vs 上一版已发布包，揪「变回英文」的静默回归；
+#   3. 单词级界面文案差集（tools/uipos_gap.js）：前两道都带词数下限（≥3 词 / ≥2 词），
+#      `Settings` / `Theme` / `Reset` 这类单词文案它们看不见——这道把「本版产物 − 上一版
+#      已发布产物 − intentional-english.json」变成判据；
+#   4. 字面量占用（tools/lint_collisions.js）：词条会不会在原版 electron/*.cjs 里当
+#      路径 / 比较值 / IPC 通道名用（`Cookies` 这种：翻掉会让 Cookie 导入静默找不到文件）。
+#      构建全绿、界面正常，只有真去用那个功能才暴露，所以必须挡在发布前。
 #
 # 发布成功后会把本版英文原版快照作为附加资产传上去（tools/pristine.js publish，失败只 WARN）：
 # 别的机器 `pristine.js import --from-release <targetVersion>` 就能拿到「上一版英文原版」，
@@ -194,20 +200,108 @@ else
   else
     echo "  ! 未能下载 ${PREV_TAG} 的汉化包（gh 与 curl 都不通？），本道闸门未执行" >&2
   fi
-  rm -rf "${GATE_TMP}"
+  # 注意：GATE_TMP 不在这里删——闸门三还要拿同一个包作「上一版基线」。
+  # （曾经在这里就删了，于是闸门三拿到一个已不存在的路径、惄惄退化成「看全量」）
 fi
 case "${GATE_RC}" in
-  0) echo "  ✓ 相对 ${PREV_TAG} 未发现新增英文片段" ;;
+  0) echo "  ✓ 相对 ${PREV_TAG} 未发现未登记的新增英文片段" ;;
   1)
     if [ "${ALLOW_ENGLISH}" -eq 1 ]; then
-      echo "  WARN: 上述英文片段由 --allow-english 放行" >&2
+      echo "  WARN: 上述英文片段由 --allow-english 全放行（只推荐临时排障用；确认保留请登进 intentional-english.json）" >&2
     else
-      echo "ERROR: 回归闸门拦住本次发布。请先把上面的片段补齐（dict.json → bash build.sh），" >&2
-      echo "  确认确实要保留英文时再用 bash tools/release.sh --allow-english 重跑。" >&2
+      echo "ERROR: 回归闸门拦住本次发布。请先把上面的片段补齐（dict.json → bash build.sh）；" >&2
+      echo "  确认确实要保留英文时，登进 intentional-english.json 并写明理由（逐条豁免，" >&2
+      echo "  仓库内可审，之后不再拦发布）；临时全放行仍可用 bash tools/release.sh --allow-english。" >&2
       exit 1
     fi
     ;;
   *) echo "  ! 闸门未能完成比对，跳过" ;;
+esac
+
+# --- 闸门三：单词级界面文案差集（新构建 vs 上一版已发布产物）---------------------------
+# 为什么还要一道：upstreamdiff 的片段级要 ≥3 词、字面量级要 ≥2 词，regress 的片段提取只认句子，
+# 于是 `Settings` / `Theme` / `Reset` / `Width` 这类**单词文案三条通道全都看不见**
+# （0.0.131 适配时 14 条是人工从 uipos 的 52 条里肉眼挑出来的）。uipos_gap 把这一步变成判据：
+# 本版产物 − 上一版产物 − intentional-english.json 的 uiStrings。取不到上一版包时退化成
+# 看全量（仍按登记表扣除），结论照样有用。
+echo
+echo "== 闸门三：单词级界面文案差集（界面位置英文）=="
+GAP_RC=2
+GAP_BUNDLE="$(ls -1 "${HERE}"/output/ui/assets/index-*.js 2>/dev/null | head -1 || true)"
+if [ -z "${GAP_BUNDLE}" ]; then
+  echo "  ! 找不到本次构建的主 bundle，本道闸门未执行" >&2
+else
+  GAP_ARGS=(--bundle "${GAP_BUNDLE}")
+  if [ -n "${PREV_ZIP:-}" ] && [ -s "${PREV_ZIP}" ]; then
+    GAP_ARGS+=(--prev "${PREV_ZIP}")
+  else
+    echo "  （没有上一版包，看全量；上一版就有的品牌名 / 模型名应已登进登记表）"
+  fi
+  set +e
+  node "${HERE}/tools/uipos_gap.js" "${GAP_ARGS[@]}"
+  GAP_RC=$?
+  set -e
+fi
+case "${GAP_RC}" in
+  0) echo "  ✓ 界面位置英文里没有未登记的新增项" ;;
+  1)
+    if [ "${ALLOW_ENGLISH}" -eq 1 ]; then
+      echo "  WARN: 上述界面位置英文由 --allow-english 放行" >&2
+    else
+      echo "ERROR: 单词级文案闸门拦住本次发布。上面那些位置的词数少于 2 个，upstreamdiff 与" >&2
+      echo "  regress 都看不见，所以只能靠这道：能翻的补进 dict.json（再跑 bash build.sh）；" >&2
+      echo "  确认是品牌名 / 模型名 / JSON 示例时，登进 intentional-english.json 的 uiStrings" >&2
+      echo "  并写明理由（逐条豁免，仓库内可审）。临时全放行：--allow-english。" >&2
+      exit 1
+    fi
+    ;;
+  *) echo "  ! 本道闸门未能完成比对，跳过" >&2 ;;
+esac
+if [ -n "${GATE_TMP:-}" ]; then
+  rm -rf "${GATE_TMP}" 2>/dev/null || echo "  ! 临时目录未能删除：${GATE_TMP}（不影响结论，可手工删）" >&2
+fi
+
+# --- 闸门四：字面量占用（词条 vs 原版 electron/*.cjs）---------------------------------
+# 为什么还要一道：词典按「完整字符串字面量」替换，分不清「给人看的标签」和「代码里的值」。
+# 0.0.131 实测 `Cookies`：browser-native.cjs 里是文件选择器的筛选器名（该翻），
+# browser-import.cjs 里却是磁盘上要找的目录名（`path.join(root, 'Cookies')`，翻掉会让
+# Cookie 导入静默找不到文件）。当时靠临时脚本才发现，而这类错构建全绿、界面正常，
+# 只有真去用那个功能才暴露 —— 所以固化成一条可执行判据并挡在发布前。
+# 原版 electron 树取自快照仓库 work/pristine/<targetVersion>/（与闸门一同源）。
+echo
+echo "== 闸门四：字面量占用（词条 vs 原版 electron/*.cjs）=="
+COLLIDE_RC=2
+# pristine.js path 给的是快照根目录，本工具要的是含 electron/*.cjs 的那一层
+COLLIDE_ROOT="$(node "${HERE}/tools/pristine.js" path "${TARGET}" --require-electron 2>/dev/null || true)"
+COLLIDE_TREE=""
+if [ -n "${COLLIDE_ROOT}" ] && [ -d "${COLLIDE_ROOT}/electron" ]; then
+  COLLIDE_TREE="${COLLIDE_ROOT}/electron"
+else
+  COLLIDE_TREE="$(ls -1dt "${HERE}"/work/pristine/*/electron 2>/dev/null | head -1 || true)"
+fi
+if [ -z "${COLLIDE_TREE}" ] || [ ! -d "${COLLIDE_TREE}" ]; then
+  echo "  ! 找不到含 electron/ 的原版快照，本道闸门未执行" >&2
+  echo "    补齐：node tools/pristine.js import --from-release ${TARGET}（或 capture --exe <安装包>）" >&2
+else
+  set +e
+  node "${HERE}/tools/lint_collisions.js" --electron "${COLLIDE_TREE}"
+  COLLIDE_RC=$?
+  set -e
+fi
+case "${COLLIDE_RC}" in
+  0) echo "  ✓ 没有词条在代码里当值用" ;;
+  1)
+    if [ "${ALLOW_ENGLISH}" -eq 1 ]; then
+      echo "  WARN: 上述字面量占用由 --allow-english 放行（注意：这类错会静默改行为）" >&2
+    else
+      echo "ERROR: 字面量占用闸门拦住本次发布。上面那些词条在 electron/*.cjs 里还当值用：" >&2
+      echo "  翻掉会静默改行为（如 Cookie 导入找不到文件），而构建与界面都看不出异常。" >&2
+      echo "  处置：从 dict.json 撤掉该词条，改写进 patches/electron-*.patch（只改该翻的那处），" >&2
+      echo "  或把两处用法拆开（例如给目录名换个不冲突的写法）。" >&2
+      exit 1
+    fi
+    ;;
+  *) echo "  ! 本道闸门未能完成比对，跳过（这次发布没有查过字面量占用）" >&2 ;;
 esac
 
 DIST="${HERE}/dist"

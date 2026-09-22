@@ -88,6 +88,31 @@ if ! node "${HERE}/tools/lint_dict.js"; then
   exit 1
 fi
 
+# --- 词条命中体检：够不着 UI bundle 的条目在解包之前就炸（tools/missed_diagnose.js）-------
+# 「词典条目必须能在 UI bundle 命中」是 build.sh 的硬约束（第 4 步 UI 侧 MISSED 即中止），
+# 但它一直只是隐含的：0.0.131 适配时 38 条**主进程专属**文案被塞进词典，构建跑到第 4 步
+# 才报「词典有 38 条未命中（原文可能随版本改写）」——提示的方向是错的，实际原因只是
+# 它们该写成 patches/electron-*.patch。这里在解包之前就把每一条归到四类里（命中 / 只在
+# 主进程 / 只在上一版 / 两边都没有），几秒就能报出来，且直接说清该往哪边补。
+echo
+echo "== 0b/4 词条命中体检（tools/missed_diagnose.js）=="
+if [ -n "${PRISTINE_UI}" ]; then
+  SNAP_ELECTRON="${HERE}/work/pristine/${UPVER}/electron"
+  PREV_SNAP="$(ls -1dt "${HERE}"/work/pristine/*/ 2>/dev/null | sed -n 2p || true)"
+  DIAG=(--dict "${HERE}/dict.json" --ui "${PRISTINE_UI}")
+  if [ -d "${SNAP_ELECTRON}" ]; then DIAG+=(--electron "${SNAP_ELECTRON}"); fi
+  if [ -n "${PREV_SNAP}" ] && [ -d "${PREV_SNAP}ui" ]; then DIAG+=(--prev-ui "${PREV_SNAP}ui"); fi
+  if ! node "${HERE}/tools/missed_diagnose.js" "${DIAG[@]}"; then
+    echo "ERROR: 词典里有够不着本版 UI bundle 的词条（分类见上），已提前拦下（否则会在第 4 步以 MISSED 中止）。" >&2
+    echo "  只在主进程出现 → 写成 patches/electron-*.patch，并从 dict.json 删掉（词典够不着主进程文件）" >&2
+    echo "  只在上一版 UI 出现 → 上游改写了这句或整段下线：按新原文改写词条，确认下线就直接删" >&2
+    echo "  两边都没有 → 历史死词条，删掉即可" >&2
+    exit 1
+  fi
+else
+  echo "  ! 未给 ui 目录，跳过（体检需要本版 UI bundle）" >&2
+fi
+
 WORK="$(mktemp -d)"
 trap 'rm -rf "${WORK}"' EXIT
 
@@ -107,7 +132,11 @@ echo "== 3/4 套用人工补丁 (patches/) =="
 find "${WORK}/main" -type f \( -name '*.cjs' -o -name '*.html' -o -name '*.js' -o -name '*.json' -o -name '*.ts' \) -exec sed -i 's/\r$//' {} +
 (cd "${WORK}/main" && for p in "${HERE}"/patches/electron-*.patch; do
   if ! git apply -p1 "$p"; then
-    echo "ERROR: 补丁未干净套用：$(basename "$p")（原版文件与补丁预期不符？需重新维护 patches）" >&2
+    echo "ERROR: 补丁未干净套用：$(basename "$p")" >&2
+    # 失败分两种，处置完全不同，别让维护者自己猜：
+    #   行号漂移（上游在前面插了几行）→ 一条命令重锚定；上游改写 → 补丁正文要人工重维护。
+    echo "  先分诊：node tools/patch_preflight.js    # 行号漂移 vs 上游改写，附逐 hunk 结论" >&2
+    echo "  行号漂移 → node tools/reanchor_patch.js --all --write（只改 @@ 头，补丁正文不动）" >&2
     exit 1
   fi
 done)

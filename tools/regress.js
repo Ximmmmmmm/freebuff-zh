@@ -10,11 +10,15 @@
 // 关键实现：比对前把 ${...} 插值整体抹掉，变量改名就不会造成误报；模板字面量按「每两个相邻
 // 反引号之间」逐段取（含嵌套模板的内层段），不能用非重叠匹配，否则奇数段会被跳过。
 //
+// 「有意保留英文」不再只能靠发布时敲 --allow-english 全放行：默认读仓库根的
+// intentional-english.json，逐条登记（带理由）的片段进「已登记」桶、不进失败判定，
+// 未登记的新增片段依旧报错。登记项在产物里消失后会提醒清理（不失败）。
+//
 // 用法：
-//   node tools/regress.js <旧产物> <新产物>
+//   node tools/regress.js <旧产物> <新产物> [--allow-file <json>] [--no-allow]
 //   旧/新产物都可以是：目录（含 ui/index.html 或 assets/index-*.js）、pack zip、bundle 文件
 //
-// 退出码：0 = 没有新增英文片段；1 = 发现新增英文片段（需人工确认）；2 = 有输入无法解析
+// 退出码：0 = 没有未登记的新增英文片段；1 = 有（需人工确认或登记）；2 = 有输入无法解析
 'use strict';
 
 const fs = require('fs');
@@ -202,15 +206,52 @@ function resolveBundle(input) {
 
 // --- 主流程 -------------------------------------------------------------------
 
+// 「有意保留英文」登记表：默认读仓库根目录的 intentional-english.json。
+// 为什么要有它：以前唯一的办法是发布时敲 `--allow-english`——那是**一把全放行**的逃生口，
+// 放行了什么、为什么放行，仓库里一行记录都没有（0.0.131 的 5 条只写进了 CHANGELOG 的散文里）。
+// 登记表把这件事变成常规路径：逐条写理由、可审、可清理，换机器/CI 发布也不会忘。
+function loadAllowlist(file) {
+  const p = file || path.join(__dirname, '..', 'intentional-english.json');
+  if (!fs.existsSync(p)) return { path: p, entries: new Map(), missing: false };
+  let doc
+  try {
+    doc = JSON.parse(fs.readFileSync(p, 'utf8'))
+  } catch (e) {
+    console.error(`ERROR: 登记表不是合法 JSON：${p}\n  ${e.message}`)
+    process.exit(2)
+  }
+  const entries = new Map()
+  for (const it of doc.fragments || []) {
+    const text = typeof it === 'string' ? it : it && it.text
+    if (!text) continue
+    entries.set(text, (it && it.why) || '')
+  }
+  return { path: p, entries, missing: false }
+}
+
 function main() {
-  const args = process.argv.slice(2);
-  if (args.length !== 2) {
-    console.error('用法：node tools/regress.js <旧产物> <新产物>（目录 / pack zip / bundle 文件）');
+  const argv = process.argv.slice(2)
+  const positional = []
+  let allowFile = null
+  let noAllow = false
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i]
+    if (a === '--allow-file') allowFile = argv[++i]
+    else if (a === '--no-allow') noAllow = true
+    else if (a.startsWith('--')) {
+      console.error(`未知参数：${a}（支持 --allow-file <json> / --no-allow）`)
+      process.exit(2)
+    } else positional.push(a)
+  }
+  if (positional.length !== 2) {
+    console.error('用法：node tools/regress.js <旧产物> <新产物> [--allow-file <json>] [--no-allow]');
+    console.error('  （旧/新产物可以是目录 / pack zip / bundle 文件；默认读 intentional-english.json）');
     process.exit(2);
   }
+  const allow = noAllow ? { path: null, entries: new Map() } : loadAllowlist(allowFile)
 
-  const oldBundle = resolveBundle(args[0]);
-  const newBundle = resolveBundle(args[1]);
+  const oldBundle = resolveBundle(positional[0]);
+  const newBundle = resolveBundle(positional[1]);
   if (!oldBundle || !newBundle) {
     console.error(`无法定位主 bundle：${oldBundle ? '' : args[0] + ' '}${newBundle ? '' : args[1]}`);
     console.error('（期望目录里有 ui/index.html，或 assets/index-*.js，或直接给 bundle / pack zip）');
@@ -220,19 +261,36 @@ function main() {
   const oldSet = collectFragments(oldBundle);
   const newSet = collectFragments(newBundle);
   const added = [...newSet].filter((x) => !oldSet.has(x)).sort();
+  const kept = added.filter((x) => allow.entries.has(x));
+  const unknown = added.filter((x) => !allow.entries.has(x));
 
   console.log(`回归闸门：${path.basename(oldBundle)} → ${path.basename(newBundle)}`);
   console.log(`  旧版英文片段 ${oldSet.size} 处；新版 ${newSet.size} 处；新版独有 ${added.length} 处`);
+  if (allow.path && added.length) {
+    console.log(`  登记表：${path.relative(process.cwd(), allow.path)}（${allow.entries.size} 条）`);
+  }
 
-  if (added.length === 0) {
-    console.log('  ✓ 未发现新增英文片段');
+  if (kept.length) {
+    console.log(`  ⓘ 已登记的「有意保留英文」${kept.length} 处（不进失败判定）：`);
+    for (const x of kept) console.log(`    · ${x.slice(0, 200)}\n      ↳ ${allow.entries.get(x) || '（登记表里没写理由，建议补上）'}`);
+    // 登记项随上游改动消失后不会被使用，留着会让人误以为还有效——提醒清理，但不失败。
+    const gone = [...allow.entries.keys()].filter((x) => !newSet.has(x))
+    if (gone.length) {
+      console.log(`  ⓘ 登记表里有 ${gone.length} 条在本版产物里已看不见，可以清理：`);
+      for (const x of gone.slice(0, 10)) console.log('    · ' + x.slice(0, 200));
+    }
+  }
+
+  if (unknown.length === 0) {
+    console.log('  ✓ 未发现未登记的新增英文片段');
     process.exit(0);
   }
 
   console.log('  ❌ 新版出现以下英文片段（漏翻/迁移回归，或有意保留）：');
-  for (const x of added) console.log('    · ' + x.slice(0, 200));
-  console.log('  处理：能翻的补进 dict.json 后重跑 bash build.sh；确认有意保留的，发布时用');
-  console.log('        bash tools/release.sh --allow-english 放行。');
+  for (const x of unknown) console.log('    · ' + x.slice(0, 200));
+  console.log('  处理：能翻的补进 dict.json 后重跑 bash build.sh；确认有意保留的，登进');
+  console.log(`        ${path.relative(process.cwd(), allow.path || path.join(__dirname, '..', 'intentional-english.json'))}（逐条写理由，之后不再拦发布）；`);
+  console.log('        临时全放行仍可用 bash tools/release.sh --allow-english。');
   process.exit(1);
 }
 
