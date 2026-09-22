@@ -81,7 +81,6 @@
     "Agent to-do list": "智能体待办列表",
     "Agents write shell commands in bash, which Windows doesn’t ship. Git for Windows includes it and takes about a minute to install.": "智能体使用 bash 编写 shell 命令，而 Windows 并未自带 bash。适用于 Windows 的 Git 包含它，安装大约需要一分钟。",
     "All": "全部",
-    "all projects": "所有项目",
     "All projects": "所有项目",
     "All up to date": "全部已是最新",
     "An agent opens a standalone HTML page or starts this project’s dev server from the thread workspace, then shows it here.": "智能体会从会话工作区打开一个独立的 HTML 页面或启动此项目的开发服务器，然后在此处显示。",
@@ -360,7 +359,6 @@
     "Popular skills": "热门技能",
     "Powerful all-round coding model": "强大的全能编程模型",
     "Premium": "高级版",
-    "premium ": "高级版",
     "premium sessions": "高级版会话",
     "Preparing the preview": "正在准备预览",
     "Preview": "预览",
@@ -410,7 +408,6 @@
     "Restore built-in": "恢复内置",
     "Restore window": "恢复窗口",
     "Resume queue": "继续队列",
-    "Resume the queue": "继续队列",
     "Continue interrupted turn": "继续被中断的轮次",
     "Continue the interrupted turn": "继续被中断的轮次",
     "Continue the interrupted turn, then run queued messages": "继续被中断的轮次，然后运行排队的消息",
@@ -501,7 +498,6 @@
     "The agent missed or broke something": "智能体遗漏或损坏了某些内容",
     "The conversation changed underneath the edit — try again": "编辑期间对话已发生变化 — 请重试",
     "The plan is ready for your review": "计划已准备好供你审查",
-    "The queue is paused.": "队列已暂停。",
     "The working tree is clean — everything is committed.": "工作目录是干净的 — 所有内容都已提交。",
     "Thinking": "思考",
     "Thinking…": "正在思考…",
@@ -510,7 +506,6 @@
     "This folder isn’t a git repository, so isolated workspaces aren’t available. Threads run directly in the folder.": "此文件夹不是 git 仓库，因此无法使用隔离工作区。会话将直接在文件夹中运行。",
     "This history page changed. Return to latest and try again.": "此历史页已发生变化。请回到最新后重试。",
     "this model": "该模型",
-    "this project": "此项目",
     "This project": "此项目",
     "This tab has the slot — send your message again.": "此标签页拥有该配额 — 请重新发送你的消息。",
     "This thread runs directly in the shared project folder.": "此会话直接在共享项目文件夹中运行。",
@@ -661,7 +656,6 @@
     "Upgrade": "升级",
     "Use wallet": "使用钱包",
     "Monthly limit": "每月限额",
-    "Get more sessions": "获取更多会话",
     "Not supported!": "不支持！",
     " for the full message or use the non-minified dev environment for full errors and additional helpful warnings.": " 以查看完整消息，或使用非压缩的开发环境来获取完整的错误和额外有用的警告。",
     "Activity": "活动",
@@ -703,7 +697,6 @@
     "columns is null. Race condition?": "columns 为 null。竞争条件？",
     "completion info": "补全信息",
     "Could not dispose an addon that has not been loaded": "无法释放尚未加载的插件",
-    "Created": "已创建",
     "Decorations that replace line breaks may not be specified via plugins": "替换换行的装饰不能通过插件指定",
     "Type a message — / for skills, @ for threads or files": "输入消息 — / 调用技能，@ 引用会话或文件",
     "Find": "查找",
@@ -1296,7 +1289,16 @@
     "System": "跟随系统",
     "Desktop · 1280 × 720": "桌面 · 1280 × 720",
     "Phone · 390 × 844": "手机 · 390 × 844",
-    "Tablet · 768 × 1024": "平板 · 768 × 1024"
+    "Tablet · 768 × 1024": "平板 · 768 × 1024",
+    "Address": "地址",
+    "Archived": "已归档",
+    "Custom · ": "自定义 · ",
+    " New terminal": " 新建终端",
+    "Open DevTools": "打开 DevTools",
+    "Show in Discord status": "在 Discord 状态中显示",
+    "View": "视图",
+    "Viewport": "视口",
+    "Zoom": "缩放"
   },
   "template": {
     "Close ${r.title||\"new thread\"}": "关闭“${r.title||\"新会话\"}”",
@@ -1528,7 +1530,13 @@
     "Close ${v}": "关闭“${v}”",
     "Close ${te.label}": "关闭“${te.label}”",
     "Could not select ${de.name}: ${st}": "无法选择 ${de.name}：${st}",
-    "View ${t.path} changes in the right panel": "在右侧面板查看 ${t.path} 的改动"
+    "View ${t.path} changes in the right panel": "在右侧面板查看 ${t.path} 的改动",
+    "Edit ${o.name}": "编辑 ${o.name}",
+    "New chat (${KO()}T)": "新建会话（${KO()}T）",
+    "Project: ${Ar(t)}": "项目：${Ar(t)}",
+    "Remove project ${re}": "移除项目 ${re}",
+    "Viewport ${Q}": "视口 ${Q}",
+    " for ${o}": "，用时 ${o}"
   },
   "code": {
     "run_file_change_hooks:\"Hooks\"": "run_file_change_hooks:\"文件变更钩子\"",
@@ -1544,7 +1552,8 @@
     "Connectors:\"": "连接器:\"",
     ",Skills:\"": ",技能:\"",
     "\"API Providers\":\"": "\"API 提供商\":\"",
-    ",Projects:\"": ",项目:\""
+    ",Projects:\"": ",项目:\"",
+    "\" code comment\",c.length===1?\"\":\"s\"": "\" 条代码注释\""
   },
   "pattern": {
     "Providers": "提供商",
@@ -1613,6 +1622,7 @@
     "Account": "账户",
     "Verify": "验证",
     "Acceptance criteria verification": "验收标准验证",
-    "Expired sponsored invitation": "赞助邀请已过期"
+    "Expired sponsored invitation": "赞助邀请已过期",
+    "Forward": "前进"
   }
 }
