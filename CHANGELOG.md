@@ -1,5 +1,70 @@
 # 更新日志
 
+## [0.0.131] · 2026-09-22（已发布 `pack-v0.0.131`）
+
+**上游连跳三个版本（0.0.129 / 0.0.130 / 0.0.131），是本项目适配过最大的一次改动**：终端分屏、任务（mission）与技能
+选择器、项目预览、网页标注，以及一整套**浏览器子系统**（Chrome / Edge / Arc / Safari 的 Cookie 导入、原生浏览器窗口、
+页面录制、视口预设）；设置页从一页重构成 `General / Appearance / Connectors / Projects / Skills / API Providers` 的导航。
+对差账（英文原版 vs 英文原版）：片段级 1512 → 1430（新增 108 / 下线 183 / 疑似改写 17 组），字面量级 1963 → 1917
+（新增 207，其中 95 条片段级没报到）；`electron/` 新增 6 个文件（`browser-cookies.cjs` / `browser-import.cjs` /
+`browser-native.cjs` / `browser-preload.cjs` / `browser-recorder-preload.cjs` / `browser-recorder.html`），`cdp-bridge.cjs` /
+`main.cjs` / `preload.cjs` / `updater.cjs` 有改动。
+
+- **词典**：exact 1297 / template 230 / code 14 / pattern 67，替换总数 1929；模板变量重映射 **0 条**（230 SAME）、歧义 0 条、
+  MISSING 0 条，`all keys matched`。上游新增文案补完后「待补翻」剩 28 条，全部是压缩产物噪音：类名与标识符片段
+  （`terminal-drop-preview edge-` / `send-key ready` / `:c?void 0:r,disabled:n,`）、react-window 与 `wheelDelta` 内部代码、
+  页面标注 payload、以及和服务端比较用的关闭原因串（`terminal closed` / `project closed`）。
+- **单词级新文案**：两个自动通道有系统性盲区（片段级要 ≥3 词、字面量级要 ≥2 词），`Settings` / `Projects` / `General` /
+  `Missions` / `Theme` / `Reset` / `Width` / `Height` / `Availability` / `Browser` / `System` 与设备预设
+  （`Desktop · 1280 × 720` 等 3 条）这 14 条是 `uipos` 报出来的（52 → 35；剩下的 35 条是品牌名、模型名、JSON 示例）。
+  设置页那组既是比较用的 id 又是显示文案（`t==="Appearance"`、`v2e=[…]`），按「整体一致替换」处理——同一条常量
+  在 bundle 里被一起换掉，比较与显示都跟着走；`semantic_guard` 的放行理由已写进工具注释。
+- **主进程**：新增 `patches/electron-browser-*.patch` 四份（浏览器权限 / 导入 / 文件选择对话框、右键菜单 `Inspect element`、
+  录制的用户可见报错，26 + 9 + 2 + 2 处），另把「智能体侧协议报错」（`Browser action interrupted by human input…` /
+  `Close browser DevTools before using agent browser control.` / `Unknown browser command.` / `Unknown native browser method.`）、
+  「浏览器配置的磁盘路径」（`Cookies` / `Local State` / `Library/Application Support` …）与品牌名（`Freebuff Browser` /
+  `Microsoft Edge`）登记进 `mainscan.js` 的 `INTENTIONAL` 名单并写明理由：`mainscan` 疑似文案 **16 → 0**、短标签 0。
+- **踩坑记录（下次别再犯）**：词典条目**必须能在 UI bundle 命中**——`build.sh` 对 UI 侧 MISSED 是硬失败，所以「只在主进程
+  出现」的文案只能写成补丁。这一版先把 38 条浏览器子系统文案塞进了 `dict.json`，构建在 UI 侧报 `MISSED (38 keys)` 中止；
+  之后拆成「UI 命中的留词典 / 主进程专属走 patches」。另外 `Cookies` 这个字面量在 `browser-import.cjs` 里还是**磁盘路径后缀**，
+  进词典会让导入找不到文件，只能留给补丁只改筛选器那处。
+- **回归闸门**：238 vs 238，新增 5 处，全部**有意保留**：react-window 的三条内部 `console.warn`（`Failed to get offset for index:` /
+  `Failed to scroll to index after attempts.` / `` The `smooth` scroll behavior … ``）、页面标注 payload 里的
+  `Regions: … / Style changes to implement:`（与既有 `Component:` / `Feedback:` 同类，是送给模型的上下文）、以及 CSS 类名拼接
+  `streak-day on`。按项目惯例用 `bash tools/release.sh --allow-english` 放行，并在发布说明里逐条列出；这一版成为新基线后
+  下一版不再重复报。
+- **工具修复（这一版撞出的两处「工具自己错」）**：`semantic_guard` 把模板字面量里的引号当成字符串定界符，引号配对错位后会把
+  不相干的片段误判成 `new Event(...)` 的参数而拦下构建，现在按模板配对逐段扫描；`probe_token_epoch` 不再写死辅助函数名，
+  而是从抽出来的请求包装器本体上回引读取（minifier 改名后写死的名字会让**有效补丁**被判成「未生效」并中止构建），
+  并补了一条「合成运行时里不存在的名字」的自检，自测 22 项全绿。
+- **验证**：`update.sh` 七步——构建自检全绿（布局 / `lang="zh-CN"` / 主进程语法与译文哨兵 / UI 行为补丁 5 条哨兵与两道
+  行为取证 `stream-epoch` + `token-epoch`）、UI 行为补丁体检 KEEP×2、`mainscan` 零漏翻、`uipos` 35 条；
+  `tools/test_mainscan.js` / `test_upstreamdiff.js` / `test_blindscan.js` / `test_probe_*.js` / `test_ui_*.js` / `test_pristine.js`
+  等自测通过（`tools/test_remap.js` 在 HEAD 上就有 10 项失败，本轮未触碰 `tools/remap.js`，与本版无关）。
+- **资产**：`targetVersion` / `packVersion` 均为 `0.0.131`，发布为 `pack-v0.0.131`（附本版英文原版快照 `pristine-0.0.131.json.gz`）。
+
+## [0.0.128] · 2026-09-21（已发布 `pack-v0.0.128`）
+
+**上游这一版把「非高峰时段定价」的说明整段收窄**——`Kz(...)` 返回的对象里 `detail` 字段直接删掉、tooltip 从三句话砍到一句，
+**没有新写任何文案**。片段级英文片段 1515 → 1512（新增 0、下线 3），字面量级 1966 → 1963（新增 1 / 下线 4），`electron/` 下
+30 个文件与 0.0.127 **逐字节相同**（`diff -rq` 无输出，`patches/` 无需改动），`index.html` 只是换了 bundle 文件名
+（`index-BQ2DjWRr.js` → `index-Bb6jUn1K.js`）。所以这一轮真正要动的只有 4 条词条：
+
+- **改写 1 条**：`` `Off-peak: ${r.price} Freebucks/hour, daily ${f}. Regular price: ${r.regularPrice} Freebucks/hour. The price at session start is locked for the full hour.` ``
+  → `` `Off-peak: ${r.price} Freebucks/hour, daily ${f}.` ``。变量名一个没改，所以 `remap.js` 报的是 **MISSING**（锚文本不在新 bundle）
+  而不是 **RENAMED**——正是「上游整段重写」与「minifier 改名」这两种情形的区分点。
+- **下线 3 条死词条**：两条 `detail` 模板（`` `Off-peak · normally ${r.regularPrice}/hr · until ${l.format(o)} ${d}` `` 与
+  `` `Off-peak ${r.price}/hr · ${f}` ``，`detail` 字段已从返回值里消失）与 exact 里的
+  `" Your first-tab discount is also included in the displayed price."`（尾随那个 `firstTabDiscount` 三元被上游一起删掉）。
+- **新版唯一的「新增字面量」是改写后 tooltip 的碎片**：`Off-peak: Freebucks/hour, daily .`（插值被抹掉后的固定段）。所以
+  `upstreamdiff` 两层的账是「片段级新增 0 / 字面量级新增 1」——它属于**新模板**而不是新句子，「待补翻」为 0 是对的；
+  照旧用一次「遮蔽分号」的全量字面量对差复核，0.0.127 → 0.0.128 **只多 1 条、只少 4 条**，与上面完全一致。
+- **验证**：模板变量重映射 0 条（287 SAME）、歧义 0 条、MISSING 3 条（即上述死词条，删完复扫为 0），替换数 1988 → 1985
+  （exact 1310 / template 288 / code 9 / pattern 80），`all keys matched`。`update.sh` 七步全绿——上游新增文案词典已全覆盖、
+  回归闸门 238 vs 238 新增 0 处、`mainscan` 零漏翻、UI 行为补丁 5 组锚点全 KEEP、产物侧两道行为取证
+  （`stream-epoch` + `token-epoch`）通过；残留扫描回到基线：`uipos` 15 条、`fieldscan` 1 条、`blindscan` 279 条。
+- **资产**：`targetVersion` / `packVersion` 均为 `0.0.128`，发布为 `pack-v0.0.128`（附本版英文原版快照 `pristine-0.0.128.json.gz`）。
+
 ## [0.0.127] · 2026-09-20（已发布 `pack-v0.0.127`）
 
 **上游这一版没有新写任何界面文案**——片段级 1515 vs 1515、字面量级 1966 vs 1966 全等，`electron/` 下 30 个

@@ -1,0 +1,62 @@
+diff --git "a/C:\\Users\\XIM\\Desktop\\freebuff\\freebuff-zh\\work\\patch-src\\browser-import.cjs" "b/C:\\Users\\XIM\\Desktop\\freebuff\\freebuff-zh\\work\\patch-out\\browser-import.cjs"
+index a190c87..c83ee47 100644
+--- a/electron/browser-import.cjs
++++ b/electron/browser-import.cjs
+@@ -136,10 +136,10 @@ function chromiumValue(row, version, key, platform = process.platform) {
+   if (encrypted.length === 0) return ''
+   const prefix = encrypted.subarray(0, 3).toString()
+   if (!['v10', 'v11'].includes(prefix))
+-    throw new Error('Unsupported app-bound cookie encryption.')
++    throw new Error('不支持的应用绑定 Cookie 加密。')
+   if (platform === 'linux' && prefix === 'v10')
+     key = crypto.pbkdf2Sync('peanuts', 'saltysalt', 1, 16, 'sha1')
+-  if (!key) throw new Error('Browser encryption key unavailable.')
++  if (!key) throw new Error('浏览器加密密钥不可用。')
+   let clear
+   if (platform === 'win32') {
+     const cipher = crypto.createDecipheriv(
+@@ -169,17 +169,17 @@ function chromiumValue(row, version, key, platform = process.platform) {
+       clear.length < 32 ||
+       !crypto.timingSafeEqual(digest, clear.subarray(0, 32))
+     )
+-      throw new Error('Cookie host digest does not match.')
++      throw new Error('Cookie 主机摘要不匹配。')
+     clear = clear.subarray(32)
+   }
+   return clear.toString('utf8')
+ }
+ function safariCookies(bytes) {
+   if (bytes.subarray(0, 4).toString() !== 'cook')
+-    throw new Error('Invalid Safari cookie file.')
++    throw new Error('Safari Cookie 文件无效。')
+   const pages = bytes.readUInt32BE(4)
+   if (pages > 10000 || 8 + pages * 4 > bytes.length)
+-    throw new Error('Invalid Safari page count.')
++    throw new Error('Safari 页数无效。')
+   const result = []
+   let offset = 8 + pages * 4
+   for (let i = 0; i < pages; i++) {
+@@ -187,19 +187,19 @@ function safariCookies(bytes) {
+     const page = bytes.subarray(offset, offset + size)
+     offset += size
+     if (page.length !== size || size < 8)
+-      throw new Error('Truncated Safari page.')
++      throw new Error('Safari 页面被截断。')
+     const count = page.readUInt32LE(4)
+     if (count + result.length > 10000 || 8 + count * 4 > size)
+-      throw new Error('Invalid Safari cookie count.')
++      throw new Error('Safari Cookie 数量无效。')
+     for (let n = 0; n < count; n++) {
+       const start = page.readUInt32LE(8 + n * 4)
+       if (start + 56 > page.length)
+-        throw new Error('Invalid Safari cookie offset.')
++        throw new Error('Safari Cookie 偏移无效。')
+       const cookie = page.subarray(start, start + page.readUInt32LE(start))
+       const str = (pos) => {
+         const at = cookie.readUInt32LE(pos)
+         const end = cookie.indexOf(0, at)
+-        if (at < 48 || end < at) throw new Error('Invalid Safari string.')
++        if (at < 48 || end < at) throw new Error('Safari 字符串无效。')
+         return cookie.subarray(at, end).toString()
+       }
+       const flags = cookie.readUInt32LE(8)

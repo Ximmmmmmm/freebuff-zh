@@ -7,7 +7,7 @@
 // Without --write, prints what WOULD change and reports keys with 0 matches.
 const fs = require('fs')
 const path = require('path')
-const { contextReason } = require('./semantic_guard')
+const { contextReason, CONSISTENT_LABELS } = require('./semantic_guard')
 
 const file = process.argv[2]
 const write = process.argv.includes('--write')
@@ -63,8 +63,12 @@ const applyExact = (source, dictSection) => {
       if (countOf(source, reZh) === 0) missed.push(en)
       continue
     }
+    // 白名单标签（semantic_guard.CONSISTENT_LABELS）是「同表同值、进程内派生」的界面标签：
+    // 它的比较位置与显示位置必须用同一个值，只翻一处反而会错，所以这里放行；其余中文落在
+    // 比较 / switch / 协议参数位置仍会拦下。
+    const consistentLabel = CONSISTENT_LABELS.has(zh)
     source = source.replace(re, (match, offset, whole) => {
-      const reason = contextReason(whole, offset, offset + match.length)
+      const reason = !consistentLabel && contextReason(whole, offset, offset + match.length)
       if (reason) {
         semanticBlocked.push({ en, reason })
         return match

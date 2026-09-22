@@ -1,0 +1,22 @@
+diff --git "a/C:\\Users\\XIM\\Desktop\\freebuff\\freebuff-zh\\work\\patch-src\\browser-cookies.cjs" "b/C:\\Users\\XIM\\Desktop\\freebuff\\freebuff-zh\\work\\patch-out\\browser-cookies.cjs"
+index 0091578..98cf15d 100644
+--- a/electron/browser-cookies.cjs
++++ b/electron/browser-cookies.cjs
+@@ -31,7 +31,7 @@ function parseCookies(text) {
+           }
+         })
+   if (!Array.isArray(values) || values.length > 10000)
+-    throw new Error('Invalid cookie export.')
++    throw new Error('Cookie 导出文件无效。')
+   return values
+     .filter(
+       (c) =>
+@@ -44,7 +44,7 @@ function parseCookies(text) {
+     .map((c) => {
+       const domain = c.domain.replace(/^\./, '')
+       if (!/^[a-z0-9.-]+$/i.test(domain))
+-        throw new Error('Invalid cookie domain.')
++        throw new Error('Cookie 域名无效。')
+       return {
+         url: `${c.secure ? 'https' : 'http'}://${domain}${c.path?.startsWith('/') ? c.path : '/'}`,
+         ...(c.hostOnly === false ||

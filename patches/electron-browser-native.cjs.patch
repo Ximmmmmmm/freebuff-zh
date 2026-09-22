@@ -1,0 +1,200 @@
+diff --git "a/C:\\Users\\XIM\\Desktop\\freebuff\\freebuff-zh\\work\\patch-src\\browser-native.cjs" "b/C:\\Users\\XIM\\Desktop\\freebuff\\freebuff-zh\\work\\patch-out\\browser-native.cjs"
+index 632136b..829b7fc 100644
+--- a/electron/browser-native.cjs
++++ b/electron/browser-native.cjs
+@@ -35,7 +35,7 @@ function createBrowserNative({
+   function get(id) {
+     const state = guests.get(id)
+     if (!state || state.wc.isDestroyed())
+-      throw new Error('Not a registered browser guest.')
++      throw new Error('不是已注册的浏览器访客。')
+     return state
+   }
+   const permitted = (url) => allowedUrl(url) && !isAppUrl(url)
+@@ -56,14 +56,14 @@ function createBrowserNative({
+           )
+         )
+           return callback(false)
+-        const origin = details?.requestingUrl || wc?.getURL() || 'This page'
++        const origin = details?.requestingUrl || wc?.getURL() || '此页面'
+         try {
+           const result = await dialog.showMessageBox({
+             type: 'question',
+-            buttons: ['Deny', 'Allow'],
++            buttons: ['拒绝', '允许'],
+             defaultId: 0,
+             cancelId: 0,
+-            message: `Allow ${permission}?`,
++            message: `允许 ${permission}？`,
+             detail: origin,
+           })
+           callback(result.response === 1)
+@@ -149,7 +149,7 @@ function createBrowserNative({
+         { role: 'paste' },
+         { type: 'separator' },
+         {
+-          label: 'Inspect element',
++          label: '检查元素',
+           click: () => {
+             if (wc.debugger.isAttached()) wc.debugger.detach()
+             wc.inspectElement(params.x, params.y)
+@@ -265,7 +265,7 @@ function createBrowserNative({
+ 
+   async function startRecording(state) {
+     if (captures.has(state.wc.id))
+-      throw new Error('This tab is already recording.')
++      throw new Error('此标签页正在录制。')
+     const directory = path.join(app.getPath('userData'), 'browser-recordings')
+     await fs.mkdir(directory, { recursive: true })
+     const file = path.join(
+@@ -313,7 +313,7 @@ function createBrowserNative({
+         const data = Buffer.from(payload.bytes)
+         entry.bytes += data.length
+         if (entry.bytes > 50 * 1024 * 1024)
+-          throw new Error('Recording exceeded 50 MiB.')
++          throw new Error('录制超过 50 MiB。')
+         entry.chunks.push(data)
+         if (payload.final) {
+           await fs.writeFile(file, Buffer.concat(entry.chunks), { mode: 0o600 })
+@@ -331,7 +331,7 @@ function createBrowserNative({
+     window.once('closed', () => {
+       ipcMain.removeListener('browser:recording-data', onData)
+       clearInterval(entry.timer)
+-      reject(new Error('Recording window closed.'))
++      reject(new Error('录制窗口已关闭。'))
+     })
+     try {
+       await window.loadFile(path.join(__dirname, 'browser-recorder.html'))
+@@ -366,7 +366,7 @@ function createBrowserNative({
+   }
+   async function stopRecording(id) {
+     const entry = captures.get(id)
+-    if (!entry) throw new Error('This tab is not recording.')
++    if (!entry) throw new Error('此标签页未在录制。')
+     if (!entry.stopping) {
+       entry.stopping = true
+       clearInterval(entry.timer)
+@@ -379,7 +379,7 @@ function createBrowserNative({
+         entry.done,
+         new Promise((_, reject) => {
+           timer = setTimeout(
+-            () => reject(new Error('Recording finalization timed out.')),
++            () => reject(new Error('录制收尾超时。')),
+             15000,
+           )
+         }),
+@@ -400,9 +400,9 @@ function createBrowserNative({
+         !PARTITION.test(params.partition || '') ||
+         !params.partition.startsWith('persist:')
+       )
+-        throw new Error('Invalid browser profile.')
++        throw new Error('浏览器配置无效。')
+       if ([...guests.values()].some((g) => g.partition === params.partition))
+-        throw new Error('Close this profile’s browser tabs before removing it.')
++        throw new Error('移除该配置前，请先关闭它的浏览器标签页。')
+       const ses = session.fromPartition(params.partition)
+       await ses.clearStorageData()
+       await ses.clearCache()
+@@ -412,7 +412,7 @@ function createBrowserNative({
+     const wc = state.wc
+     if (method === 'Freebuff.verifyGuest') {
+       if (params.partition !== state.partition)
+-        throw new Error('Browser profile does not match the registered guest.')
++        throw new Error('浏览器配置与已注册的访客不匹配。')
+       return { ok: true }
+     }
+     if (method === 'Freebuff.beginAction') {
+@@ -434,7 +434,7 @@ function createBrowserNative({
+           if (wc.canGoForward()) wc.goForward()
+         } else if (params.to === 'reload') wc.reload()
+         else {
+-          if (!permitted(params.to)) throw new Error('Unsupported browser URL.')
++          if (!permitted(params.to)) throw new Error('不支持的浏览器网址。')
+           void wc.loadURL(params.to).catch(() => {})
+         }
+         return { ok: true }
+@@ -480,7 +480,7 @@ function createBrowserNative({
+             params.zoom < 0.25 ||
+             params.zoom > 5
+           )
+-            throw new Error('Invalid zoom.')
++            throw new Error('缩放值无效。')
+           wc.setZoomFactor(params.zoom)
+           state.zoom = params.zoom
+         }
+@@ -496,7 +496,7 @@ function createBrowserNative({
+               height < 240 ||
+               height > 2160
+             )
+-              throw new Error('Invalid viewport.')
++              throw new Error('视口值无效。')
+             wc.enableDeviceEmulation({
+               screenPosition: 'desktop',
+               screenSize: { width, height },
+@@ -508,10 +508,10 @@ function createBrowserNative({
+         }
+         if (params.colorScheme !== undefined) {
+           if (!['system', 'light', 'dark'].includes(params.colorScheme))
+-            throw new Error('Invalid appearance.')
++            throw new Error('外观值无效。')
+           if (wc.isDevToolsOpened())
+             throw new Error(
+-              'Close DevTools before changing browser appearance.',
++              '更改浏览器外观前，请先关闭 DevTools。',
+             )
+           if (!wc.debugger.isAttached()) wc.debugger.attach('1.3')
+           await wc.debugger.sendCommand('Emulation.setEmulatedMedia', {
+@@ -532,15 +532,15 @@ function createBrowserNative({
+         const profiles = await discoverProfiles()
+         if (!profiles.length)
+           throw new Error(
+-            'No supported browser profiles found. You can import a cookies.txt or JSON export instead.',
++            '未找到受支持的浏览器配置文件。你也可以改用 cookies.txt 或 JSON 导出文件导入。',
+           )
+         const choice = await dialog.showMessageBox({
+           type: 'question',
+-          title: 'Import signed-in browser sessions',
++          title: '导入已登录的浏览器会话',
+           message:
+-            'Choose a browser profile to copy into this Freebuff profile.',
++            '选择要复制到当前 Freebuff 配置的浏览器配置文件。',
+           detail:
+-            'Close the source browser first. This copies cookies once; it does not move passwords or change the source. Some sites may require signing in again. Safari requires Full Disk Access. Your OS may ask to unlock the browser’s encryption key.',
++            '请先关闭来源浏览器。此操作只复制一次 Cookie，不会搬走密码，也不会改动来源。部分网站可能要求重新登录。Safari 需要「完全磁盘访问权限」。系统可能要求解锁浏览器的加密密钥。',
+           buttons: ['Cancel', ...profiles.map((p) => p.label)],
+           defaultId: 0,
+           cancelId: 0,
+@@ -554,20 +554,20 @@ function createBrowserNative({
+           })
+         } catch (error) {
+           throw new Error(
+-            `Browser import failed: ${error.code === 'EPERM' || error.code === 'EACCES' ? 'Allow Freebuff Full Disk Access in System Settings, then retry.' : error.message}`,
++            `Browser import failed: ${error.code === 'EPERM' || error.code === 'EACCES' ? '请在系统设置中授予 Freebuff 完全磁盘访问权限，然后重试。' : error.message}`,
+           )
+         }
+       }
+       case 'importCookies': {
+         const result = await dialog.showOpenDialog({
+-          title: 'Import browser cookies (Netscape cookies.txt or JSON)',
++          title: '导入浏览器 Cookie（Netscape cookies.txt 或 JSON）',
+           properties: ['openFile'],
+-          filters: [{ name: 'Cookies', extensions: ['txt', 'json'] }],
++          filters: [{ name: 'Cookie', extensions: ['txt', 'json'] }],
+         })
+         if (result.canceled) return { canceled: true }
+         const file = result.filePaths[0]
+         if ((await fs.stat(file)).size > 5 * 1024 * 1024)
+-          throw new Error('Cookie file is too large.')
++          throw new Error('Cookie 文件过大。')
+         const { parseCookies } = require('./browser-cookies.cjs')
+         const cookies = parseCookies(await fs.readFile(file, 'utf8'))
+         let imported = 0,
+@@ -604,7 +604,7 @@ function createBrowserNative({
+         })
+     }
+     if (method === 'Page.navigate' && !permitted(params.url))
+-      throw new Error('Unsupported browser URL.')
++      throw new Error('不支持的浏览器网址。')
+   }
+   async function dispatchKey(id, params) {
+     const state = get(id)

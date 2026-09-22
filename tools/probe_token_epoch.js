@@ -86,6 +86,25 @@ function findFn(src, anchor, label) {
 }
 
 /**
+ * 从请求包装器本体里读出它实际调用的两个辅助函数名：
+ *   · 消息构造：`new <ApiError>(<helper>(…), <status>, …)` 的第一个参数
+ *   · JSON 解析：`const x = raw ? <helper>(raw) : null` 里的 <helper>
+ * 读不到就返回 null（调用方回退到锚点，再由 runtime 自检把「名字对不上」转成无法取证）。
+ */
+const GLOBAL_NAMES = new Set(['setTimeout', 'setInterval', 'clearTimeout', 'fetch', 'JSON', 'Promise', 'Object', 'Array'])
+function deriveCallNames(body, errName) {
+  const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  // new <ApiError>(<helper>(…), <status>, …)
+  const msg = new RegExp(`new ${esc(errName)}\\(([A-Za-z_$][\\w$]*)\\(`).exec(body)
+  // 解析响应体：`x = raw ? <helper>(raw) : null`。必须要求**同一个变量**既做判据又做入参
+  // （回引 \1），否则 `const s=n?setTimeout(()=>…` 这类三元会把 setTimeout 误抓成辅助函数，
+  // 合成运行时于是把真 setTimeout 覆盖成 JSON 解析器（0.0.131 踩过）。
+  const json = /([A-Za-z_$][\w$]*)\?([A-Za-z_$][\w$]*)\(\1\)/.exec(body)
+  const pick = (m, idx) => (m && !GLOBAL_NAMES.has(m[idx]) ? m[idx] : null)
+  return { msgName: pick(msg, 1), jsonName: pick(json, 2) }
+}
+
+/**
  * 组装一个只含「令牌读取 + 请求包装器」的迷你运行时。每次调用都重新组装：缓存变量是模块级
  * 状态，场景之间必须互不影响。
  * @param {string} src bundle 文本
@@ -105,17 +124,24 @@ function build(src, failure) {
   const errMatch = src.match(ANCHORS.apiError[0])
   if (!errMatch) throw new Error('抽不到「ApiError 类」的锚点')
   const errName = errMatch[1]
+  // 辅助函数名：优先从**抽出来的请求包装器本体**里读它实际调用的名字，锚点只作兜底。
+  // 锚点绑的是上游某一版的写法，minifier 换名或上游微调写法都会失配；而退回硬编码的旧名
+  // （pG / OG）会让合成运行时里没有那个函数——包装器一调用就 ReferenceError，又被它自己的
+  // catch 吞掉，表现成「调用直接失败」，于是补丁明明生效也被判成未生效（0.0.131 的 iY 就是
+  // 这样：锚点未命中，退回的 pG 在 bundle 里根本不存在）。
+  const derived = deriveCallNames(request.body, errName)
   const msgMatch = src.match(ANCHORS.messageHelper[0])
   const jsonMatch = src.match(ANCHORS.jsonHelper[0])
-  const msgName = msgMatch ? msgMatch[1] : 'pG'
-  const jsonName = jsonMatch ? jsonMatch[1] : 'OG'
+  // 锚点只当兜底；两边都拿不到就不定义（合成运行时里缺名字会由 scenario 的自检转成「无法取证」）。
+  const msgName = derived.msgName || (msgMatch ? msgMatch[1] : null)
+  const jsonName = derived.jsonName || (jsonMatch ? jsonMatch[1] : null)
 
   const decl = [
     `const ${timeout[1]}=15e3`,
     // ApiError：请求包装器用它区分「HTTP 错误」与「传输错误」，补丁按 .status 判断 403
     `class ${errName} extends Error{constructor(e,n,i=null){super(e);this.status=n;this.body=i;this.name="ApiError"}}`,
-    `function ${msgName}(t,e){if(t&&typeof t=="object"){const{error:n,message:i}=t;if(typeof n==="string"&&n)return n;if(typeof i==="string"&&i)return i}return "请求失败（"+e+"）"}`,
-    `function ${jsonName}(t){try{return JSON.parse(t)}catch{return null}}`,
+    msgName ? `function ${msgName}(t,e){if(t&&typeof t=="object"){const{error:n,message:i}=t;if(typeof n==="string"&&n)return n;if(typeof i==="string"&&i)return i}return "请求失败（"+e+"）"}` : '',
+    jsonName ? `function ${jsonName}(t){try{return JSON.parse(t)}catch{return null}}` : '',
     `let ${mg};`,
     // 桥接替身：真身返回 window.freebuffDesktop，这里换成可注入的假对象
     `function ${bridge[1]}(){return __state.ui}`,
@@ -165,11 +191,19 @@ async function scenario(src, failure) {
   state.token = 'T2'
 
   let firstCallOk = false
+  let firstErr = null
   try {
     await call()
     firstCallOk = true
-  } catch {
+  } catch (e) {
     firstCallOk = false
+    firstErr = e
+  }
+  // 合成运行时的自检：抽出来的代码引用了这里没定义的名字（辅助函数改名/锚点失配），
+  // 结果不是「缺陷结论」而是「取证失败」——ReferenceError 会被包装器自己的 catch 吞掉，
+  // 不拦就会把补丁生效的产物报成未生效。
+  if (firstErr instanceof ReferenceError) {
+    throw new Error(`合成运行时缺少被引用的名字（${firstErr.message}）—— 辅助函数名与上游写法已不一致`)
   }
   const requestsInFirstCall = state.sent.length
   // harness 自检（两种 bundle 上都必须成立）：第一次请求确实带着那张预热的旧令牌。

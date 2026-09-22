@@ -254,10 +254,26 @@ keep('bridge / CDP 的 HTTP 协议错误（调用方按 kind 判定，不是给�
 keep('遥测', ['Bun crash'])
 keep('JS 指令（不是文案）', ['use strict'])
 keep('诊断串片段（拼进 [linux-launch] 那行日志）', [' forced-on by FREEBUFF_FORCE_SANDBOX'])
+keep('浏览器子系统（0.0.131 新增）的智能体侧 / 协议报错（调用方或模型按错误分支处理，不是给用户读的文案；用户可见的对话框与录制报错已进 dict.json）', [
+  'Browser action interrupted by human input. Read a fresh snapshot before continuing.',
+  'Close browser DevTools before using agent browser control.',
+  'Unknown browser command.',
+  'Unknown native browser method.',
+])
+keep('浏览器配置的磁盘路径 / 文件名（用来在磁盘上定位，翻掉会让导入找不到文件）', [
+  'Cookies',
+  'Local State',
+  'Library/Application Support',
+  'Arc/User Data',
+  'imput/Helium/User Data',
+])
+keep('附件 / 下载文件名（用户看到的是文件名本身）', ['Browser annotation.png'])
 keep('品牌名 / 应用名 / 字体名（产品名，且被用于探测与匹配）', [
   'Visual Studio Code',
   'Microsoft VS Code',
   'Windows Terminal',
+  'Microsoft Edge',
+  'Freebuff Browser',
   'Command Prompt',
   'File Explorer',
   'Finder',

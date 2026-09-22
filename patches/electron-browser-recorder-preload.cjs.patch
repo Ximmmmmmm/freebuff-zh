@@ -1,0 +1,22 @@
+diff --git "a/C:\\Users\\XIM\\Desktop\\freebuff\\freebuff-zh\\work\\patch-src\\browser-recorder-preload.cjs" "b/C:\\Users\\XIM\\Desktop\\freebuff\\freebuff-zh\\work\\patch-out\\browser-recorder-preload.cjs"
+index 56d6037..5e734c0 100644
+--- a/electron/browser-recorder-preload.cjs
++++ b/electron/browser-recorder-preload.cjs
+@@ -26,7 +26,7 @@ window.addEventListener('DOMContentLoaded', () => {
+       }
+       recorder.onerror = () =>
+         ipcRenderer.send('browser:recording-data', {
+-          error: 'Video encoder failed.',
++          error: '视频编码器失败。',
+         })
+       recorder.start(1000)
+     }
+@@ -36,7 +36,7 @@ window.addEventListener('DOMContentLoaded', () => {
+     if (recorder?.state === 'recording') recorder.stop()
+     else
+       ipcRenderer.send('browser:recording-data', {
+-        error: 'No frames were recorded.',
++        error: '没有录到任何画面。',
+       })
+   })
+ })
