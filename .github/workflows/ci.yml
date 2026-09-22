@@ -23,6 +23,8 @@ jobs:
         run: node tools/test_remap.js
       - name: blindscan 自测（原版 vs 产物的英文片段对差）
         run: node tools/test_blindscan.js
+      - name: uipos 自测（锚点必须是属性名：字符串内容 / 属性读取两类误报）
+        run: node tools/test_uipos.js
       - name: mainscan 自测（主进程对差：注释 / 模板插值 / 正则 / 保留名单 / 退出码）
         run: node tools/test_mainscan.js
       - name: forbidden 体检自测（asar 读取 / 补丁形态 / 判定表与容差 / 退出码 0-1-2）

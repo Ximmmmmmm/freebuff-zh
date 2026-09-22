@@ -66,7 +66,26 @@ const WORD = /[A-Za-z]{2,}/g;
 // `instanceof` 是 0.0.120 适配时补进关键字组的：拼接式的片段（如 `,message:k instanceof
 // Error?k.message:`）里恰好带着 message 这个常见小词，其余判据都拦不住它，而它跟 function /
 // typeof 一样是 JS 关键字——不认它，回归闸门就会把「上游改了错误处理代码」误报成新增英文。
-const CODEISH = /[(){}\[\];=<>]|&&|\|\||=>|\?\.|\?\?|\b(?:function|typeof|const|let|var|instanceof)\b|\[object|\\n|console\.|\.js\b/;
+//
+// **反引号（`）** 是 0.0.133 适配时补的：重叠配对遇到模板字面量会跨过模板定界符，抽出
+// `:Xt?` - -menu`:void 0,` 这种「压缩代码 + 模板尾巴」的混合片段（源文本是
+// `"aria-controls":Xt?`${ft}-${Xt}-menu`:void 0,` —— 开引号其实是 "aria-controls" 的**闭引号**）。
+// 它带着 menu / void / 数字，两条判据都拦不住：upstreamdiff 会把它列进「待补翻」，而「本版
+// 新增了什么」的真文案就藏在这条噪音后面（0.0.133 的 `Open` / `Closed` 就是先补了真文案、
+// 噪音才单独露出来的）。判据：**自然文案里的反引号只可能是第三方库在引用标识符**
+// （shiki 的 `` Please use `lazyRender` … ``、react-window 的 `` The `smooth` scroll … ``），
+// 那种消息按惯例保留英文、进不进对差清单都没意义；而我们自己的文案一条都不带反引号——
+// 实测两版产物在闸门口径（≥3 词 + 常见小词）下各 28 条含反引号片段，**全部是第三方库消息**，
+// 宽口径下每一条跨引号片段都能在同一个集合里找到「不带反引号的孪生片段」（同一句文案的
+// 模板分段版），也就是说这条判据不会让任何真文案从清单里消失。
+//
+// **`void`** 与反引号是同一个场合的姊妹判据：模板按「相邻反引号」逐段取，夹在两个模板之间的
+// 那段代码也会被当成一段「文案」（如 `:void 0,"aria-activedescendant":Xt?` —— 前一个模板
+// 收尾、下一个模板开始之间的代码）。压缩产物里的 `void 0` 就是 `undefined`，文案里不会出现
+// 它，所以它跟 function / typeof 一样按关键字拦下来；实测四份 bundle（两版原版 + 两版产物）
+// 在闸门口径下含 void 的片段 **0 条**、宽口径下各 5 条且全是这种代码（CSS 属性 / aria 属性
+// 的取值代码），没有一条真文案被这条判据误伤。
+const CODEISH = /[(){}\[\];=<>`]|&&|\|\||=>|\?\.|\?\?|\b(?:function|typeof|const|let|var|instanceof|void)\b|\[object|\\n|console\.|\.js\b/;
 // 括号要在**紧贴标识符**时才算代码（`fetch(url)`、`a[i]`）；被空白与词尾包起来的 ` (…)` 多半是
 // 文案里的插入语（`What went wrong? (optional)`、`Charged once (per session)`）。以前括号一律当
 // 代码符号，于是「带插入语的界面文案」在片段级与字面量级两条通道里**都**看不见：0.0.132 新增的

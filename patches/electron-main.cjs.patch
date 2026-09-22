@@ -1,6 +1,6 @@
 --- a/electron/main.cjs
 +++ b/electron/main.cjs
-@@ -508,14 +508,14 @@
+@@ -509,14 +509,14 @@
    const buttons = []
    const actions = []
    if (compatibilityBuildUrl) {
@@ -18,7 +18,7 @@
    actions.push(() => {})
  
    const options = {
-@@ -540,10 +540,13 @@
+@@ -541,10 +541,13 @@
    return new Promise((resolve, reject) => {
      const { bun, args, cwd, uiDir, wasmDir, packaged } = resolveOrchestrator()
      const capture = createStderrCapture(bun, args)
@@ -36,7 +36,7 @@
      apiLaunchToken = launchId
      let exited = false
      let ready = false
-@@ -585,7 +588,7 @@
+@@ -586,7 +589,7 @@
      }
  
      if (!shellLifetime) {
@@ -45,7 +45,7 @@
        return
      }
      const env = {
-@@ -640,10 +643,10 @@
+@@ -641,10 +644,10 @@
        rejectStartup(
          failure('spawn', {
            errorMessage:
@@ -59,7 +59,7 @@
          }),
        )
      })
-@@ -730,7 +733,7 @@
+@@ -731,7 +734,7 @@
          closed
            ? failure('timeout')
            : failure('cleanup', {
@@ -68,7 +68,7 @@
              }),
        )
      }
-@@ -1083,15 +1086,13 @@
+@@ -1084,15 +1087,13 @@
    try {
      const response = askSync(parent, {
        type: 'question',
@@ -88,7 +88,7 @@
        // a stray Return keeps the agents alive
        defaultId: 0,
        cancelId: 0,
-@@ -1176,8 +1177,8 @@
+@@ -1177,8 +1178,8 @@
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return []
    const res = await dialog.showOpenDialog(win, {
@@ -96,10 +96,10 @@
 -    buttonLabel: 'Attach',
 +    title: '附加文件或文件夹',
 +    buttonLabel: '附加',
-     properties: ['openFile', 'openDirectory', 'multiSelections', 'treatPackageAsDirectory'],
+     properties: attachmentDialogProperties(kind),
    })
    if (res.canceled) return []
-@@ -1206,13 +1207,13 @@
+@@ -1207,13 +1208,13 @@
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return []
    const res = await dialog.showOpenDialog(win, {
@@ -117,7 +117,7 @@
          extensions: [...VIEWABLE_IMAGE_EXTENSIONS, ...OTHER_IMAGE_EXTENSIONS],
        },
      ],
-@@ -1230,8 +1231,8 @@
+@@ -1231,8 +1232,8 @@
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return null
    const res = await dialog.showOpenDialog(win, {
@@ -128,7 +128,7 @@
      properties: ['openDirectory', 'createDirectory'],
    })
    return res.canceled || res.filePaths.length === 0 ? null : res.filePaths[0]
-@@ -1241,10 +1242,10 @@
+@@ -1242,10 +1243,10 @@
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return false
    if (typeof filename !== 'string' || typeof content !== 'string') {
@@ -141,7 +141,7 @@
      defaultPath: path.basename(filename),
      filters: [{ name: 'Markdown', extensions: ['md'] }],
      properties: ['createDirectory', 'showOverwriteConfirmation'],
-@@ -1337,17 +1338,17 @@
+@@ -1338,17 +1339,17 @@
  ipcMain.handle('shell:openIn', async (_event, request) => {
    try {
      if (!request || typeof request !== 'object' || Array.isArray(request)) {
@@ -164,7 +164,7 @@
  
      if (target.id === 'copy-path') {
        clipboard.writeText(resolved.requested)
-@@ -1360,7 +1361,7 @@
+@@ -1361,7 +1362,7 @@
        }
      } else {
        const args = launchArgs(target, resolved, line)
@@ -173,7 +173,7 @@
        await new Promise((resolve, reject) => {
          const child = spawn(target.executable, args, {
            cwd: launchCwd(target, resolved),
-@@ -1377,7 +1378,7 @@
+@@ -1378,7 +1379,7 @@
      }
      return { ok: true, path: resolved.requested, openedPath: resolved.opened, fallback: resolved.fallback }
    } catch (error) {
@@ -182,7 +182,7 @@
    }
  })
  
-@@ -1510,10 +1511,10 @@
+@@ -1511,10 +1512,10 @@
        resolve(action)
      }
      const menu = Menu.buildFromTemplate([
@@ -197,7 +197,7 @@
      ])
      menu.popup({
        window: BrowserWindow.fromWebContents(event.sender) ?? undefined,
-@@ -1536,10 +1537,10 @@
+@@ -1537,10 +1538,10 @@
              label: app.name,
              submenu: [
                { role: 'about' },
@@ -210,7 +210,7 @@
                { role: 'services' },
                { type: 'separator' },
                { role: 'hide' },
-@@ -1548,7 +1549,7 @@
+@@ -1549,7 +1550,7 @@
                { type: 'separator' },
                {
                  // not `role: 'quit'`: that reaches app.quit() directly, with no chance to ask
@@ -219,7 +219,7 @@
                  accelerator: 'Command+Q',
                  click: () => requestQuit(),
                },
-@@ -1557,16 +1558,16 @@
+@@ -1558,16 +1559,16 @@
          ]
        : []),
      {
@@ -240,7 +240,7 @@
            accelerator: 'CmdOrCtrl+Shift+T',
            click: () => sendMenuCommand('reopen-tab'),
          },
-@@ -1575,24 +1576,24 @@
+@@ -1576,24 +1577,24 @@
          // other, and on a fresh install its menu lists only the project already open — so ⌘O is
          // where someone who has never heard the word "space" is going to look.
          {
@@ -272,7 +272,7 @@
          { role: 'toggleDevTools' },
          { type: 'separator' },
          { role: 'resetZoom' },
-@@ -1602,15 +1603,15 @@
+@@ -1603,15 +1604,15 @@
          { role: 'togglefullscreen' },
        ],
      },
@@ -291,7 +291,7 @@
              ],
            },
          ]),
-@@ -1758,7 +1759,7 @@
+@@ -1759,7 +1760,7 @@
      if (err?.orchestratorFailure) {
        await showOrchestratorFailure(err.orchestratorFailure, win)
      } else {
@@ -300,7 +300,7 @@
      }
      app.quit()
      return
-@@ -1877,9 +1878,9 @@
+@@ -1878,9 +1879,9 @@
        canRelaunch: !!relaunchExecPath,
      })
      const buttons = canRetryWithoutSandbox
@@ -313,7 +313,7 @@
      // A launch failure this early can land before `ready`, where the dialog
      // module throws — and an exception here would replace the message we came to
      // show with a silent crash, which is the exact failure being fixed.
-@@ -1887,7 +1888,7 @@
+@@ -1888,7 +1889,7 @@
      // buttons, so the pre-ready path explains and quits rather than offering the
      // retry. Nothing is running yet, so there is nothing to tear down.
      if (!app.isReady()) {
@@ -322,7 +322,7 @@
        app.exit(1)
        return
      }
-@@ -1895,7 +1896,7 @@
+@@ -1896,7 +1897,7 @@
      try {
        response = dialog.showMessageBoxSync({
          type: 'error',

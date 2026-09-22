@@ -9,6 +9,11 @@
 //   2. JSX 文本节点：children:[ …, " 裸文本", … ] 中深度 1 的纯字符串元素。
 //   3. 模板分支：属性值里以反引号给出的模板（`Connected · Manage ${o}`）。
 //
+// 锚点必须是**属性名**（前一个字符是属性边界），否则会拿字符串内容或属性读取当锚点：
+//   `` key:`label:${xe}:${R}` `` （0.0.133 的新会话选择器分组键，前一个字符是反引号）、
+//   `k.label:`Open in ${k.label}``、`n.children:[n]`（前一个字符是 `.`）——
+//   前者会把后面 200 字符的压缩代码当成「label 的值」报成一条英文，实测 0.0.133 适配时中过一次。
+//
 // 只列英文（不含 CJK）条目，按出现次数排序。用法：node tools/uipos.js <bundle>
 const fs = require('fs')
 const src = fs.readFileSync(process.argv[2], 'utf8')
@@ -147,10 +152,22 @@ function collectStrings(text) {
   return out
 }
 
+// 锚点必须是**属性名**，不能是「恰好以 label: 结尾的字符串内容」或属性读取：
+//   · `` key:`label:${xe}:${R}` ``（0.0.133 新增的会话选择器分组键）——前一个字符是反引号，
+//     命中后 valueTextAt 会一路吞到下一个深度 0 的逗号，于是把整段压缩代码当成「label 的值」
+//     报成一条 200 字符的英文（0.0.133 适配时实测）；
+//   · `k.label:`Open in ${k.label}``、`n.children:[n]` 这类**属性读取**同样是误报：
+//     属性名的前一个字符是 `.`。
+// 真正的属性名前面必然是逗号 / 大括号 / 圆括号 / 分号 / 空白之一（对象字面量、JSX props、
+// 解构、默认参数都是这个形状），所以按「前一个字符是不是属性边界」判即可——
+// 实测这一条在 2.4 MB 的 bundle 里只挡掉 11 处误报（其余 2372 处照旧）。
+const PROP_BOUNDARY = new Set(['', ',', '{', '(', '[', ';', ' ', '\n', '\r', '\t'])
+
 for (const anchor of ANCHORS) {
   const re = new RegExp(anchor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ':' + OPT_ASSIGN, 'g')
   let m
   while ((m = re.exec(src)) !== null) {
+    if (!PROP_BOUNDARY.has(src[m.index - 1] ?? '')) continue
     const valueStart = m.index + m[0].length
     const { text } = valueTextAt(valueStart)
     for (const { raw, quote, offset } of collectStrings(text)) {
@@ -169,6 +186,8 @@ for (const anchor of ANCHORS) {
 const childArr = /children:\[/g
 let cm
 while ((cm = childArr.exec(src)) !== null) {
+  // 同上的属性边界判据：`n.children:[n]`（属性读取）不是 JSX 的 children 属性
+  if (!PROP_BOUNDARY.has(src[cm.index - 1] ?? '')) continue
   let i = cm.index + cm[0].length
   let depth = 1
   let q = null

@@ -1,5 +1,73 @@
 # 更新日志
 
+## [0.0.133] · 2026-09-22（已发布 `pack-v0.0.133`）
+
+跟随上游自动更新到 0.0.133。这一版上游只动了两块界面（**任务输入框**与**附件菜单**）外加一个平台 bug：
+
+- **任务输入框**：原来「没填任务提示就排队会被拒」那条 `Enter a mission prompt before queueing` 被删掉，
+  改成**长度上限**提示 `` `A mission can be at most ${up.toLocaleString()} characters` ``；在任务选择器里
+  选中某个任务时，占位符换成 `Describe the mission — Enter runs the one selected below`（原来的
+  `Describe what this mission should accomplish…` 仍在，是没选中任务时的分支）。
+- **附件菜单**：` Attach files or folder` / ` Upload images` 去掉前导空格并拆成三条——`Attach files or folder`
+  只在 macOS 给「文件+文件夹」合并对话框，Windows / Linux 拆成 `Attach files` / `Attach folder`。主进程
+  为此新增 `electron/attachment-dialog.cjs`（按平台给原生对话框的 `properties`），`main.cjs` / `preload.cjs`
+  跟着接线——这正是 0.0.131 起实测到的「Windows 上只选得到文件夹」那个 bug 的修法。
+- **另外两条单词级新文案**：项目侧栏的会话选择器现在按「已打开 / 已关闭」分组（`Ce("Open")` / `Ce("Closed")`
+  两个分组标签，两三个词，三条对差通道本来就看不见），设置面板多了关闭按钮标签 `Close settings`。
+
+对差账：片段级 1468 → 1469（新增 4 / 下线 3 / 疑似改写 5 组——后两组都是压缩变量改名的噪音），
+字面量级 1976 → 1980（新增 7，其中 3 条片段级没报到）；`electron/` 36 → 37 个文件（新增的
+`attachment-dialog.cjs` 只有配置与注释、无用户可见文案，**不需要新补丁**）。
+
+发布资产（`hanhua-pack-0.0.133.zip` 30,429,884 B / `pack-manifest.json` / `pristine-0.0.133.json.gz`），
+四道闸门（主进程扫描 / 回归闸门 / 单词级文案差集 / 字面量占用）全过；线上包下载回来后独立哈希，
+与本地包、与 manifest 声明三方一致：
+
+```
+sha512(base64) = md7D8MQI2scKZzCyY/EhAT7YEYVzTn8Q65yJ38KDlUoZ/o6rLm9BL2UiOHMrnuMtFW+f6sGmbYscS0YjSQFobA==
+```
+
+- **词典补翻 9 条、下线 3 条死词条**：新增 exact 8 条（`Attach files or folder` / `Attach files` /
+  `Attach folder` / `Upload images`——前两条是原来带前导空格条目的改写，`Close settings` /
+  `Describe the mission — Enter runs the one selected below` / `Open` / `Closed`）与 template 1 条
+  （`` `A mission can be at most ${up.toLocaleString()} characters` ``）；下线的 3 条是
+  `Enter a mission prompt before queueing` 与两个带前导空格的附件标签。exact 1311 → 1316 /
+  template 236 → 237（共 1636 条），替换数 1961 → 1967、`all keys matched`、
+  `missed_diagnose` 1636 条全部命中本版 UI bundle；重映射歧义 1 条人工改名：`Close ${te.label}` →
+  `Close ${ee.label}`（remap 报「锚文本在 bundle 命中 2 处且插值不一致」，人工比对 `panel-tab-close`
+  那处确认）——其余 53 条自动迁移。`Open` / `Closed` 是两三个词的短标签，`upstreamdiff`（≥3 词 / ≥2 词）
+  与 `regress`（只认句子）都看不见，是 6b 步的 `uipos_gap` 报出来的。
+- **主进程补丁**：`electron-main.cjs.patch` 里 `dialog:pickAttachments` 那个 hunk 失配——上游把处理函数签名
+  改成 `(event, kind)`、把 `properties: [...]` 换成 `properties: attachmentDialogProperties(kind)`。
+  改掉那一行上下文后跑 `node tools/reanchor_patch.js --all --write` 重锚定 23 个 hunk（其余是上游在文件
+  前半段插了一行 `require` 造成的整体行号漂移），12 个补丁全部干净套用；产物侧哨兵与两道行为取证照旧通过。
+- **又揪出一类静默失败：`uipos` 把「字符串里的 `label:`」当成界面属性锚点**。这一版新写的会话选择器分组键
+  是 `` key:`label:${xe}:${R}` ``，锚点命中它之后 `valueTextAt` 会一路吞到下一个深度 0 的逗号，把后面 200
+  字符压缩代码当成「`label` 的值」报成一条界面位置英文——而 `uipos_gap` 是发布闸门之一，于是它会**卡在一个
+  根本不存在的文案上**；更麻烦的是两条真文案（`Open` / `Closed`）就藏在这条噪音后面，人眼扫一遍很容易直接
+  跳过（本轮正是先把它们补进词典、噪音才单独露出来）。现在锚点必须是**属性名**（前一个字符是属性边界），
+  顺带挡住 `k.label:`Open in ${k.label}`` 与 `n.children:[n]` 这类属性读取误报——实测 2.4 MB 的 bundle 里
+  2372 处命中只挡掉 11 处，正例一条不少。新增 `tools/test_uipos.js` 自测（正例保留 + 两类误报挡住）并接进 CI。
+- **又一类跨引号噪音不再进清单（`regress` / `upstreamdiff` 共用的提取器）**：这一版报完还剩下两条
+  「待补翻短片段」（`` :P?` - -menu`:void 0, `` 与 `` :Xt?` - -menu`:void 0, ``）与两组「疑似改写」
+  （`:void 0,"aria-activedescendant":Xt?`）。它们都不是文案：模板按「相邻反引号」逐段取，
+  夹在两个模板之间的代码也会被当成一段；引号的重叠配对又会从某个 **闭引号**起读到下一个引号，
+  抽出「压缩代码 + 模板尾巴」。判据补了两条（`CODEISH`）：**裸反引号**（自然文案里不会出现它，
+  出现就说明这一片段跨了模板定界符）与 **`void`**（压缩产物里的 `undefined`，与 `typeof` /
+  `instanceof` 同类）。实测四份 bundle：闸门口径下含 `void` 的片段 **0 条**、含反引号的 28 条
+  **全是第三方库消息**（shiki / oniguruma / react-window 用反引号引用标识符那种，本来就按惯例
+  保留英文）；宽口径下每一条跨引号片段都能在同一个集合里找到「不带反引号的孪生片段」（同一句
+  文案的模板分段版），**不会让任何真文案从清单里消失**——`test_upstreamdiff` 新增第 16 组用例钉住
+  这两条判据（含「旧口径会放行它」的对照，实测把判据还原后 4 项断言立刻变红）。
+  由此 `intentional-english.json` 里那条 react-window 消息（`` The `smooth` scroll … ``）在提取阶段
+  就被滤掉、永远不会再被报出来，已移除（不再需要登记）。
+- 项目体检：回归闸门相对 `pack-v0.0.132` 未登记新增 0 处（220 vs 220——比上一版的 248 少 28 条，
+  正是上面那批含反引号的第三方库消息，两边同步掉一样的数）；主进程英文扫描疑似文案 0 条；
+  6b 步界面位置英文 17 → 17（扣除登记表 15 条后本版独有 0 处）；字面量占用 0 条；UI 行为补丁 KEEP
+  （5/5 哨兵 + stream-epoch / token-epoch 取证通过）；残留扫描回到基线（`uipos` 17 条 / `fieldscan` 1 条 /
+  `blindscan` 279 条）；`upstreamdiff` 小结：待补翻 0 条、疑似改写 0 组、下线 1 条（真被上游删掉的
+  那句 `Enter a mission prompt before queueing`）。
+
 ## [0.0.132] · 2026-09-22（已发布 `pack-v0.0.132`）
 
 跟随上游自动更新到 0.0.132。这一版上游改动很小（**评价反馈**那一块重做，外加付费套餐徽标），

@@ -33,6 +33,9 @@
 //      括号才算代码（`fetch(url, (opts))` 照旧不进清单）。
 //  15. **登记表**：`intentional-english.json`（fragments + uiStrings 两节都认）里登记过的条目
 //      不进待补翻、不拦退出码，单列一节并打印理由；`--no-allow` 忽略登记表，回到未过滤的全清单。
+//  16. **跨模板定界符的代码片段**（含裸反引号 / `void`）：模板按相邻反引号逐段取、引号按
+//      重叠配对取，两者都会抽出「代码 + 模板尾巴」的混合片段；minifier 一改短名就成一堆
+//      假的新增 / 下线 / 疑似改写（0.0.133 实测），现在在片段提取阶段就当代码拦掉。
 //
 // 用法：node tools/test_upstreamdiff.js        # 退出码非 0 表示回归
 'use strict'
@@ -40,7 +43,7 @@
 const fs = require('fs')
 const path = require('path')
 const { execFileSync } = require('child_process')
-const { isCopyLiteral } = require('./regress.js')
+const { isCopyLiteral, collectFragmentsFromSource, collectLiteralsFromSource } = require('./regress.js')
 
 const TOOL = path.join(__dirname, 'upstreamdiff.js')
 const WORK = path.join(__dirname, '..', 'work', 'test-upstreamdiff')
@@ -334,5 +337,55 @@ chk(entries(section(noAllow.out, '## 新增文案 · 词典未覆盖')).includes
 chk(/登记表：已忽略/.test(noAllow.out), '15) 且明说登记表被忽略（不静默）')
 chk(noAllow.code === 1, `15) 未过滤时仍是 exit 1（实际 ${noAllow.code}）`)
 
-console.log(fail ? `\n${fail} 项失败` : '\n全部通过（15 组用例）')
+// --- 16) 跨模板定界符的代码片段不进清单（裸反引号 / void 两个判据）----------------
+// 真实形态（0.0.133 实测）：模板按「相邻反引号」逐段取，夹在两个模板之间的代码也会被当成
+// 一段「文案」；引号的重叠配对又会从某个闭引号起读到下一个引号，抽出「代码 + 模板尾巴」。
+// 源文本形如：
+//   "aria-controls":Xt?`${ft}-${Xt}-menu`:void 0,"aria-activedescendant":Xt?…
+// 会抽出 `:Xt?` - -menu`:void 0,`（开引号其实是 "aria-controls" 的闭引号）与
+// `:void 0,"aria-activedescendant":Xt?`（前后两个模板之间的代码）。minifier 一改这些短名字，
+// 它们就成了「新增 + 下线 + 疑似改写」，把真正的待补翻清单淹掉，而清单后面的真文案很容易
+// 被连着跳过（0.0.133 的 `Open` / `Closed` 就是先补了真文案、噪音才单独露出来的）。
+const noisePrev = [
+  "'use strict'",
+  'const s = "Terminal actions"',
+  'const m = { "aria-expanded": c !== null, "aria-controls": c ? `${id}-${c}-menu` : void 0, "aria-activedescendant": c ? `${id}-${c}-option-${n}` : void 0 }',
+].join('\n')
+const noiseCur = [
+  "'use strict'",
+  'const s = "Terminal actions"',
+  'const m = { "aria-expanded": x !== null, "aria-controls": x ? `${ft}-${x}-menu` : void 0, "aria-activedescendant": x ? `${ft}-${x}-option-${v}` : void 0 }',
+  'const added = "Attach folder"',
+].join('\n')
+const noisePrevFile = path.join(WORK, 'noise-prev.js')
+const noiseCurFile = path.join(WORK, 'noise-cur.js')
+fs.writeFileSync(noisePrevFile, noisePrev)
+fs.writeFileSync(noiseCurFile, noiseCur)
+// 夹具词典不能是空的：词典没键时 upstreamdiff 一律判「无法标注覆盖」（全算已覆盖），
+// 那测不出「真新增长这样照旧进待补翻」。放一条跟夹具无关的键，让它走正常的覆盖判定。
+const noiseDict = path.join(WORK, 'noise-dict.json')
+fs.writeFileSync(
+  noiseDict,
+  JSON.stringify({ exact: { 'Something unrelated here': '夹具：与本次断言无关' }, template: {}, code: {}, pattern: {} }, null, 2) + '\n'
+)
+
+const noiseFrags = collectFragmentsFromSource(noiseCur, { minWords: 2, requireCommon: false })
+chk(![...noiseFrags].some((t) => t.includes('`')), '16) 含裸反引号的跨引号片段不进片段集合（两条通道都拦）')
+chk(![...noiseFrags].some((t) => /-menu|void 0/.test(t)), '16) 跨模板的 `-menu` / `void 0` 代码片段也不进')
+// 真文案单独看一条：两词 Title case 标签在片段级本来就不算（小写词占比不够），靠字面量级拿
+chk(collectLiteralsFromSource(noiseCur).has('Attach folder'), '16) 同一个文件里的真标签仍然被字面量级抽到（判据没有一刀切）')
+
+// 两个判据各自的必要性：旧口径（不含 ` 与 void）会放行这两条——写死旧正则，免得日后
+// 「顺手放宽」时以为它们在别处已经拦住了
+const OLD_CODEISH = /[(){}\[\];=<>]|&&|\|\||=>|\?\.|\?\?|\b(?:function|typeof|const|let|var|instanceof)\b|\[object|\\n|console\.|\.js\b/
+chk(!OLD_CODEISH.test(": x ? ` - -menu` : void 0,"), '16) 反引号是拦住跨引号模板尾巴的那一条（旧口径会放行它）')
+chk(!OLD_CODEISH.test(': void 0,"aria-activedescendant": x ?'), '16) void 是拦住跨模板代码段的那一条（旧口径会放行它）')
+
+const noiseRun = runH([noisePrevFile, noiseCurFile, '--dict', noiseDict, '--no-ctx'])
+chk(/新增 0、下线 0、疑似改写 0 组/.test(noiseRun.out), '16) 只换压缩变量名时，报告里不再出现新增 / 下线 / 疑似改写')
+chk(!/void 0|-menu/.test(noiseRun.out), '16) 报告正文里也不出现这两类代码片段')
+chk(entries(section(noiseRun.out, '## 新增文案 · 词典未覆盖')).includes('Attach folder'), '16) 同一文件里的真新增仍然进待补翻')
+chk(noiseRun.code === 1, `16) 有真新增 → exit 1（实际 ${noiseRun.code}）`)
+
+console.log(fail ? `\n${fail} 项失败` : '\n全部通过（16 组用例）')
 process.exit(fail ? 1 : 0)

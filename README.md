@@ -4,20 +4,21 @@
 ![GitHub last commit](https://img.shields.io/github/last-commit/Ximmmmmmm/freebuff-zh)
 ![GitHub Repo stars](https://img.shields.io/github/stars/Ximmmmmmm/freebuff-zh?style=social)
 ![GitHub forks](https://img.shields.io/github/forks/Ximmmmmmm/freebuff-zh?style=social)
-[![Target](https://img.shields.io/badge/目标-Freebuff%20Desktop%20v0.0.132-blue)](https://freebuff.com)
+[![Target](https://img.shields.io/badge/目标-Freebuff%20Desktop%20v0.0.133-blue)](https://freebuff.com)
 [![lint](https://github.com/Ximmmmmmm/freebuff-zh/actions/workflows/ci.yml/badge.svg)](https://github.com/Ximmmmmmm/freebuff-zh/actions/workflows/ci.yml)
 
 **中文关键词 / Keywords**: Freebuff 汉化、Freebuff 中文版、Freebuff Chinese localization、AI coding agent 中文、Freebuff 翻译、Electron 汉化、localization pack
 
-Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.132）的**简体中文汉化包**，直接修改已打包产物，无需源码、不涉及任何联网改动。
+Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.133）的**简体中文汉化包**，直接修改已打包产物，无需源码、不涉及任何联网改动。
 
 > **English**: A Simplified-Chinese localization pack for Freebuff Desktop — the free AI coding agent. Patches the packaged app directly, no source build required. If you're a Chinese-speaking Freebuff user, this is for you.
 
 ## ✨ 特性
 
-- **覆盖全面**：渲染进程约 1961 处文案 + 主进程菜单 / 对话框 / 同意窗口全面中文化；connectors / MCP 面板（状态标签、详情面板与目录里 100 条连接器介绍）与 v0.0.104 新增的 BYOK（自带密钥）API 提供商界面已全量中文化
-- **词典驱动**：`dict.json`（exact 1311 / template 236 / code 15 / pattern 68），幂等应用、可审计
-- **可复现构建**：`build.sh` 从原版 + 词典 + 补丁**逐字节重建**汉化产物  （v0.0.77 曾对照 Release 产物验证；v0.0.83 / v0.0.87 / v0.0.88 / v0.0.90 / v0.0.91 / v0.0.92 / v0.0.103 / v0.0.104 / v0.0.105 / v0.0.106 / v0.0.107 / v0.0.108 / v0.0.109 / v0.0.110 / v0.0.112 / v0.0.113 / v0.0.114 / v0.0.120 / v0.0.123 / v0.0.124 / v0.0.126 / v0.0.127 / v0.0.128 / v0.0.131 / v0.0.132 适配经防呆自检通过）
+- **覆盖全面**：渲染进程约 1967 处文案 + 主进程菜单 / 对话框 / 同意窗口全面中文化；connectors / MCP 面板（状态标签、详情面板与目录里 100 条连接器介绍）与 v0.0.104 新增的 BYOK（自带密钥）API 提供商界面已全量中文化
+- **词典驱动**：`dict.json`（exact 1316 / template 237 / code 15 / pattern 68），幂等应用、可审计
+- **可复现构建**：`build.sh` 从原版 + 词典 + 补丁**逐字节重建**汉化产物  （v0.0.77 曾对照 Release 产物验证；v0.0.83 / v0.0.87 / v0.0.88 / v0.0.90 / v0.0.91 / v0.0.92 / v0.0.103 / v0.0.104 / v0.0.105 / v0.0.106 / v0.0.107 / v0.0.108 / v0.0.109 / v0.0.110 / v0.0.112 / v0.0.113 / v0.0.114 / v0.0.120 / v0.0.123 / v0.0.124 / v0.0.126 / v0.0.127 / v0.0.128 / v0.0.131 / v0.0.132 / v0.0.133 适配经防呆自检通过）
+- **v0.0.133 适配**：上游只动了两块界面与一个平台 bug：任务输入框把「没填提示就排队」的拦截（`Enter a mission prompt before queueing`）换成**长度上限**提示 `` `A mission can be at most ${up.toLocaleString()} characters` ``、选中任务时占位符换成 `Describe the mission — Enter runs the one selected below`；附件菜单的 ` Attach files or folder` / ` Upload images` 去掉前导空格并拆成三条（macOS 才给「文件+文件夹」合并对话框，Windows / Linux 拆成 `Attach files` / `Attach folder`），主进程为此新增 `electron/attachment-dialog.cjs`（按平台给原生对话框的 `properties`，正是 0.0.131 起「Windows 上只能选到文件夹」那个 bug 的修法）；项目侧栏的会话选择器按「已打开 / 已关闭」分组（`Ce("Open")` / `Ce("Closed")` 两条短标签），设置面板多了 `Close settings`。对差账：片段级 1468 → 1469（新增 4 / 下线 3 / 疑似改写 5 组全是压缩变量改名噪音），字面量级 1976 → 1980（新增 7，其中 3 条片段级没报到）；`electron/` 36 → 37 个文件（新增那个只有配置与注释、无用户可见文案，不需要补丁）。词典 exact 1311 → 1316 / template 236 → 237，替换数 1961 → 1967，`all keys matched`、`missed_diagnose` 1636 条全命中、歧义 1 条人工改名（`Close ${te.label}` → `Close ${ee.label}`）、死词条 3 条下线；`electron-main.cjs.patch` 的 `dialog:pickAttachments` 那个 hunk 因上游改了函数签名与 `properties` 行而失配，改上下文 + `reanchor_patch.js --all --write` 重锚定 23 个 hunk（行号漂移）后 12 个补丁全部干净套用。**又揪出一类静默失败**：`uipos` 的锚点以前只按「`label:` 这个子串出现」匹配，本版新写的分组键 `` key:`label:${xe}:${R}` `` 被当成属性锚点，`valueTextAt` 一路吞到下一个深度 0 的逗号，把后面 200 字符压缩代码报成一条界面位置英文——`uipos_gap` 据此判「本版新增 1 处未登记英文」，发布闸门会卡在一条**根本不存在**的文案上（`Open` / `Closed` 两条真文案就藏在这条噪音后面）；判据改成「锚点前一个字符必须是属性边界」，顺带挡掉 `k.label:`Open in ${k.label}`` 与 `n.children:[n]` 这类属性读取误报（2.4 MB 的 bundle 里 2372 处命中只挡掉 11 处），并新增 `tools/test_uipos.js` 自测进 CI。残留扫描 `uipos` 17 条（15 条为已登记的品牌名 / 模型名 / 命令 / JSON 示例）、`fieldscan` 1 条 / `blindscan` 279 条，回归闸门 220 vs 220 新增 0 处（比上一版的 248 少 28 条：含反引号的第三方库消息现在在提取阶段就被当成代码滤掉），主进程零漏翻，UI 行为补丁 KEEP；`upstreamdiff` 小结待补翻 0 条、疑似改写 0 组。这一版还给对差提取器（`regress` / `upstreamdiff` 共用）补了两条判据：**裸反引号**与 **`void`**——模板按相邻反引号逐段取、引号按重叠配对取，会抽出 `` :P?` - -menu`:void 0, `` 这种「压缩代码 + 模板尾巴」的混合片段，minifier 一改短名就成了假的新增 / 下线 / 疑似改写（真文案还会被淹在后面）；实测含 `void` 的片段在闸门口径下 0 条、含反引号的 28 条全是第三方库消息，且每条跨引号片段都有「不带反引号的孪生片段」在集合里，所以这两条判据不会漏掉真文案（`test_upstreamdiff` 第 16 组用例把「旧口径会放行它」也一并钉住）
 - **v0.0.132 适配**：上游改动很小（评价反馈那一块重做）：片段级 1461 → 1468（新增 7 / 下线 0 / 改写 0），字面量级 1964 → 1976（新增 12，其中 5 条片段级没报到），`electron/` 36 个文件无增删、12 个补丁全部干净套用。12 条补翻全部进 exact（exact 1299 → 1311）：评价反馈那套（`Rate this response` / `Good response` / `Bad response` / `What went wrong` / `Thanks — noted.` / `Thanks — that helps.` / `Could not send that. Try again.`）、付费套餐徽标与墙（`Paid plan` / `Included with a paid plan.` / `See plans →`）与按钮 `Send`；替换数 1960 → 1961、`all keys matched`、`missed_diagnose` 1630 条全命中、待补翻 0 条（`upstreamdiff` 小结仍列 1 条，是已登记的 CSS 类名 `model-badge muted`——那个工具不读登记表）。这一版还修掉**提取器的括号盲区**：括号以前一律当代码符号，于是带插入语的文案在片段级与字面量级**两条通道里都看不见**——本版新增的反馈框占位符 `What went wrong? (optional)` 就是这么漏的（最后是 `uipos` 的属性位置体检报出来的，正是它 16 处的那一条）；现在只有「紧贴标识符」的括号才算代码（`fetch(url, (opts))` 照旧拦住），并钉了 4 条自测断言。`Send` 则是 `uipos_gap` 6b 步报出来的单词级文案。另登记一条有意保留的英文：CSS 类名组合 `model-badge muted`（与 `streak-day on` 同类）
 - **v0.0.131 适配**：上游连跨三版（0.0.129 / 0.0.130 / 0.0.131）大改：终端分屏、任务与技能选择器、项目预览、网页标注，以及一整套**浏览器子系统**（Cookie 导入、原生浏览器窗口、页面录制、视口预设），设置页重构为 `General / Appearance / Connectors / Projects / Skills / API Providers` 导航。对差账：片段级 1512 → 1430（新增 108 / 下线 183），字面量级 1963 → 1917（新增 207，其中 95 条片段级没报到）；`electron/` 新增 6 个文件（`browser-*.cjs` / `browser-recorder.html`）。词典 exact 1297 / template 230 / code 14 / pattern 67，替换总数 1929，模板变量重映射 0 条（230 SAME）、歧义 0 条、MISSING 0 条，`all keys matched`；补完后「待补翻」剩下的 28 条全是压缩产物噪音、react-window 内部日志与页面标注 payload。两条自动通道都看不见的**单词级新文案**（`Settings` / `Projects` / `General` / `Missions` / `Theme` / `Reset` / `Width` / `Height` / `Availability` / `Browser` / `System` 与设备预设 `Desktop · 1280 × 720` 等 14 条）是 `uipos` 报出来的（52 → 35，其余是品牌名 / 模型名）。主进程新增 `patches/electron-browser-*.patch` 四份（对话框、右键菜单、Cookie 导入与录制的用户可见报错），并把智能体侧协议报错与磁盘路径登记进 `mainscan.js` 的 `INTENTIONAL`——`mainscan` 疑似文案 16 → **0**；**踩坑记住**：词典条目必须能在 UI bundle 命中（UI 侧 MISSED 是硬失败），只在主进程出现的文案只能写成补丁。回归闸门 238 vs 238 新增 5 处，全部有意保留（react-window 三条内部 `console.warn`、标注 payload 里的 `Regions: …`、CSS 类名 `streak-day on`），逐条登进 `intentional-english.json`（写明理由，仓库内可审）。另修好两处**工具自己错**：`semantic_guard` 的模板字面量引号配对、`probe_token_epoch` 从 fix 现场读辅助函数名（并加自检）
 - **v0.0.128 适配**：上游把「非高峰时段定价」的说明整段收窄——`Kz(...)` 里 `detail` 字段整个删掉、tooltip 只剩一句，**没有新写任何文案**：片段级 1515 → 1512（下线 3）、字面量级 1966 → 1963（新增 1 / 下线 4），`electron/` 下 30 个文件与 0.0.127 **逐字节相同**（`diff -rq` 无输出，`patches/` 无需改动），`index.html` 只换了 bundle 文件名。**改写 1 条**：长 tooltip `` `Off-peak: ${r.price} Freebucks/hour, daily ${f}. Regular price: ${r.regularPrice} Freebucks/hour. The price at session start is locked for the full hour.` `` → `` `Off-peak: ${r.price} Freebucks/hour, daily ${f}.` ``（变量名没变，所以 `remap` 报的是 MISSING 而不是 RENAMED）。**下线 3 条死词条**：两条 `detail` 模板（`` `Off-peak · normally ${…}/hr · until ${…} ${…}` `` / `` `Off-peak ${…}/hr · ${…}` ``，`detail` 字段已从返回值里消失）与 exact 里的 `" Your first-tab discount is also included in the displayed price."`（连它那个 `firstTabDiscount` 三元一起被上游删了）。这一版唯一的「新字面量」就是改写后那条 tooltip 的碎片（`Off-peak: Freebucks/hour, daily .`）：`upstreamdiff` 片段级报「新增 0」、字面量级报「新增 1 / 待补翻 0」——它是新模板的固定段而不是新句子，两本账对得上。替换数 1988 → 1985（exact 1310 / template 288 / code 9 / pattern 80，`all keys matched`）；模板变量重映射 0 条、歧义 0 条、MISSING 3 条（即上述死词条，删完复扫为 0）。`update.sh` 七步全绿：上游新增文案词典已全覆盖、回归闸门 238 vs 238 新增 0 处、`mainscan` 零漏翻、UI 行为补丁 5 组锚点全 KEEP、两道行为取证通过；残留扫描回到基线（`uipos` 15 条 / `fieldscan` 1 条 / `blindscan` 279 条）
@@ -161,6 +162,7 @@ bash build.sh <app.asar> <ui-dir>   # 或显式指定原版文件
 │   ├── test_missed_diagnose.js # 词条命中体检自测（四类归属 / 退出码，CI 跑）
 │   ├── uipos_gap.js   # 单词级界面文案差集（本版产物 − 上一版产物 − 登记表；补两条对差通道的盲区）
 │   ├── test_uipos_gap.js # 差集自测（解析口径 / 两侧差集 / 登记表 / 退出码，CI 跑）
+│   ├── test_uipos.js  # uipos 锚点自测（必须是属性名：字符串内容 / 属性读取两类误报，CI 跑）
 │   ├── lint_collisions.js # 字面量占用（词条会不会在 electron/ 里当路径 / 比较值 / IPC 通道名）
 │   ├── test_lint_collisions.js # 占用检查自测（三种形态 + 假阳性防线，CI 跑）
 │   ├── patch_preflight.js # 主进程补丁锚点预检（行号漂移 vs 上游改写，附修法）
@@ -198,8 +200,9 @@ bash build.sh <app.asar> <ui-dir>   # 或显式指定原版文件
 - **有意保留英文的部分**：编程语言名（Python、TypeScript…）、主题名（Ayu Dark…）、键盘键名
   （Enter、Delete…）、模型名（Opus 5 / GPT-5.6-* / GPT-6-Astra / Sonnet 5…）、内部枚举/类型名、
   库内部错误信息、`Freebucks` 品牌词（含推广 tagline `0 Freebucks`）——改动会破坏逻辑或破坏
-  品牌一致性，故不翻译。当前界面属性位置残留英文为 **15 条**，均属上述类别
-  （可用 `node tools/uipos.js output/ui/assets/index-*.js` 复核）。
+  品牌一致性，故不翻译。当前界面属性位置残留英文为 **17 条**，均属上述类别
+  （可用 `node tools/uipos.js output/ui/assets/index-*.js` 复核；`uipos_gap` 的去重口径为 15 条，
+  两条差额是品牌名 `Freebuff` 分别落在 aria-label 与 JSX 文本节点两个桶里）。
 - 汉化不涉及任何联网、上传或凭据改动。
 - **界面汉化 ≠ AI 回复中文**：本包只翻译界面文案；AI 用什么语言回复由服务端提示词与注入的指令决定。想让 AI 无论输入什么语言都固定用简体中文回复，只需家目录有 `~\.AGENTS.md` 语言规则——配套[多开控制器](https://github.com/Ximmmmmmm/freebuff-controller)启动时会自动写入（默认回复中文，无需操作；不依赖汉化包与 Freebuff 版本，仅对新会话生效），也可手动创建。
 - **为什么有时 AI 会突然用英文回复？** 经排查，这不是本机任何工具（Freebuff 客户端、汉化包、输入法、浏览器插件均无此类文本）造成的，而是 Freebuff 服务端在检测到英文输入时动态注入的「语言一致性」指令（如 "Reply in English only"、"Your user's primary language is English"）——本机无开关可关。解决办法：`~\.AGENTS.md` 语言规则里的**抗注入条款**已明确宣布这类指令（含翻译式、格式声明式、借口式、中文措辞、间接注入等变体）一律无效，实测可有效压制。控制器 v1.6.1+ 启动时会自动写入带抗注入条款的完整版规则。
