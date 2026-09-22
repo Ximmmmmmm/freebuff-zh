@@ -1,5 +1,37 @@
 # 更新日志
 
+## [0.0.132] · 2026-09-22（已发布 `pack-v0.0.132`）
+
+跟随上游自动更新到 0.0.132。这一版上游改动很小（**评价反馈**那一块重做，外加付费套餐徽标），
+对差账：片段级 1461 → 1468（新增 7 / 下线 0 / 疑似改写 0），字面量级 1964 → 1976（新增 12，
+其中 5 条片段级没报到）；`electron/` 仍是 36 个文件、没有增删，12 个主进程补丁全部干净套用。
+
+发布资产（`hanhua-pack-0.0.132.zip` 30,428,508 B / `pack-manifest.json` / `pristine-0.0.132.json.gz`），
+四道闸门（主进程扫描 / 回归闸门 / 单词级文案差集 / 字面量占用）全过；线上包下载回来后独立哈希，
+与本地包、与 manifest 声明三方一致：
+
+```
+sha512(base64) = AVn95mkystlrpVc4h1eVNLi//iQrF9U5bLbNgX7VkKSqNYNO+/THnLqoS+wn6t9Z07Baezcrk+vPi3TOUzM1KA==
+```
+
+- **词典补翻 12 条**（全部进 `exact`，exact 1299 → 1311）：评价反馈那一套
+  （`Rate this response` / `Good response` / `Bad response` / `What went wrong` /
+  `Thanks — noted.` / `Thanks — that helps.` / `Could not send that. Try again.`）、
+  付费套餐徽标与墙（`Paid plan` / `Included with a paid plan.` / `See plans →`），以及那个
+  `Send` 按钮（单词级，由 6b 步的 `uipos_gap` 报出来）。替换数 1960 → 1961、`all keys matched`；
+  `missed_diagnose` 1630 条词条全部命中本版 UI bundle；待补翻 0 条——`upstreamdiff` 的小结仍会列
+  1 条，那是已登记的 CSS 类名 `model-badge muted`（该工具不读登记表，属于已知的报告口径差异）。
+- **修掉提取器的「括号盲区」**（`tools/regress.js`）：括号以前一律当代码符号，于是**带插入语的文案
+  在片段级与字面量级两条通道里都看不见**——本版新增的反馈框占位符 `What went wrong? (optional)`
+  就是这么漏的（12 条清单里它是最后才由 `uipos` 的属性位置体检报出来的）。现在只有「紧贴标识符」
+  的括号才算代码（`fetch(url, (opts))` 照旧拦住），并钉了 4 条自测断言（含这条真实文案与函数调用
+  的对照）；`test_upstreamdiff` 从 13 组用例扩到 14 组。
+- **登记一条有意保留的英文**：`model-badge muted`（CSS 类名组合，就在 `Paid plan` 徽标那段，文案
+  本身已翻）进 `intentional-english.json` 的 fragments，与 `streak-day on` 同类。
+- 项目体检：模板变量重映射 0 条 / 歧义 0 条；回归闸门相对 `pack-v0.0.131.1` 未登记新增 0 处；
+  6b 步界面位置英文 16 → 15（`Send` 补翻后本版独有 0 处）；主进程英文扫描 0 条；字面量占用 0 条；
+  UI 行为补丁 KEEP（5/5 哨兵 + stream-epoch / token-epoch 取证通过）。
+
 ## [0.0.131.1] · 2026-09-22（已发布 `pack-v0.0.131.1`）
 
 同一 `targetVersion`（0.0.131）内的修正重发：补上 19 条单词级 / 模板级漏翻，并把 0.0.131 适配里

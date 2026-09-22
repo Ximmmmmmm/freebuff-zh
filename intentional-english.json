@@ -28,6 +28,10 @@
     {
       "text": "streak-day on",
       "why": "CSS 类名拼接（`className: filled ? \"streak-day on\" : \"streak-day\"`），是给样式表看的，翻掉就没有对应样式了。"
+    },
+    {
+      "text": "model-badge muted",
+      "why": "CSS 类名组合（`className: \"model-badge muted\"`，0.0.132 新增，就在 `Paid plan` 徽标那段——文案本身已翻），是给样式表看的，翻掉就没有对应样式了。与 streak-day on 同类。"
     }
   ],
   "uiStrings": [
