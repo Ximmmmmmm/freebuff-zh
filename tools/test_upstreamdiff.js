@@ -28,6 +28,9 @@
 //      单列进「短标签」节且**不拦退出码**；字面量的「已覆盖」判整串相等（子串相同不算）；
 //  13. 字面量级反过来帮片段级去残段：`"Don't close …"` 片段级只抽出撇号后的半截句
 //      （`t close this window …`），字面量级拿到全句，半截句不再单列。
+//  14. **带插入语的文案**（`What went wrong? (optional)`）：括号以前一律当代码符号，这类文案在
+//      片段级与字面量级两条通道里都看不见（0.0.132 适配时真漏过一条），现在只剩「紧贴标识符」的
+//      括号才算代码（`fetch(url, (opts))` 照旧不进清单）。
 //
 // 用法：node tools/test_upstreamdiff.js        # 退出码非 0 表示回归
 'use strict'
@@ -35,6 +38,7 @@
 const fs = require('fs')
 const path = require('path')
 const { execFileSync } = require('child_process')
+const { isCopyLiteral } = require('./regress.js')
 
 const TOOL = path.join(__dirname, 'upstreamdiff.js')
 const WORK = path.join(__dirname, '..', 'work', 'test-upstreamdiff')
@@ -78,6 +82,8 @@ const trunc = "Don't close this window while the upload finishes."
 const pathish = "cm-citedLine"
 const keyish = "supabase_setup_invitation"
 const oneWord = "Rechecking…"
+const aside = "What went wrong? (optional)"
+const callish = "fetch(url, (opts))"
 `
 
 const prevFile = path.join(WORK, 'prev.js')
@@ -150,7 +156,7 @@ const mainEntries = entries(need + cov + pair + gone)
 chk(!out.includes('The connection states are unavailable.'), '1) 未变的句子不进任何桶')
 chk(!out.includes('Remove this provider'), '1) 未变的短句也不进')
 chk(!out.includes('Wallet left'), '1) 只换插值变量的模板不算新增（抹掉 ${...} 再比）')
-chk(/新增 3、下线 1、疑似改写 1 组/.test(out), '1) 计数正确（新增 3 / 下线 1 / 改写 1）')
+chk(/新增 4、下线 1、疑似改写 1 组/.test(out), '1) 计数正确（新增 4 / 下线 1 / 改写 1）')
 
 // --- 2) 分桶与词典覆盖 --------------------------------------------------------
 chk(need.includes('[文案] First-tab discount · up to Freebucks off'), '2) 未覆盖的新模板进「待补翻」清单')
@@ -178,7 +184,7 @@ chk(!mainEntries.includes('supabase_setup_invitation'), '5) 键名形态的单�
 
 // --- 6) 片段级两桶口径 --------------------------------------------------------
 chk(need.includes('[短片段] bun install'), '6) 2 词小写短标签进「短片段」桶')
-chk(/待补翻 3 条（文案 1 \+ 短片段 1 \+ 字面量 1）/.test(out), '6) 小结里的分桶计数正确')
+chk(/待补翻 4 条（文案 1 \+ 短片段 2 \+ 字面量 1）/.test(out), '6) 小结里的分桶计数正确')
 chk(need.includes('[字面量] Resume queue'), '6) 口径修正：Title case 的两词标签进字面量桶（以前会漏）')
 
 // --- 7) 上下文 ----------------------------------------------------------------
@@ -241,7 +247,7 @@ fs.writeFileSync(path.join(arc, '0.0.113-index-legacy.js'), 'const z = "Only in 
 const viaSnap = run(['--auto', '--archive', arc, '--snapshots', snaps, '--dict', dictFile])
 chk(viaSnap.out.includes('旧：0.0.113 · 快照 index-113.js'), '11) --auto 认得快照仓库里的基线')
 chk(!viaSnap.out.includes('Only in the legacy duplicate'), '11) 同版本的旧式归档被按版本去重掉（否则会自己跟自己比）')
-chk(viaSnap.code === 1 && /待补翻 3 条/.test(viaSnap.out), `11) 拿快照当基线结论与显式路径一致（实际 ${viaSnap.code}）`)
+chk(viaSnap.code === 1 && /待补翻 4 条/.test(viaSnap.out), `11) 拿快照当基线结论与显式路径一致（实际 ${viaSnap.code}）`)
 
 // --- 12) 字面量级：短标签单列且不拦退出码；字面量的「已覆盖」判整串相等 -----------------
 const labels = section(out, '## 短标签')
@@ -268,5 +274,12 @@ fs.writeFileSync(curWord, PREV + 'const onlyWord = "Continue"\n')
 const wordOnly = run([prevFile, curWord, '--dict', dictFile])
 chk(!wordOnly.out.includes('Continue'), '12) 无标点的单词标签不进清单（交给 uipos / blindscan）')
 
-console.log(fail ? `\n${fail} 项失败` : '\n全部通过（13 组用例）')
+// --- 14) 带插入语的文案：括号紧贴标识符才算代码 ----------------------------------
+// 判据层直接问一遍（报告层可能因为别的案子把它挤到别处），再确认它真进了待补翻清单。
+chk(isCopyLiteral('What went wrong? (optional)'), '14) 带插入语的文案不再被括号误判成代码')
+chk(!isCopyLiteral('fetch(url, (opts))'), '14) 但紧贴标识符的括号（函数调用）仍算代码')
+chk(need.includes('[短片段] What went wrong? (optional)'), '14) 它进了「待补翻」并拦住退出码')
+chk(!mainEntries.includes('fetch(url'), '14) 函数调用串一条都不进清单')
+
+console.log(fail ? `\n${fail} 项失败` : '\n全部通过（14 组用例）')
 process.exit(fail ? 1 : 0)

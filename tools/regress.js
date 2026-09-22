@@ -67,6 +67,16 @@ const WORD = /[A-Za-z]{2,}/g;
 // Error?k.message:`）里恰好带着 message 这个常见小词，其余判据都拦不住它，而它跟 function /
 // typeof 一样是 JS 关键字——不认它，回归闸门就会把「上游改了错误处理代码」误报成新增英文。
 const CODEISH = /[(){}\[\];=<>]|&&|\|\||=>|\?\.|\?\?|\b(?:function|typeof|const|let|var|instanceof)\b|\[object|\\n|console\.|\.js\b/;
+// 括号要在**紧贴标识符**时才算代码（`fetch(url)`、`a[i]`）；被空白与词尾包起来的 ` (…)` 多半是
+// 文案里的插入语（`What went wrong? (optional)`、`Charged once (per session)`）。以前括号一律当
+// 代码符号，于是「带插入语的界面文案」在片段级与字面量级两条通道里**都**看不见：0.0.132 新增的
+// 反馈框占位符 `What went wrong? (optional)` 就是这样两处都漏的（最后是 uipos 的属性位置体检
+// 报出来的）。判代码前先把这类插入语折掉，其余代码符号照旧拦：`fetch(url, (opts))` 折完还留着
+// `fetch(`，`items.map(e=>(e.name))` 折完还留着 `=>`。
+const ASIDE = /\s\(([^()]{0,40})\)/g;
+function foldAsides(t) {
+  return t.includes('(') ? t.replace(ASIDE, ' ') : t;
+}
 // 自然语言的强信号：至少出现一个常见小词
 const COMMON = new RegExp(
   '\\b(' +
@@ -95,7 +105,7 @@ function isProse(plain, rawLen, opts = {}) {
   if (t.length < 10 || t.length > 300) return false;
   if (rawLen > 800) return false; // 超长多半是拼进来的代码
   if (!/ /.test(t)) return false;
-  if (CODEISH.test(t)) return false;
+  if (CODEISH.test(foldAsides(t))) return false;
   // 单个残留的 } 允许（嵌套模板），再多就不是文案了
   if ((t.match(/[{}]/g) || []).length > 1) return false;
   const words = t.match(WORD) || [];
@@ -336,7 +346,7 @@ function isCopyLiteral(t) {
   if (t.length < 2 || t.length > 200) return false;
   if (/[\u4e00-\u9fff]/.test(t)) return false; // 已汉化
   if (!/[A-Za-z]/.test(t)) return false;
-  if (CODEISH.test(t)) return false;
+  if (CODEISH.test(foldAsides(t))) return false;
   if (/[{}<>]/.test(t)) return false; // 花括号 / 尖括号残留 = 插值或被切过的代码
   if (!/ /.test(t)) return LABELISH.test(t);
   const words = t.match(WORD) || [];
@@ -411,6 +421,7 @@ module.exports = {
   isCopyLiteral,
   resolveBundle,
   isProse,
+  foldAsides,
   COMMON,
   mainBundleInDir,
 };
