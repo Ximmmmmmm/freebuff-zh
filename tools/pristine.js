@@ -902,9 +902,17 @@ function importBuffer(buf, { force, quiet, origin }) {
   return 0
 }
 
+// GitHub API 的公共请求头。仓库是公开的，匿名就能取；带上 token（CI 里用 GITHUB_TOKEN）
+// 只是为了不吃共享出口 IP 的匿名限额（api.github.com 按 IP 计 60 次/小时，CI 机器是共享 IP），
+// 另外仓库万一转私有也能直接用。没设就不带，行为与以前一致。
+function ghHeaders(extra) {
+  const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN
+  return Object.assign({ 'user-agent': 'freebuff-zh-pristine' }, token ? { authorization: `Bearer ${token}` } : {}, extra || {})
+}
+
 async function fetchJson(url) {
   const res = await fetch(url, {
-    headers: { accept: 'application/vnd.github+json', 'user-agent': 'freebuff-zh-pristine' },
+    headers: ghHeaders({ accept: 'application/vnd.github+json' }),
     signal: AbortSignal.timeout(25000),
   })
   if (!res.ok) throw new Error(`HTTP ${res.status}（${url}）`)
@@ -912,7 +920,7 @@ async function fetchJson(url) {
 }
 
 async function fetchBuf(url) {
-  const res = await fetch(url, { headers: { 'user-agent': 'freebuff-zh-pristine' }, signal: AbortSignal.timeout(120000) })
+  const res = await fetch(url, { headers: ghHeaders(), signal: AbortSignal.timeout(120000) })
   if (!res.ok) throw new Error(`HTTP ${res.status}（${url}）`)
   return Buffer.from(await res.arrayBuffer())
 }

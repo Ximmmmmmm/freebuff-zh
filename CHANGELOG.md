@@ -44,10 +44,19 @@ sha512(base64) = ogzMscUMSTJzk+a1DvV9100fd6TSco7m/JC7+0zaMig09uBOppDOMnwNzUzWkjX
   闸门会把理由一并打印、登记项失效时提醒清理；`--allow-english` 退回临时排障用途。
 
 CI 新增五道自测：`test_missed_diagnose.js`、`test_regress.js`、`test_uipos_gap.js`、
-`test_lint_collisions.js`、`test_patch_preflight.js`（连同修好的 `test_remap.js`，本地 14 个自测
+`test_lint_collisions.js`、`test_patch_preflight.js`（连同修好的 `test_remap.js`，本地 15 个自测
 全绿）。另外顺手修了两处**脚本真 bug**：`release.sh` 闸门二结束就把临时目录删了，导致闸门三拿到
 失效的上一版包路径、悄悄退化成「看全量」；`apply.js` 的幂等判据以「本次运行写进去的译文」为凭据，
 同译文的兄弟词条会把死词条藏起来。
+
+**这些闸门现在也跑在 PR 上**（不影响产物，故不需重发）：`.github/workflows/ci.yml` 新增
+`snapshot-gates` job — 先从我们自己的 Release 取本版英文原版快照（`pristine.js import --from-release`，
+`pristine.js` 的取数同时支持 `GITHUB_TOKEN`，免得在 CI 共享出口 IP 上吃匿名 API 限额），再跑
+`tools/ci_gates.sh` 里的三道：字面量占用 / 补丁锚点预检 / 单词级界面文案。它们不需要装 Freebuff、
+不需要解 `app.asar`，所以能在 PR 阶段就把「词典把代码里的值翻了」「补丁锚点漂了」「新加的单词标签
+没登记」拦下；本版还没发过 Release 时打 `::warning::` 并 rc 0（本地 `update.sh` 6b 步与 `release.sh`
+闸三 / 闸四 上的同名闸门用真实产物，仍是最终把关）。`tools/test_ci_gates.js` 专钉两类自骗：闸门失败
+却 rc 0（假绿灯），以及拿不到快照时跳过路径冒充通过。
 
 
 

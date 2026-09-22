@@ -4,9 +4,9 @@ name: lint
 
 on:
   push:
-    paths: ['dict.json', 'tools/**', '*.sh', '.github/workflows/**']
+    paths: ['dict.json', 'manifest.json', 'intentional-english.json', 'patches/**', 'tools/**', '*.sh', '.github/workflows/**']
   pull_request:
-    paths: ['dict.json', 'tools/**', '*.sh', '.github/workflows/**']
+    paths: ['dict.json', 'manifest.json', 'intentional-english.json', 'patches/**', 'tools/**', '*.sh', '.github/workflows/**']
   workflow_dispatch:
 
 jobs:
@@ -49,6 +49,8 @@ jobs:
         run: node tools/test_lint_collisions.js
       - name: 补丁预检自测（行号漂移 vs 上游改写的分诊 / 重锚定幂等 / 镜像口径）
         run: node tools/test_patch_preflight.js
+      - name: CI 闸门自测（假绿灯防线 / 跳过路径 / 退出码）
+        run: node tools/test_ci_gates.js
       - name: 工具脚本语法冒烟
         run: |
           for f in tools/*.js; do
@@ -59,3 +61,21 @@ jobs:
           for f in *.sh tools/*.sh; do
             bash -n "$f"
           done
+
+  # 三道闸门单独一个 job：它们要一份「本版英文原版快照」（Release 资产 pristine-<版本>.json.gz），
+  # 而上面那批自测全用合成夹具、不碰网络——分开跑，网络抖动就不会把纯自测带红。
+  snapshot-gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # 快照的取回放在脚本内部（pristine.js import --from-release），不单列一步：
+      # 版本刚 bump、Release 还没发时脚本会打 ::warning:: 并 rc 0（本地 update.sh / release.sh
+      # 上的同名闸门才是最终把关），单列一步会让那种情况直接把 job 打红。
+      - name: 三道快照闸门（字面量占用 / 补丁锚点预检 / 单词级界面文案）
+        env:
+          # 只为不吃共享出口 IP 的匿名 API 限额；仓库公开，没它也基本能用。
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash tools/ci_gates.sh

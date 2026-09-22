@@ -61,6 +61,7 @@ Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.131）的**简体中文汉�
   `electron/*.cjs` 里当路径 / 比较值 / IPC 通道名用（`Cookies` 那种：翻掉会让 Cookie 导入静默
   找不到文件，而构建全绿、界面正常，只有真去用那个功能才暴露）。确认有意保留英文时，逐条登进
   `intentional-english.json`（写明理由、仓库内可审）而不是敲 `--allow-english` 全放行
+- **CI 上的三道快照闸门**：`.github/workflows/ci.yml` 另跑一个 `snapshot-gates` job——先从我们自己的 Release 取本版**英文原版快照**（`pristine.js import --from-release`），再跑**字面量占用**（`tools/lint_collisions.js`）/ **补丁锚点预检**（`tools/patch_preflight.js`）/ **单词级界面文案**（`tools/uipos_gap.js`）这三道（包在 `tools/ci_gates.sh` 里）。它们不需要装 Freebuff、不需要解 `app.asar`，所以能在 PR 上就拦下「词典把代码里的值翻了」「补丁锚点漂了」「新加的单词标签没登记」。这套闸门自测（`test_ci_gates.js`）专门钉住两件事：闸门失败时必须真 rc 1（假绿灯防线），以及拿不到快照时的跳过路径会打 `::warning::` 而不是冒充通过。
 - **构建防呆自检**：`build.sh` 在解包前先跑 `tools/lint_dict.js`（词典结构 / 半截模板键，
   此前只在 CI 跑、本地流程形同虚设）与 `tools/missed_diagnose.js`（词条命中体检：够不着本版 UI bundle
   的条目按「只在主进程出现 / 只在上一版出现 / 两边都没有」归类，解包前就报清该往哪边补——
@@ -164,6 +165,8 @@ bash build.sh <app.asar> <ui-dir>   # 或显式指定原版文件
 │   ├── patch_preflight.js # 主进程补丁锚点预检（行号漂移 vs 上游改写，附修法）
 │   ├── reanchor_patch.js  # 补丁重锚定（只改 @@ 头；目标＝快照 + 词典，与 build.sh 口径一致）
 │   ├── test_patch_preflight.js # 预检 / 重锚定自测（分诊 / 幂等 / 镜像口径，CI 跑）
+│   ├── ci_gates.sh    # CI 的三道快照闸门（字面量占用 / 补丁锚点预检 / 单词级文案；不装 Freebuff）
+│   ├── test_ci_gates.js # 闸门自测（假绿灯防线 / 跳过路径 / 退出码，CI 跑）
 │   ├── regress.js     # 发布回归闸门（新旧产物英文片段比对，release/update 调用）
 │   ├── test_regress.js # 回归闸门自测（登记表逐条豁免 / --allow-english / 退出码，CI 跑）
 │   ├── blindscan.js   # 盲区扫描：原版 vs 产物，找 uipos/fieldscan/regress 都扫不到的英文
