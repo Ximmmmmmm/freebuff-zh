@@ -13,10 +13,10 @@ jobs:
   dict-lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 24
       - name: 词典 lint（结构 / 重复键 / 占位符一致性 / 半截模板键）
         run: node tools/lint_dict.js
       - name: remap 自测（模板变量迁移 + 半截模板 + lint 负面用例）
@@ -69,10 +69,10 @@ jobs:
   snapshot-gates:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 24
       # 快照的取回放在脚本内部（pristine.js import --from-release），不单列一步：
       # 版本刚 bump、Release 还没发时脚本会打 ::warning:: 并 rc 0（本地 update.sh / release.sh
       # 上的同名闸门才是最终把关），单列一步会让那种情况直接把 job 打红。
