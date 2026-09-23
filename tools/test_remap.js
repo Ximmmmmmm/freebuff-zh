@@ -14,7 +14,10 @@
 //   4. 迁移后的词典必须过 lint_dict；
 //   5. lint_dict 的 E5 负面用例：未登记的半截键 / 译文尾巴不一致 / 放进 exact 分区，均须 exit 1；
 //   6. 同一锚文本在 bundle 里有**两份拷贝**：插值一致时照旧迁移，插值名不一致时必须拒绝
-//      写回、列进 AMBIGUOUS 明细（猜一份写下去＝另一份静默退回英文，而构建依旧全绿）。
+//      写回、列进 AMBIGUOUS 明细（猜一份写下去＝另一份静默退回英文，而构建依旧全绿）；
+//   7. AMBIGUOUS 的**每一条**退出路径：能触发的都配夹具并断言「词典一个字节都没动」
+//      （只断开退出码不够——真正的伤害是写坏词典），构造上不可达的三条写清理由，
+//      另配「形似但应放行」的边界夹具，钉住它们不会被误拦。
 //
 // 用法：node tools/test_remap.js        # 退出码非 0 表示回归
 const fs = require('fs')
@@ -262,6 +265,121 @@ const dupDictText = (extra) =>
   chk(fs.readFileSync(d, 'utf8') === before, '  词典文件一个字节都没动（拒绝写回）')
 }
 
+// --- 3.7) AMBIGUOUS 的每一条退出路径 ------------------------------------------------
+// AMBIGUOUS 是 remap 唯一的「拒绝写回」表态（宁可交人工，也不猜着改词典），每条退出路径
+// 都对应一种具体的不确定。全 9 条（按 remap.js 里 AMBIGUOUS.push 的出现顺序；括号里是覆盖
+// 它的夹具）：
+//   1. 锚文本在 bundle 命中 N 处且插值不一致 ......... 3.6b（同锚两份拷贝、插值各自改名）
+//   2. 捕获到的表达式括号不平衡，边界可能切错 ........ P2 ×2
+//   3. 半截模板尾巴捕获异常 ......................... 构造上不可达（见下）
+//   4. 插值数不齐且无法顺序对齐 ..................... 构造上不可达（见下）
+//   5. 重建的新 key 无法逐字节命中 bundle ........... P5
+//   6. 重建的新 key 插值槽数与原 key 不一致 ......... 构造上不可达（见下）
+//   7. 重建的译文插值槽数变化 ....................... P7
+//   8. 译文的插值无法与新 key 对齐（骨架不匹配）..... P8
+//   9. 重建后译文与 key 的半截尾巴不一致 ............ P9
+//
+// 三条「构造上不可达」是被捕获构造排除的，不是漏测——它们是对**旧实现**的防御，现在的
+// 正则构造已经让它们不可能成立（写清楚而不是拿假夹具凑数，免得下次维护时误以为覆盖够了）：
+//   · 第 3 条：尾巴的捕获组本身就是 `(\$\{[^`}]{1,200})`，与那句校验正则同形，永远通过；
+//     「尾巴连一个字符都捕获不到」的形态会整体命不中 → 落 MISSING（下面有边界夹具钉住）；
+//   · 第 4 条：mk() 给 key 的**每个**插值各生成一个捕获组，于是 keyExprs.length 与
+//     newExprs.length 恒等，那个「数不齐」分支进不去；
+//   · 第 6 条：捕获值自带 `${…}` 外壳、且 parseTemplate 只在顶层数 `${`，重建出的 newKey
+//     插值槽数恒等于原 key——只有旧实现（捕获忘了包外壳）才可能丢槽。
+const remapCase = (label, { key, zh, src, expect, reason }) => {
+  const n = remapCase.n++
+  const b = path.join(WORK, `amb-${n}.js`)
+  const d = path.join(WORK, `amb-${n}.json`)
+  fs.writeFileSync(b, src)
+  const text =
+    JSON.stringify(
+      {
+        exact: { __placeholder__: '占位' },
+        template: { [key]: zh },
+        code: { __placeholder__: '' },
+        pattern: { __placeholder__: '占位' },
+      },
+      null,
+      2,
+    ) + '\n'
+  fs.writeFileSync(d, text)
+  const r = node([path.join(REPO, 'tools', 'remap.js'), b, '--dict', d, '--write'])
+  const nRen = count(/RENAMED\s+(\d+)/, r.out)
+  const nAmb = count(/AMBIGUOUS\s+(\d+)/, r.out)
+  const nMis = count(/MISSING\s+(\d+)/, r.out)
+  const got = { RENAMED: nRen, AMBIGUOUS: nAmb, MISSING: nMis }[expect]
+  chk(got === 1, `${label}（RENAMED ${nRen} / AMBIGUOUS ${nAmb} / MISSING ${nMis}）`)
+  if (reason) chk(r.out.includes(reason), `  ↳ 明细点名「${reason}」`)
+  if (expect === 'AMBIGUOUS') chk(fs.readFileSync(d, 'utf8') === text, '  ↳ 词典文件一个字节都没动（拒绝写回）')
+}
+remapCase.n = 0
+
+// P2 括号不平衡：捕获到的表达式括号不配平（两种成因各一例）
+remapCase('P2 括号不平衡（调用组多吃一个右括号）', {
+  key: 'File ${aa.name} is ready', zh: '文件 ${aa.name} 已就绪',
+  src: 'var a=`File ${bb(x))} is ready`;\n',
+  expect: 'AMBIGUOUS', reason: '捕获到的表达式括号不平衡，边界可能切错',
+})
+remapCase('P2 括号不平衡（裸左括号，无闭合）', {
+  key: 'Total: ${aa.n} items', zh: '共 ${aa.n} 项',
+  src: 'var a=`Total: ${bb(} items`;\n',
+  expect: 'AMBIGUOUS', reason: '捕获到的表达式括号不平衡，边界可能切错',
+})
+
+// P5 重建的新 key 命不中：key 把**同一个**插值写了两遍，而 bundle 里两处形态不同
+// （映射表以 key 文本为键，两次写入只剩一条 → 重建出的 newKey 与 bundle 对不上）
+remapCase('P5 重建的新 key 无法逐字节命中 bundle', {
+  key: 'A ${aa} B ${aa} C', zh: '甲 ${aa} 乙 ${aa} 丙',
+  src: 'var a=`A ${q1} B ${q2} C`;\n',
+  expect: 'AMBIGUOUS', reason: '重建的新 key 无法逐字节命中 bundle',
+})
+
+// P7 译文插值槽数变化：译文里那个插值被映射到了「半截尾巴」（没有收尾花括号），
+// 于是重建后的译文整个塌成一个槽
+remapCase('P7 重建的译文插值槽数变化', {
+  key: 'A ${aa.x} B ${cond?', zh: '甲 ${cond?} 乙 ${cond?',
+  src: 'var a=`A ${q1} B ${q2?`;\n',
+  expect: 'AMBIGUOUS', reason: '重建的译文插值槽数变化（2 → 1），拒绝写回',
+})
+
+// P8 译文插值无法对齐：译文里多了一个 key 里没有、映射表也找不到的插值（骨架不匹配）
+remapCase('P8 译文的插值无法与新 key 对齐', {
+  key: 'Hello ${aa.name}', zh: '你好 ${aa.name}（${zz.extra}）',
+  src: 'var a=`Hello ${bb.name}`;\n',
+  expect: 'AMBIGUOUS', reason: '无法与新 key 对齐（骨架不匹配），拒绝写回',
+})
+
+// P9 译文尾巴不一致：key 是半截模板，译文却把尾巴写成了闭合形态——apply.js 会拼断模板
+remapCase('P9 重建后译文与 key 的半截尾巴不一致', {
+  key: 'A ${cc.x} B ${aa?', zh: '甲 ${dd.y} 乙 ${q2?}',
+  src: 'var a=`A ${dd.y} B ${q2?`;\n',
+  expect: 'AMBIGUOUS', reason: '重建后译文与 key 的半截尾巴不一致',
+})
+
+// 边界：形似上面那三条「构造上不可达」的守卫、但**应当放行**的形态——它们必须走
+// 迁移 / 过期判定，绝不能被误拦成歧义（否则正常版本适配会被养成「反正都是人工改」）。
+remapCase('边界：半截尾巴形态正常 → 照旧迁移', {
+  key: 'Spend ${aa.n} ${bb?', zh: '花掉 ${aa.n} ${bb?',
+  src: 'var a=`Spend ${q1} ${q2?`;\n',
+  expect: 'RENAMED',
+})
+remapCase('边界：半截尾巴后面紧跟反引号（一个字符都捕获不到）→ 认作过期而非歧义', {
+  key: 'Spend ${aa.n} ${bb?', zh: '花掉 ${aa.n} ${bb?',
+  src: 'var a=`Spend ${q1} ${`;\n',
+  expect: 'MISSING',
+})
+remapCase('边界：两处插值形态规整 → 照旧迁移', {
+  key: 'A ${aa.x} B ${cc.y}', zh: '甲 ${aa.x} 乙 ${cc.y}',
+  src: 'var a=`A ${q1} B ${q2}`;\n',
+  expect: 'RENAMED',
+})
+remapCase('边界：捕获值自带 ${} 外壳且含嵌套 ${（槽数不变）→ 照旧迁移', {
+  key: 'A ${aa.x} B', zh: '甲 ${aa.x} 乙',
+  src: 'var a=`A ${bb(${cc})} B`;\n',
+  expect: 'RENAMED',
+})
+
 // --- 4) lint 的 E5 负面用例 -------------------------------------------------------
 const negative = (label, mutate) => {
   const d = JSON.parse(dictText)
@@ -292,5 +410,9 @@ const outSec = negative('半截键放进 exact 分区', (d) => {
 })
 chk(/只能出现在 template 分区/.test(outSec), '  报错指出分区限制')
 
-console.log(fail ? `\n${fail} 项失败` : `\n全部通过（${samples.length} 条样本 + 重复拷贝 2 例 + 3 条负面用例）`)
+console.log(
+  fail
+    ? `\n${fail} 项失败`
+    : `\n全部通过（${samples.length} 条样本 + 重复拷贝 2 例 + 退出路径/边界 ${remapCase.n} 例 + 3 条负面用例）`,
+)
 process.exit(fail ? 1 : 0)
