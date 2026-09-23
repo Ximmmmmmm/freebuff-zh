@@ -85,7 +85,18 @@ const WORD = /[A-Za-z]{2,}/g;
 // 它，所以它跟 function / typeof 一样按关键字拦下来；实测四份 bundle（两版原版 + 两版产物）
 // 在闸门口径下含 void 的片段 **0 条**、宽口径下各 5 条且全是这种代码（CSS 属性 / aria 属性
 // 的取值代码），没有一条真文案被这条判据误伤。
-const CODEISH = /[(){}\[\];=<>`]|&&|\|\||=>|\?\.|\?\?|\b(?:function|typeof|const|let|var|instanceof|void)\b|\[object|\\n|console\.|\.js\b/;
+//
+// **引号紧贴逗号 / 冒号**（`,"` 与 `":`）是这一家族里最后补上的一条：它拦的是「夹在两个模板
+// 之间的 JSX 属性表」。0.0.134 实测源文本
+//   "aria-label":t?`${Qf(t.balance)} Freebucks`:"Freebucks balance unavailable","data-tooltip":t?`…`
+// 会在模板分段通道里抽出一条 `:"Freebucks balance unavailable","data-tooltip":t?` —— 里面没有
+// 反引号也没有 `void`，前三四十个字符看着还像一句正常英文，于是它稳稳进了「待补翻」，把真正
+// 该翻的 `Freebucks balance unavailable` 挤在同一个区块里。判据的依据也是先量后改：四份 bundle
+// （两版原版 + 两版产物）里同时含 `,"` 或 `":` 的片段**各只有这一条**，全是这种属性表；
+// 而反例清楚——自然文案里逗号与引号之间总有空格（`He said, "hello"`），`,"` 与 `":` 是压缩
+// 代码里属性表 / 参数表的固定写法。真文案不会因此消失：同一条 `Freebucks balance unavailable`
+// 字面量级照旧抽到（test_upstreamdiff 第 17 组把这个对照钉住了）。
+const CODEISH = /[(){}\[\];=<>`]|&&|\|\||=>|\?\.|\?\?|\b(?:function|typeof|const|let|var|instanceof|void)\b|\[object|\\n|console\.|\.js\b|,"|"\s*:/;
 // 括号要在**紧贴标识符**时才算代码（`fetch(url)`、`a[i]`）；被空白与词尾包起来的 ` (…)` 多半是
 // 文案里的插入语（`What went wrong? (optional)`、`Charged once (per session)`）。以前括号一律当
 // 代码符号，于是「带插入语的界面文案」在片段级与字面量级两条通道里**都**看不见：0.0.132 新增的

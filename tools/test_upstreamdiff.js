@@ -36,6 +36,9 @@
 //  16. **跨模板定界符的代码片段**（含裸反引号 / `void`）：模板按相邻反引号逐段取、引号按
 //      重叠配对取，两者都会抽出「代码 + 模板尾巴」的混合片段；minifier 一改短名就成一堆
 //      假的新增 / 下线 / 疑似改写（0.0.133 实测），现在在片段提取阶段就当代码拦掉。
+//  17. **夹在两个模板之间的 JSX 属性表**（引号紧贴逗号 / 冒号）：0.0.134 实测的那条
+//      `:"Freebucks balance unavailable","data-tooltip":t?` 既无反引号也无 void，前三十几个
+//      字符还像句英文，于是挤进待补翻、把旁边的真文案淹没；判据补在第 16 组同一处。
 //
 // 用法：node tools/test_upstreamdiff.js        # 退出码非 0 表示回归
 'use strict'
@@ -370,6 +373,7 @@ fs.writeFileSync(
 )
 
 const noiseFrags = collectFragmentsFromSource(noiseCur, { minWords: 2, requireCommon: false })
+// （第 17 组用的是同一份判据的另一种触发形态：属性表，见文件末尾）
 chk(![...noiseFrags].some((t) => t.includes('`')), '16) 含裸反引号的跨引号片段不进片段集合（两条通道都拦）')
 chk(![...noiseFrags].some((t) => /-menu|void 0/.test(t)), '16) 跨模板的 `-menu` / `void 0` 代码片段也不进')
 // 真文案单独看一条：两词 Title case 标签在片段级本来就不算（小写词占比不够），靠字面量级拿
@@ -387,5 +391,46 @@ chk(!/void 0|-menu/.test(noiseRun.out), '16) 报告正文里也不出现这两�
 chk(entries(section(noiseRun.out, '## 新增文案 · 词典未覆盖')).includes('Attach folder'), '16) 同一文件里的真新增仍然进待补翻')
 chk(noiseRun.code === 1, `16) 有真新增 → exit 1（实际 ${noiseRun.code}）`)
 
-console.log(fail ? `\n${fail} 项失败` : '\n全部通过（16 组用例）')
+// --- 17) 夹在两个模板之间的 JSX 属性表不算文案（引号紧贴逗号 / 冒号）----------------
+// 真实形态（0.0.134 实测，上游新写的侧边栏余额小徽章）：
+//   "aria-label":t?`${Qf(t.balance)} Freebucks`:"Freebucks balance unavailable","data-tooltip":t?`…`
+// 模板分段通道会把 `…Freebucks` 的**闭**反引号到下一个模板的开反引号之间那段代码抽成一条片段：
+//   :"Freebucks balance unavailable","data-tooltip":t?
+// 它没有反引号、也没有 void，前三十几个字符还像句正常英文，于是稳稳进了「待补翻」——而真正
+// 该翻的 `Freebucks balance unavailable` 就贴在它旁边，很容易被连着跳过。判据是「引号紧贴
+// 逗号 / 冒号」（`,"` 与 `":`）：自然文案里逗号与引号之间总有空格（`He said, "hello"`）。
+// 这一块是**本版新增**的元素（真实场景就是如此：侧边栏余额小徽章整块是新的），所以下面的
+// 属性表片段与它包着的字面量在本版都算「新增」——正好能同时验「噪音被拦」与「真文案没被连坐」。
+const attrPrev = ["'use strict'", 'const unrelated = "Something unrelated here"'].join('\n')
+const attrCur = [
+  "'use strict'",
+  'const unrelated = "Something unrelated here"',
+  'const chip = { "aria-label": x ? `${Qf(t.balance)} Freebucks` : "Freebucks balance unavailable", "data-tooltip": x ? `${Qf(t.rem)} of ${Qf(t.lim)} daily Freebucks remaining above` : "Your balance is not available yet." }',
+].join('\n')
+const attrPrevFile = path.join(WORK, 'attr-prev.js')
+const attrCurFile = path.join(WORK, 'attr-cur.js')
+fs.writeFileSync(attrPrevFile, attrPrev)
+fs.writeFileSync(attrCurFile, attrCur)
+
+const attrFrags = collectFragmentsFromSource(attrCur, { minWords: 2, requireCommon: false })
+chk(![...attrFrags].some((t) => /,"|"\s*:/.test(t)), '17) 引号紧贴逗号 / 冒号的属性表片段不进片段集合')
+chk(![...attrFrags].some((t) => /data-tooltip/.test(t)), '17) 报告里不会出现 `data-tooltip` 这类属性名')
+// 真文案不会因此消失：同一条字面量在字面量级通道里照旧抽到（它才是要翻的那条）
+chk(collectLiteralsFromSource(attrCur).has('Freebucks balance unavailable'), '17) 旁边的真字面量仍被字面量级抽到（判据没有一刀切）')
+// 旧口径（含 ` 与 void，但没有这一条）会放行它 —— 免得日后「顺手放宽」时以为它在别处已经拦住了
+const OLD_CODEISH_16 = /[(){}\[\];=<>`]|&&|\|\||=>|\?\.|\?\?|\b(?:function|typeof|const|let|var|instanceof|void)\b|\[object|\\n|console\.|\.js\b/
+chk(!OLD_CODEISH_16.test(':"Freebucks balance unavailable","data-tooltip": x ?'), '17) 引号紧贴逗号 / 冒号是拦住它的那一条（旧口径会放行）')
+
+const attrDict = path.join(WORK, 'attr-dict.json')
+fs.writeFileSync(
+  attrDict,
+  JSON.stringify({ exact: { 'Something unrelated here': '夹具：与本次断言无关' }, template: {}, code: {}, pattern: {} }, null, 2) + '\n'
+)
+const attrRun = runH([attrPrevFile, attrCurFile, '--dict', attrDict, '--no-ctx'])
+const attrTodos = entries(section(attrRun.out, '## 新增文案 · 词典未覆盖'))
+chk(!/data-tooltip/.test(attrTodos), '17) 待补翻清单里没有那条属性表片段')
+chk(attrTodos.includes('Freebucks balance unavailable'), '17) 而旁边的真字面量进待补翻（没被连坐）')
+chk(attrRun.code === 1, `17) 有真新增 → exit 1（实际 ${attrRun.code}）`)
+
+console.log(fail ? `\n${fail} 项失败` : '\n全部通过（17 组用例）')
 process.exit(fail ? 1 : 0)

@@ -1,5 +1,56 @@
 # 更新日志
 
+## [0.0.134] · 2026-09-23（已发布 `pack-v0.0.134`）
+
+跟随上游自动更新到 0.0.134。这一版上游动的是**项目侧栏**（可折叠 / 可调宽的左侧栏）与侧栏上的余额小徽章：
+
+- **左侧栏布局开关**：新增 `sidebar-layout-toggle` 按钮，`label:t?"Expand left sidebar":"Collapse left sidebar"`；
+  分隔条改成带 `role:"separator"` 的可拖拽控件，`aria-label:"Resize left sidebar"`。
+- **侧栏余额小徽章**（`sidebar-new-chat sidebar-balance`）：`aria-label` 是三元，左右两支分别是
+  `` `${Qf(t.balance)} Freebucks` `` 与 `"Freebucks balance unavailable"`；`data-tooltip` 复用已有的
+  「今日剩余 … + 钱包余额」那句，`children` 是徽章本身。
+- **两条新的界面文案**：项目侧栏「打开项目」按钮的 `data-tooltip:"Projects · Open project"`；
+  消息里插入技能芯片时的报错 `Not enough room left in the message for that skill`（与既有的
+  `…for that suggestion` / `…for that element` / `…to quote that` 同族）。
+- **一处整段改写**：移除项目的确认态不再用独立模板，而是内联成
+  `` `${L===de?"Confirm delete":"Remove project"} ${ge}` `` —— 于是 `Confirm delete` 变成一条新的字面量，
+  旧的 `Remove project ${ge}` 词条作废（已下线，`Remove project` 与 `Confirm delete` 由 exact 覆盖）。
+- **上游把侧栏那批组件在 bundle 里**重复打进了一份**（第二份的压缩短名不同）：`Dismiss notification` /
+  `Project:` / `Close` / `Freebucks / hour` / `N pixels` / `Remove ${…configKey}` 这些句子在本版各有两种形态。
+  `remap` 因此报 6 条 AMBIGUOUS（锚文本在 bundle 命中 2 处且插值不一致）——它们**不是**歧义，是两份拷贝；
+  逐条按新形态改名，并给两份价钱 / 像素文案各补一条 template（`` `${Math.round(f)} pixels` `` /
+  `Regular price: ${ut} Freebucks / hour`）。`missed_diagnose` 首跑点名 7 条「只在上一版 UI 出现」，
+  这正是那 7 条改名的条目（含 1 条真下线）。
+
+对差账：片段级 1374 → 1379（新增 5）、字面量级 1924 → 1931（新增 7，其中 2 条片段级没报到，正是那两个单词级的
+`Resize left sidebar` / 第二份 `N pixels`）；`electron/` 仍是 37 个文件、**没有新补丁**。
+
+发布资产（`hanhua-pack-0.0.134.zip` / `pack-manifest.json` / `pristine-0.0.134.json.gz`），
+四道闸门（主进程扫描 / 回归闸门 / 单词级文案差集 / 字面量占用）全过；线上包下载回来后独立哈希，
+与本地包、与 manifest 声明三方一致：
+
+```
+sha512(base64) = 8Io7BD2bQKojX+b1h51MSc0w/ZeYEijr8DKFGnO70JUIV4D1mAQFTyCuyHMicA8bdkP+0PqHog9hu3Q62K4qSg==
+```
+
+- **词典补翻 7 条、改名 7 条、下线 1 条**：新增 exact 7 条（`Collapse left sidebar` / `Expand left sidebar` /
+  `Resize left sidebar` / `Confirm delete` / `Freebucks balance unavailable` / `Projects · Open project` /
+  `Not enough room left in the message for that skill`）与 template 3 条（`` `${Qf(t.balance)} Freebucks` `` /
+  `` `${Math.round(f)} pixels` `` / `Regular price: ${ut} Freebucks / hour`）。exact 1316 → 1323 /
+  template 237 → 239（共 1645 条），替换数 1967 → 1984、`all keys matched`、`missed_diagnose` 1645 条
+  全部命中本版 UI bundle。
+- **主进程补丁与 UI 行为补丁**：12 个补丁**一次干净套用**（本版没动补丁覆盖区，`reanchor` 无需介入）；
+  两组 UI 行为补丁按 `ui_patch_status` 判为 `KEEP`（上游仍带着 stream-epoch 与 token-epoch 两个缺陷），
+  产物侧 5/5 哨兵 + 两道行为取证照旧通过。
+- **又揪出一条跨引号噪音（`regress` / `upstreamdiff` 共用的提取器）**：这一版新写的余额徽章把「属性表」摆在了
+  两个模板之间——`` "aria-label":t?`${Qf(t.balance)} Freebucks`:"Freebucks balance unavailable","data-tooltip":t?`…` ``，
+  模板分段通道于是抽出 `:"Freebucks balance unavailable","data-tooltip":t?`。它没有反引号、也没有 `void`，
+  前三十几个字符还像句正常英文，于是稳稳进了「待补翻」，而**真正该翻的 `Freebucks balance unavailable`
+  就贴在它旁边**。判据补上第 17 组：**引号紧贴逗号 / 冒号**（`,"` 与 `"\s*:`）——自然文案里逗号与引号之间
+  总有空格（`He said, "hello"`）。依据仍是先量后改：四份 bundle（两版原版 + 两版产物）里符合这两条形态的
+  片段各只有这一条，全是这种 JSX 属性表；真文案不会因此消失——同一条字面量在字面量级通道里照旧抽到
+  （`test_upstreamdiff` 第 17 组把「旧口径会放行它」与「旁边的真字面量仍进待补翻」都钉住）。
+
 ## [0.0.133] · 2026-09-22（已发布 `pack-v0.0.133`）
 
 跟随上游自动更新到 0.0.133。这一版上游只动了两块界面（**任务输入框**与**附件菜单**）外加一个平台 bug：
