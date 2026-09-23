@@ -12,7 +12,9 @@
 //      且译文尾巴与 key 逐字节一致；
 //   3. 未改名的 bundle：全部落 SAME（不允许误判 MISSING/AMBIGUOUS）；
 //   4. 迁移后的词典必须过 lint_dict；
-//   5. lint_dict 的 E5 负面用例：未登记的半截键 / 译文尾巴不一致 / 放进 exact 分区，均须 exit 1。
+//   5. lint_dict 的 E5 负面用例：未登记的半截键 / 译文尾巴不一致 / 放进 exact 分区，均须 exit 1；
+//   6. 同一锚文本在 bundle 里有**两份拷贝**：插值一致时照旧迁移，插值名不一致时必须拒绝
+//      写回、列进 AMBIGUOUS 明细（猜一份写下去＝另一份静默退回英文，而构建依旧全绿）。
 //
 // 用法：node tools/test_remap.js        # 退出码非 0 表示回归
 const fs = require('fs')
@@ -203,6 +205,63 @@ for (const [i, k] of SHAPES.entries()) {
   }
 }
 
+// --- 3.6) 同一锚文本有两份拷贝：插值一致照旧迁移，不一致必须拒绝写回 --------------------
+// 真实来历：0.0.134 上游把侧栏那批组件在 bundle 里**重复打进了一份**（两份的压缩短名不同），
+// 于是 `Dismiss notification: ${…}` 这类句子各有两种形态；两份插值**一致**时按唯一定位迁移
+// 是对的（0.0.134 就是这么过的），而 0.0.136 两份又各自改了名（`l` / `S`），捕获结果不再一致
+// ——映射到哪一份都不确定，remap 必须拒绝写回、列进 AMBIGUOUS 交人工，不能猜一个写下去：
+// 猜错的那份会默默退回英文，而 build.sh 照旧 `all keys matched`（最容易漏掉的一类静默回归）。
+//
+// 注意这里测的是「同锚文本 + 插值不一致」，而不是「只要有两份拷贝就报歧义」——
+// 后者会把 0.0.134 那种正常情形也误判成需要人工。
+const dupKey = 'Report a problem: ${aa.message}'
+const dupZh = '报告问题：${aa.message}'
+const dupDictText = (extra) =>
+  JSON.stringify(
+    {
+      exact: { __placeholder__: '占位' },
+      template: { ...extra },
+      code: { __placeholder__: '' },
+      pattern: { __placeholder__: '占位' },
+    },
+    null,
+    2,
+  ) + '\n'
+
+// 3.6a 两份拷贝的插值**一致**（只是短名整体改名）→ 照旧自动迁移
+{
+  const d = path.join(WORK, 'dup-consistent.json')
+  fs.writeFileSync(d, dupDictText({ [dupKey]: dupZh }))
+  const b = path.join(WORK, 'dup-consistent.js')
+  fs.writeFileSync(b, 'var c0=`Report a problem: ${bb.message}`;\nvar c1=`Report a problem: ${bb.message}`;\n')
+  const r = node([path.join(REPO, 'tools', 'remap.js'), b, '--dict', d, '--write'])
+  const nRen = count(/RENAMED\s+(\d+)/, r.out)
+  const nAmb = count(/AMBIGUOUS\s+(\d+)/, r.out)
+  chk(nRen === 1 && nAmb === 0, `两份拷贝插值一致 → RENAMED ${nRen} / AMBIGUOUS ${nAmb}`)
+  const migrated = JSON.parse(fs.readFileSync(d, 'utf8')).template
+  chk(
+    Object.prototype.hasOwnProperty.call(migrated, 'Report a problem: ${bb.message}'),
+    '  已迁移到两份拷贝共有的形态（不是只写其中一份）',
+  )
+}
+
+// 3.6b 两份拷贝的插值**不一致** → 必须拒绝写回，并在歧义明细里点名
+{
+  const d = path.join(WORK, 'dup-divergent.json')
+  const before = dupDictText({ [dupKey]: dupZh })
+  fs.writeFileSync(d, before)
+  const b = path.join(WORK, 'dup-divergent.js')
+  fs.writeFileSync(b, 'var d0=`Report a problem: ${bb.message}`;\nvar d1=`Report a problem: ${cc.message}`;\n')
+  const r = node([path.join(REPO, 'tools', 'remap.js'), b, '--dict', d, '--write'])
+  const nRen = count(/RENAMED\s+(\d+)/, r.out)
+  const nAmb = count(/AMBIGUOUS\s+(\d+)/, r.out)
+  chk(nRen === 0, `两份拷贝插值不一致 → RENAMED = 0（实际 ${nRen}）`)
+  chk(nAmb === 1, `  该词条落 AMBIGUOUS（实际 ${nAmb}）`)
+  chk(/锚文本在 bundle 命中 2 处且插值不一致/.test(r.out), '  歧义明细点名「命中 2 处且插值不一致」')
+  chk(/Report a problem: \$\{aa\.message\}/.test(r.out), '  歧义明细里列的是原 key（人工照着它改）')
+  chk(fs.readFileSync(d, 'utf8') === before, '  词典文件一个字节都没动（拒绝写回）')
+}
+
 // --- 4) lint 的 E5 负面用例 -------------------------------------------------------
 const negative = (label, mutate) => {
   const d = JSON.parse(dictText)
@@ -233,5 +292,5 @@ const outSec = negative('半截键放进 exact 分区', (d) => {
 })
 chk(/只能出现在 template 分区/.test(outSec), '  报错指出分区限制')
 
-console.log(fail ? `\n${fail} 项失败` : `\n全部通过（${samples.length} 条样本 + 3 条负面用例）`)
+console.log(fail ? `\n${fail} 项失败` : `\n全部通过（${samples.length} 条样本 + 重复拷贝 2 例 + 3 条负面用例）`)
 process.exit(fail ? 1 : 0)
