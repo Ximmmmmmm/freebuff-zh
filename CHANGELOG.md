@@ -1,5 +1,95 @@
 # 更新日志
 
+## [0.0.136] · 2026-09-23（已发布 `pack-v0.0.136`）
+
+跟随上游自动更新到 0.0.136。这一版上游动的是**模型目录**（几处改名与下线），另有一条 Codex 更新回执改写：
+
+- **模型目录换了一批**：新增 `Opus 5.5`（`xO="claude-opus-5-5"`，`label:"Opus 5.5"`，tagline 复用已有的
+  `Powerful all-round coding model`），旧的 `Opus 5` 下线但留了迁移映射（`i=t==="claude-opus-5"?xO:t`）；
+  旧的**老模型数组**也从 `o4` 改名 `wO` 并把 5.6 那三条换成了 6 系列：
+  `label:"GPT-6-Sol"`（原 `GPT-5.6-Sol`）、`label:"GPT-6-Luna"`（原 `GPT-5.6-Luna`），
+  `gpt-5.6-terra` 那条**整条删掉**，并且 `iq()` 现在把 `id.startsWith("gpt-5.6")` 的一律过滤掉（`retiring`）。
+  模型名按约定保留英文（登记进 `intentional-english.json` 的 `uiStrings`），所以本版**没有一条新文案要翻**。
+- **Codex 更新回执改写**：`Codex updated — ${label} is ready to pick` 下线，改成成功路径上的一句 toast
+  `Codex updated — model availability refreshed`（`o.ok?"Codex updated — model availability refreshed":…`）；
+  另一条 `Codex updated — send your message again.`（notice 的完成态）仍在，旧词条保留。
+
+对差账：片段级 1380 → 1379（新增 1 / 下线 2 / 疑似改写 0 组），字面量级 1932 → 1931（新增 1，就是那条新 toast）；
+`electron/` 下 **37 个文件与上一版逐字节相同**（`diff -rq` 无输出），12 个补丁**一次干净套用**（补丁覆盖区没动，无需重锚定）；
+`ui/` 侧只有主 bundle 变了（`index-C_S8h05L.js` → `index-BY1Nix4m.js`），`index.html` 也只是换了个 bundle 名。
+
+发布资产（`hanhua-pack-0.0.136.zip` 30,433,758 B / `pack-manifest.json` / `pristine-0.0.136.json.gz`），
+四道闸门（主进程扫描 / 回归闸门 / 单词级文案差集 / 字面量占用）全过；线上包下载回来后独立哈希，
+与本地包、与 manifest 声明三方一致：
+
+```
+sha512(base64) = u7AavQjbL1XQsLU5prGxhyPKSlvSOdlMRqJzy0t2g+aWEu8TUl0oWTzXc2qThQNAk9vzZLMCttR4XpkUDZBFRA==
+```
+
+- **词典补翻 1 条 / 下线 2 条**：exact 新增 `Codex updated — model availability refreshed`
+  （译文「Codex 已更新 — 模型可用性已刷新」，与既有的 `Codex updated — send your message again.` 同族）；
+  删掉 `Balanced agentic coding model for everyday work`（原 `gpt-5.6-terra` 的 tagline，随那条模型一起下线）
+  与 template 的 `Codex updated — ${n.label} is ready to pick`。exact 1324（新增 1 / 删 1） / template 239 → 238
+  （共 1645 条），替换数 1986 → **1985**、`all keys matched`、`missed_diagnose` 1645 条全部命中本版 UI bundle。
+  **替换数的账对得上**：下线两条各减 1 处、新 toast 加 1 处 → 1985；产物里逐字检查过，新 toast 已是中文、
+  两条下线文案在产物里 0 处、`Dismiss notification` 已全部变中文。
+- **模板变量自动重映射 24 条**（`RENAMED` 24 / `AMBIGUOUS` 2 / `MISSING` 1）：`U.limit` → `q.limit`、
+  `Qf(t.balance)` → `If(t.balance)`、`_be(t.limit)` → `xbe(t.limit)`、`sye/6e4` → `oye/6e4`、`B_.length` → `U_.length`
+  这类压缩短名由 `remap` 自动迁移。
+- **两条 AMBIGUOUS 是「两份拷贝又被改了名」**：`Dismiss notification: ${s.message}` / `${v.message}`
+  （0.0.134 起 bundle 里就有两份侧栏拷贝），本版两份的插值变量分别变成 `l` 与 `S`——同一锚文本命中 2 处、
+  插值不一致，`remap` 按设计拒绝自动写回（怕把词典改坏），**逐条人工改名**为 `${l.message}` / `${S.message}`。
+  这也是本项目**唯一需要人工介入的 remap 情形**：`AMBIGUOUS > 0` 时 `update.sh` 的小结会点名。
+- **登记表增 3 条 / 清 4 条**：新增 `GPT-6-Sol` / `GPT-6-Luna` / `Opus 5.5`（都写明是从哪个旧模型名改来的）；
+  清理本版已看不见的 `GPT-5.6-Luna` / `GPT-5.6-Sol` / `GPT-5.6-Terra` / `Opus 5`——`Opus 5` 在 bundle 里
+  只剩 `Opus 5.5` 的子串，界面属性位也已看不见。**`GPT-6 Luna`（带空格）照旧保留别删**：它在模型目录对象的
+  `displayName` 里、不在属性位，`uipos_gap` 会把它列进「已看不见，可以清理」，但那是给 `upstreamdiff` 用的。
+- **主进程与行为补丁**：12 个补丁一次干净套用；两组 UI 行为补丁按 `ui_patch_status` 判为 `KEEP`（上游仍带着
+  stream-epoch 与 token-epoch 两个缺陷），产物侧 5/5 哨兵 + 两道行为取证照旧通过；`mainscan` 疑似文案 0 条、
+  短标签 0 条（约定保留 84 条，与上一版持平）。
+- **残留扫描与上一版持平**：`uipos` 17 → **16** 条（全部已登记）/ `fieldscan` 1 条 / `blindscan` 279 条。
+  `uipos_gap` 报「本版界面位置英文 14 处、上一版 15 处，扣登记表后本版独有 0 处」——
+  少的正是已下线的那条模型名，新增的三条已登记。
+
+## [0.0.135] · 2026-09-23（已发布 `pack-v0.0.135`）
+
+跟随上游自动更新到 0.0.135。这一版上游只做了一件事：**新增 `GPT-6 Luna` 模型**（跑在 OpenAI flex 容量上），其余改动都在内部：
+
+- **新模型 `GPT-6 Luna`**：模型目录里多一条
+  `{id:c4,displayName:"GPT-6 Luna",tagline:"Strong all-around",availability:"always",dataUse:"service",premium:!0,multimodal:!0,
+  reasoningEffort:f$,efforts:qv,defaultEffort:f$,isNew:!0,experimental:!0,taglineTooltip:"Runs on OpenAI flex capacity: …"}`。
+  其中 `tagline` 复用了已有的 `Strong all-around`（早就在 exact 里）、推理档位引用的也是既有那套标签，所以本版**真正要翻的只有那条 tooltip 一句**；
+  `displayName` 是模型名，按约定保留英文（登进 `intentional-english.json` 的 `uiStrings`，与选择器里其他模型一致）。
+- **主进程只有一个文件变了**：`electron/shell-lifetime.cjs` 把 socket 心跳从固定 1s 改成 `DEFAULT_PING_MS = 3000`
+  （上游注释写的是「每秒两次进程唤醒 + 一次回环写」在整段生命周期里都在耗电；orchestrator 侧本来要静默 10s 才检查，3s 够塞三次 ping）。
+  新增代码只有注释与常量，**没有用户可见文案**，`patches/` 无需改动。
+
+对差账：片段级 1379 → 1380（新增 1 / 下线 0 / 疑似改写 0 组），字面量级 1931 → 1932（新增 1，就是模型名
+`GPT-6 Luna`——它不在任何界面属性位、片段级看不见，只有字面量级报得到）；`electron/` 仍是 37 个文件，
+`diff -rq` 只有 `shell-lifetime.cjs` 一处不同，12 个补丁**一次干净套用**（补丁覆盖区没变，无需重锚定）。
+
+发布资产（`hanhua-pack-0.0.135.zip` 30,433,669 B / `pack-manifest.json` / `pristine-0.0.135.json.gz`），
+四道闸门（主进程扫描 / 回归闸门 / 单词级文案差集 / 字面量占用）全过；线上包下载回来后独立哈希，
+与本地包、与 manifest 声明三方一致：
+
+```
+sha512(base64) = WS5h+IcK8ai80DqOpZsnw8zcsQgC2ovNmkV6du9GAN/O83HS/axpYC2NdcOVMAz11dt09So5Yvrk1i+eDS58iQ==
+```
+
+- **词典补翻 1 条**：exact 新增 `Runs on OpenAI flex capacity: half the token price, the same speed in our measurements, and a standard-tier backup when flex is busy.`
+  （译文「运行在 OpenAI flex 容量上：token 价格减半、实测速度一致，flex 繁忙时自动切到标准层级作为备用。」，`flex` 按产品术语保留英文）。
+  exact 1323 → 1324 / template 239（共 1646 条），替换数 1984 → 1986、`all keys matched`、`missed_diagnose` 1646 条全部命中本版 UI bundle。
+  **替换数的账对得上**：拿本版原版跑「上一版词典」只命中 1973 处（11 条模板因压缩短名改名而失配），12 条改名各补回 1 处、新 tooltip 1 处 → 1986。
+  那条 tooltip 在 bundle 里只出现一次（原版 1 处 → 产物 0 处英文 + 1 处中文，已直接数过）。
+- **模板变量自动重映射 12 条**（`RENAMED` 12 / `AMBIGUOUS` 0 / `MISSING` 0）：`I_.length` → `B_.length`、
+  `Nz(T)` → `Qz(T)`、`bbe(t.limit)` → `_be(t.limit)`、`Lve(new Date(e),n)` → `jve(new Date(e),n)`、`nye/6e4` → `sye/6e4` 等压缩短名，
+  全部由 `remap` 自动迁移，没有歧义需要人工改名（0.0.134 那 6 条 AMBIGUOUS 是上游重复打包造成的，本版没有新增拷贝）。
+- **登记表新增 1 条**：`uiStrings` 里的 `GPT-6 Luna`（模型名）。**一个口径要记住**：`uipos_gap` 会在
+  「登记表里有 1 条在本版产物里已看不见，可以清理」里把它列出来——它只扫界面属性位，而模型名在模型目录对象的
+  `displayName` 里、不在属性位；这条是给 `upstreamdiff` 用的（那边确实让它从「待补翻」变成「已登记」），**别删**。
+- **主进程与行为补丁**：12 个补丁一次干净套用；两组 UI 行为补丁按 `ui_patch_status` 判为 `KEEP`（上游仍带着
+  stream-epoch 与 token-epoch 两个缺陷），产物侧 5/5 哨兵 + 两道行为取证照旧通过；`mainscan` 疑似文案 0 条。
+
 ## [0.0.134] · 2026-09-23（已发布 `pack-v0.0.134`）
 
 跟随上游自动更新到 0.0.134。这一版上游动的是**项目侧栏**（可折叠 / 可调宽的左侧栏）与侧栏上的余额小徽章：
