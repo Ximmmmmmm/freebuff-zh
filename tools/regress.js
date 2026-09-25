@@ -56,6 +56,12 @@ function stripInterp(s) {
   return out;
 }
 
+// 文本归一化：与报告里的条目同一套（抹插值 + 折叠空白 + 去首尾），登记表两侧才能对上：
+// raw 是按「去掉插值的骨架」逐字节写的，uiStrings 是按 uipos 的 `${…}` 形态写的，
+// 归一化之后再比，两种写法都能命中。三个读登记表的工具（regress / upstreamdiff / uipos_gap）
+// 共用这一份——以前 upstreamdiff 自己拄了一份一模一样的，uipos_gap 再拄一份就是三处漂移。
+const normText = (s) => stripInterp(String(s)).replace(/\s+/g, ' ').trim()
+
 const WORD = /[A-Za-z]{2,}/g;
 
 // 出现这些就基本是代码，不是给人看的文案。注意 } 不在此列：嵌套模板会让它把上一层的
@@ -445,6 +451,7 @@ function collectLiteralsFromSource(src) {
 // 「短标签漏报」的补救做成字面量级通道，同样只此一处）。
 module.exports = {
   stripInterp,
+  normText,
   collectFragments,
   collectFragmentsFromSource,
   collectLiteralsFromSource,

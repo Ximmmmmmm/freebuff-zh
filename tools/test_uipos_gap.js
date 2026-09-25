@@ -7,7 +7,9 @@
 //      （--ctx）和小节之前的统计行都不能进集合，否则两侧差集会假报；
 //   2. 差集 = 本版 − 上一版 − 登记表；上一版就有的（品牌名/模型名/代码）不算新增；
 //   3. 有未登记新增 → rc 1（构建流程要拦）；全登记 → rc 0；参数/输入不对 → rc 2；
-//   4. 登记表里本版已看不见的条目要提醒清理，但不失败。
+//   4. 登记表里**整串已不在产物里**的条目要提醒清理，但不失败；只为 upstreamdiff 的
+//      字面量通道登记的（模型名 `displayName:"Solar Mini 4"` 这种 uipos 不扫的位置）不算
+//      死条目——旧口径拿 uipos 的集合判定，把这 5 条从 0.0.140 一直报到 0.0.147。
 'use strict'
 const fs = require('fs')
 const path = require('path')
@@ -32,8 +34,13 @@ const pack = (name, bundle) => {
 
 // 上一版产物：Settings / Old knob / Shared label
 const prevDir = pack('prev', 'var a={label:"Settings"},b={label:"Old knob"},c={children:"Shared label"}\n')
-// 本版产物：多了 Theme（这就是「单词级新文案」），Shared label 仍在
-const curDir = pack('cur', 'var a={label:"Settings"},b={label:"Theme"},c={children:"Shared label"}\n')
+// 本版产物：多了 Theme（这就是「单词级新文案」），Shared label 仍在；另外两串在**uipos 不扫的
+// 位置**上（车配上一版字面量通道登记过的模型名与模板形态的第三方库 aria-label）
+const curDir = pack(
+  'cur',
+  'var a={label:"Settings"},b={label:"Theme"},c={children:"Shared label"},' +
+    'd={displayName:"Solar Mini 4"},e=`Action: ${x}${y}.`\n',
+)
 const emptyDir = path.join(WORK, 'no-bundle')
 fs.mkdirSync(emptyDir, { recursive: true })
 
@@ -43,6 +50,38 @@ const allowAll = write('allow-all.json', JSON.stringify({ uiStrings: [{ text: 'S
 const allowStale = write(
   'allow-stale.json',
   JSON.stringify({ uiStrings: [{ text: 'Settings', why: '测试' }, { text: 'Vanished', why: '上游已删' }] }, null, 2),
+)
+// 只在字面量通道 / 模板形态上活着的登记项：uipos 看不见它们，但它们确实还在产物里
+const allowLiteral = write(
+  'allow-literal.json',
+  JSON.stringify(
+    {
+      uiStrings: [
+        { text: 'Settings', why: '测试：上一版就有' },
+        { text: 'Theme', why: '测试' },
+        { text: 'Solar Mini 4', why: '测试：模型名，uipos 不扫 displayName:，为字面量通道而登记' },
+        { text: 'Action: ${…}${…}.', why: '测试：第三方库 aria-label，登记表按 ${…} 形态写' },
+      ],
+    },
+    null,
+    2,
+  ),
+)
+// 同样两串，但产物里整串已没了 → 仍要提醒清理
+const allowLiteralGone = write(
+  'allow-literal-gone.json',
+  JSON.stringify(
+    {
+      uiStrings: [
+        { text: 'Settings', why: '测试' },
+        { text: 'Theme', why: '测试' },
+        { text: 'Solar Mini X', why: '测试：模型已下线' },
+        { text: 'Action: ${…}${…} cancelled.', why: '测试：模板整串已改写' },
+      ],
+    },
+    null,
+    2,
+  ),
 )
 
 const run = (args) => {
@@ -96,6 +135,18 @@ chk(rNoPrev.code === 1 && /本版界面位置英文 3 处/.test(rNoPrev.out), '�
 const rStale = run(['--bundle', curDir, '--prev', prevDir, '--allow', allowStale])
 chk(/可以清理/.test(rStale.out) && /Vanished/.test(rStale.out), '登记表里本版已看不见的条目提醒清理')
 chk(rStale.code === 1, '清理提醒本身不变成 rc 0（真正的新增项照样拦）')
+
+const rLiteral = run(['--bundle', curDir, '--prev', prevDir, '--allow', allowLiteral])
+chk(rLiteral.code === 0, `字面量通道 / 模板形态的登记项齐备 → rc 0（实际 ${rLiteral.code}）`)
+chk(!/可以清理/.test(rLiteral.out), '只为字面量通道登记的条目（uipos 看不见但产物里还在）不算死条目')
+chk(!/Solar Mini 4|Action:/.test(rLiteral.out), '这类条目也不进清理清单的点名')
+
+const rLiteralGone = run(['--bundle', curDir, '--prev', prevDir, '--allow', allowLiteralGone])
+chk(
+  /· Solar Mini X/.test(rLiteralGone.out) && /· Action: /.test(rLiteralGone.out),
+  '整串已不在产物里的条目照旧提醒清理（含 ${…} 形态）',
+)
+chk(!/· Solar Mini 4/.test(rLiteralGone.out) && !/· Settings/.test(rLiteralGone.out), '还在产物里的条目仍不进清理清单')
 
 const rRegistered = run(['--bundle', curDir, '--prev', prevDir, '--allow', allowSettings, '--quiet'])
 chk(!/本版界面位置英文/.test(rRegistered.out) && rRegistered.code === 1, '--quiet 只留清单，去掉统计行')

@@ -71,7 +71,7 @@
 
 const fs = require('fs')
 const path = require('path')
-const { collectFragmentsFromSource, collectLiteralsFromSource, resolveBundle, stripInterp, COMMON } = require('./regress.js')
+const { collectFragmentsFromSource, collectLiteralsFromSource, resolveBundle, stripInterp, normText, COMMON } = require('./regress.js')
 
 const ROOT = path.join(__dirname, '..')
 const DEFAULT_ARCHIVE = path.join(ROOT, 'work', 'upstream')
@@ -79,10 +79,10 @@ const DEFAULT_SNAPSHOTS = path.join(ROOT, 'work', 'pristine')
 const DEFAULT_DICT = path.join(ROOT, 'dict.json')
 const DEFAULT_ALLOW = path.join(ROOT, 'intentional-english.json')
 
-// 文本归一化：与报告里的条目同一套（抹插值 + 折叠空白 + 去首尾），登记表两侧才能对上：
+// 文本归一化（normText）与登记表两侧的写法同一套，定义在 tools/regress.js：
 // fragments 是按「去掉插值的骨架」逐字节写的，uiStrings 是按 uipos 的 `${…}` 形态写的，
-// 归一化之后再比，两种写法都能命中。
-const normText = (s) => stripInterp(String(s)).replace(/\s+/g, ' ').trim()
+// 归一化之后再比，两种写法都能命中。（0.0.147 之前这里挺着一份自己的拷贝，
+// 再加上 uipos_gap 要做「登记项整串还在不在」的判定，两处都在比登记表——合到一处防漂移。）
 
 // 「有意保留英文」登记表。与 tools/regress.js 的 loadAllowlist 同一套约定（同名参数、
 // 同一默认路径、丢失即空表不报错、非法 JSON 直接 rc 2）——差别只在本工具连 uiStrings 一起认：
