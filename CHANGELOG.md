@@ -1,5 +1,259 @@
 # 更新日志
 
+## [0.0.146] · 2026-09-25（已发布 `pack-v0.0.146` / 修正重发 `pack-v0.0.146.1`、`pack-v0.0.146.2`）
+
+跟随上游自动更新（装机目录 14:54 被换成英文原版 0.0.146，连 `hanhua-backup-*` 一起被清）。上游这一版做的是
+**「就地赞助运行」（in-place sponsored run）**：接受赞助提案后不再另开分支，而是把改动直接写进本项目文件夹、不提交，
+交给用户审查或撤销——于是状态表与卡片新增了一整套文案；同时**把同意窗口（consent window）整体重写**
+（新的 pill 按钮、`warn-mark`、`#more` 折叠区），主进程侧两处补丁因此必须按新版原文重生成。
+
+- **新增 23 条 `exact`**：赞助卡片与撤销流程的状态标签（`Before you keep it`、`Could not undo these changes`、
+  `Couldn’t finish the setup`、`Done — committed to its own branch`、`Done — the changes are in your files`、
+  `Done — pull request merged`、`Done — pull request opened`、`Set it up for me`、`Setting it up…`、`Getting started…`、
+  `Sponsored offer`、`End mission`、`Review the changes`、`Undo these changes`、`Undone. No file changes to restore.`）、
+  免费运行那组（`Free agent run`、`free agent run`、`wants to give you a`，以及带前后空格的 ` · Sponsored by `——
+  `children:[" · Sponsored by ",…]` 后直接接广告主名，空格逐字节保留）、两条长说明句
+  （`Running in this conversation. Press Stop anytime, like any other request.`、
+  `The changes are in your files, uncommitted. Review them, then keep them or undo them from the conversation above.`）、
+  一条错误提示（`The conversation changed — try again`），外加改写后的 `The setup couldn’t finish. Nothing was changed in your project.`。
+- **新增 2 条 `template`**：`` `Free agent run, sponsored by ${t.advertiserName}` ``、
+  `` `Undone. ${l.reverted} ${l.reverted===1?"file":"files"} restored.` ``。
+- **下线 9 条**（旧状态标签被上游的状态表取代）：`Sponsored PR merged`、`Sponsored thread landed a PR`、
+  `Runs in its own labeled thread, in an isolated workspace.`、`Sponsored thread committed its work`、`Sponsored thread failed`、
+  `Sponsored thread running`、`Start sponsored thread`、`Starting sponsored thread…`、旧句 `The sponsored thread could not finish. …`。
+  前两条与最后一条是**对差工具看不出来的**（片段级提取里没有它们，`upstreamdiff` 的下线清单也不含），
+  是构建的 MISSED 报出来的——说明「词典全命中」这道闸门不可省。
+- **登记 1 条**（`intentional-english.json`）：`msg sponsored-task`（CSS 类名，与已登记的 `streak-day on` 同类）。
+- **主进程 7 条**（上游重写同意窗口，词典够不着）：`electron/consent-window.html` 的 `IN_PLACE_SENTENCE`
+  （` is sponsoring this agent run, so it’s free for you. …`，与 bridge 侧同句）与 `UNDO_NOTE`；`electron/mcp-consent-bridge.cjs` 的
+  `SPONSORED_IN_PLACE_SENTENCE`、`'Changes:  Written into the files in this folder…'`、`'Not now'` / `'Start free run'`、`'Start this free agent run?'`。
+  两个补丁（`electron-consent-window.html.patch`、`electron-mcp-consent-bridge.cjs.patch`）由 `tools/regen_patch.js` 按 0.0.146 原文**重生成**
+  （上游在 hunk 中间改了缩进、又整段重写，行号与计数交给工具算），补丁数仍 **13**；`patch_preflight` 13/13 干净套用。
+- **对差账**：片段级 1421 → 1434（新增 20 / 下线 7 / 疑似改写 1 组），字面量级 1993 → 2010（新增 27，其中 6 条片段级没报到）。
+- **词典**：exact 1354 → 1368 / template 251 → 253 / code 19 / pattern 86（共 1710 → **1726** 条），
+  主 bundle 替换数 2056 → **2073**、`all keys matched`。
+- **`update.sh` 七步全绿**：待补翻 0 条、回归闸门未发现未登记的新增英文片段、单词级差集（`uipos_gap`）0 处、
+  字面量占用 0 条、`mainscan` 零漏翻、补丁锚点预检 **13/13**；UI 行为补丁两组 `KEEP`、两道行为取证通过；
+  残留与上一版持平（`uipos` 16 条全部已登记 / `fieldscan` 1 条 / `blindscan` 280 条疑似）。
+
+### 修正重发 `pack-v0.0.146.1`：窗口按钮区的**图标色**也与页面同源
+
+上一版（`pack-v0.0.146`）的标题栏补丁只接管了按钮区的**底色**（`--chrome`）与**高度**（`--tabbar-height`），
+`SHELL_THEMES.dark/light.overlaySymbol` 仍是上游写死的 `#9a9aa0` / `#63636b`，而页面里图标用的是 `--faint`
+（深 `#7a7a7a` / 浅 `#69746d`）——于是原生按钮（— □ ×）的图标深浅与页面里那套对不上。
+
+- `HANHUA_SHELL_COLORS` 一并读 `--faint`（同一套「同一选择器取最后一块」规则：深色取裸 `:root`，
+  浅色取最后一块 `:root[data-theme=light]`；`.settings-page` 里那两个同名变量不动），新增
+  `symbolDark` / `symbolLight` 两个字段，`fallback` 仍回落上游原值；
+- `SHELL_THEMES` 两处 `overlaySymbol` 改为引用它（建窗时的 `titleBarOverlay.symbolColor` 与主题切换时的
+  `setTitleBarOverlay` 都读同一个 `colors.overlaySymbol`，所以只要换这一处就三处生效）；
+- `postbuild.js` 的 `MAIN_SENTINELS` 补一条 `overlaySymbol: HANHUA_SHELL_COLORS.symbolLight,`；
+- 产物实测：`{dark:#0f0f0f, light:#edf1ee, symbolDark:#7a7a7a, symbolLight:#69746d, height:48}`——
+  底色 / 高度 / 图标色三样全部来自 UI 的 CSS 变量，上游以后再换配色会自动跟随；
+- `targetVersion` 仍为 0.0.146、只升第四段，已装 `0.0.146` 的机器会按 `packVersion` 四段比较自动拉到这一版。
+
+### 修正重发 `pack-v0.0.146.2`：按钮区不再盖住标签条底下那条线
+
+`.tabbar` 底部那条 `border-bottom: 1px solid var(--border)` 横跨整个标签条，但**右侧按钮区那一段看不见**——
+原生 overlay 是主进程按 `titleBarOverlay.height` 从窗口顶部画的独立色块，压在渲染内容之上，高度与标签条相同时
+正好把那一行 1px 的线盖住，于是右边只剰一块同色块、与左边断开。
+
+- 按钮区高度改为「标签条高度 − 标签条底部边框宽度」：从同一份 CSS 里解析 `.tabbar` 规则的 `border-bottom` 宽度
+  （现在是 1px；上游以后改宽度或去掉边框也跟着变），`height: Math.max(0, barHeight - barInset)`；
+- 实测产物取值 `{barHeight: 48, barInset: 1, height: 47}`——按钮在 47px 区域内垂直居中，与标签条内容区中心一致，
+  露出的那一行正好是标签条的 `--border` 色，与左侧连成一条线；
+- `postbuild` 的 `MAIN_SENTINELS` 不变（`height: HANHUA_SHELL_COLORS.height,` 仍在）；
+- `targetVersion` 仍为 0.0.146、只升第四段，已装 `0.0.146` / `0.0.146.1` 的机器按四段比较会自动拉到这一版。
+
+## [0.0.145] · 2026-09-25（已发布 `pack-v0.0.145` / 修正重发 `pack-v0.0.145.1`）
+
+跟随上游自动更新连跨三版（0.0.143 / 0.0.144 / 0.0.145）。上游这三版只做了一件事：设置页新增**「应用更新」面板**
+（把自动检查与下载暂停到你选的日期）——界面新增文案 9 条；同时**移除了上一版刚上线的「降速与续费」提示面板**，
+所以这一版是「一边补 9 条、一边清 12 条死词条」。
+
+- **新增 9 条**：
+  · `exact` 4 条：`Couldn’t load update settings.`（「无法加载更新设置。」）、`Couldn’t save update settings.`（「无法保存更新设置。」）、
+    `Pause automatic update checks and downloads through a date you choose.`（「在你选定的日期之前，暂停自动检查与下载更新。」）、
+    以及带尾随空格的 `Paused through `（「已暂停至 」——`children:["Paused through ",…]` 后面直接接日期，空格要逐字节保留）；
+  · `pattern` 5 条：`App updates`（「应用更新」）、`Pause through`（「暂停至」）、`Resume updates`（「恢复更新」）、
+    `Change pause date`（「更改暂停日期」）、`Pause updates`（「暂停更新」）——后两条同属一个锚点的三元分支
+    `children:e?"Change pause date":"Pause updates"`，短标签按惯例走 `pattern`。
+- **下线 12 条**（上游把「降速与续费」面板整块删了）：`Slowed down.`、` This hour has used the compute`、
+  `, so each step now pauses about `、`. Full speed from the next step; a pause already under way finishes first.`、
+  `Starts a fresh hour and keeps this chat`、`Renew for`、`it covers`、`"s."`（面板里的秒单位）与 `template` 两条
+  （`its ${h} ${ru} cover`、`; ${h-c.daily.remaining} come from your wallet`）、`pattern` 一条（`Renewing…`）。
+  另有一条**改写**：`Your account, mobile sync, and agent preferences.` → `Your account, app updates, mobile sync, and agent preferences.`。
+  另外 ` ${sp(R.length,"item")} … ignored locally:` 那条 `template` 只是变量改名（`sp` → `op`，骨架太短不唯一，`remap` 判 MISSING），手工迁完照旧。
+- **对差账**：片段级 1420 → 1421（新增 4 / 下线 3 / 疑似改写 1 组），字面量级 1993 → 1993（新增 10，其中 5 条片段级没报到）。
+- **词典**：exact 1358 → 1354 / template 253 → 251 / pattern 82 → 86（共 1712 → **1710** 条），替换数 2057 → **2056**、
+  `all keys matched`、`missed_diagnose` 1710 条全命中。
+- **主进程新增一处补丁**：`electron/updater.cjs` 的 `update:set-pause` 有两条用户可见报错
+  （`Choose today or a future date.` / `Could not save the update preference.`，经 IPC 抛回渲染进程、由设置页的 `catch` 显示成 `O.message`），
+  词典够不着 → 新增 `patches/electron-updater.cjs.patch`（补丁数 12 → **13**），并在 `postbuild` 的 `MAIN_SENTINELS` 里补上这两句译文哨兵。
+- **`update.sh` 七步全绿**：待补翻 0 条、回归闸门未发现未登记的新增英文片段、单词级文案差集（`uipos_gap`）0 处、
+  字面量占用 0 条、`mainscan` 零漏翻、补丁锚点预检 **13/13** 干净套用；UI 行为补丁两组 `KEEP`、两道行为取证通过；
+  残留扫描与上一版持平（`uipos` **16** 条全部已登记 / `fieldscan` 1 条 / `blindscan` 279 条疑似文案）。
+- **产物改动（本版唯一的非翻译改动）：窗口按钮区跟丢 UI 配色**。上游换整套浅色配色、又把标签条压矮，
+  但主进程那张影子表没跟着改，于是窗口右上角系统按钮区（— □ ×）在标签条右侧露出一块**颜色和高度都对不上**的矩形
+  （实测：左 `#edf1ee` / 右 `#e9e9eb`、左 `48px` / 右 `54px`；暗色同病（`--chrome #0f0f0f` vs `overlay #0a0a0b`），只是不显眼）。
+  **这不是本版引入的**：逐版本核对已发布包，UI 侧在 **0.0.131** 就从 `--chrome: #ebebee` / `--tabbar-height: 60px`
+  变成 `#edf1ee` / `48px`，而主进程 `overlay: '#e9e9eb'` 与 `height: 54` 从 0.0.103 一路到 0.0.145 都没动过——
+  即上游 0.0.131 那次改版只改了 UI 侧、漏了主进程，一路带到今天；**英文原版同样错位**，与翻译无关。
+  修在汉化包里是因为我们本来就在维护这层主进程补丁。
+  两边的来源：UI 侧是 CSS 变量（`--chrome` 在 `:root[data-theme=light]` 里有 4 处声明、**后一份生效**；`--tabbar-height` 声明两次 `60px` / `48px`，`.app-workspace` 里那条 `48px` 赢），
+  主进程侧是写死的 `SHELL_THEMES.dark/light.overlay` 与 `titleBarOverlay.height: 54`。
+  `patches/electron-main.cjs.patch` 里新增 `HANHUA_SHELL_COLORS`：从 `process.resourcesPath/orchestrator/ui/index.html` 定位主 CSS，
+  按「取最后一块」读出这两个值，据此设置 `overlay` 与 `height`（`paintWindows()` 主题切换时一并带上），此后上游再换配色窗口按钮区自动跟随；
+  **读不到就回落到当前这组值**，不会比原版更糟。`postbuild` 的 `MAIN_SENTINELS` 补三条哨兵，并做了负面测试确认哨兵是活的
+  （把产物里的 `overlay: HANHUA_SHELL_COLORS.light,` 改回旧值 → 自检报「缺少译文哨兵」、rc 1）。
+  **发布状态**：这处改动是在 `pack-v0.0.145` 发布**之后**才入仓的，所以那个包里没有它。已按约定把同一 `targetVersion`
+  内的修正重发成第四段版本号 **`0.0.145.1`**（`pack-v0.0.145.1`，`targetVersion` 仍为 0.0.145）：控制器用 UI 的
+  `hanhua-pack` 戳与 `pack-manifest.json` 里的 `packVersion` 做四段比较，已装 `0.0.145` 的机器会拉到这一版；
+  只升第四段不影响词典兼容检查。
+- **记一笔（工具口径）**：`missed_diagnose` 对两个短键给了**误导性分类**——`"s."` 被判「命中 UI」、`it covers` 被判「只在主进程」，
+  其实两条都已是死词条。它的判据是「子串包含」（`curUi.includes(key)`）：`s.` 在 2.5 MB 的 bundle 里到处都是，
+  而 `it covers` 恰好出现在主进程 `shell-lifetime.cjs` 的一句**注释**里。两条最终都是 `build.sh` 第 4 步的 MISSED 抓出来的
+  ——短键（通用词 / ≤3 字符）目前仍只能靠构建兜底，体检只能当「该往哪边补」的建议。
+
+## [0.0.142] · 2026-09-24（已发布 `pack-v0.0.142`）
+
+跟随上游自动更新到 0.0.142。界面新增只有**两条**文案，但主进程多了一处**安全提示**（COD-642：Windows 上赞助任务没有沙箱）——
+它出在 `electron/` 两个文件里，词典够不着，是这一版主要的人工活。
+
+- **本版两条新文案（都进 `exact`）**：
+  · `This sponsored task was offered for a different kind of computer, so it can’t run on this one.`（`offered-for-another-os`：赞助提案不是给这台机器发的）
+    译文「此赞助任务是面向另一种计算机提供的，因此无法在这台计算机上运行。」；
+  · `Freebuff can't keep sponsored file changes inside this project's folder on this drive.`（`file_layer_unavailable`：这个驱动器上做不到把改动留在项目文件夹内）
+    译文「Freebuff 无法在这个驱动器上把赞助任务的文件改动保留在此项目的文件夹内。」。
+- **对差账**：片段级 1417 → 1420（新增 1 / 下线 0 / 疑似改写 0 组），字面量级 1991 → 1993（新增 2，其中 1 条片段级没报到）。
+  账对得上：两条新文案都在上面，没有隐藏项。
+- **词典**：exact 1356 → 1358（共 1710 → **1712** 条），替换数 2054 → **2057**、`all keys matched`、
+  `missed_diagnose` 1712 条全命中（命中 UI 1712 / 只在主进程 0 / 只在上版 UI 0 / 两边都没有 0）。
+- **模板变量自动重映射 1 条**（`n.todos.filter(qje).length` → `Uje`，首跑即写完；歧义 0 / MISSING 0）。
+- **`electron/` 37 个文件里只有两个变了**，都是 COD-642 的 Windows 无沙箱提示：
+  `consent-window.html`（新增 `.floor` 样式、`<p class="floor" id="floor">` 与页面自己的 `WINDOWS_FLOOR_SENTENCE`）与
+  `mcp-consent-bridge.cjs`（新增 `platform` 注入参数、`SPONSORED_WINDOWS_FLOOR_SENTENCE` 常量、message 拼接与 `floorDisclosed` 回执）。
+  上游刻意让两份拷贝逐字相同（页面渲染自己的副本、请求里只传布尔），译文照此**保持两份一致**：
+  「在 Windows 上没有沙箱。此任务以你自己的 Windows 权限运行，你的凭据对它不可见，但也没有被锁起来。」
+- **两处补丁按新版原文重写**（都不是行号漂移，`reanchor_patch` 救不了：上游就在 hunk 中间插了新行）：
+  `electron-consent-window.html.patch`（`@@ -58`、`@@ -91` 两个 hunk 被 `.floor` 三段插入顶开）与
+  `electron-mcp-consent-bridge.cjs.patch`（`@@ -407` hunk 被 `windowsFloor` 两行顶开）。
+  做法：把旧补丁解析成「英文行 → 中文行」映射（25 条），套到 `reanchor_patch.buildMirror()` 搭的「快照 + 词典」镜像上，再用 `diff -u` 重新生成——
+  **行号交给工具算**，不再手写 hunk（手写踩了两个坑：上下文空行计数、行首缩进）。这条路径已固化成
+  `tools/regen_patch.js`（`--broken` / `--from` / 默认试运行；自测 `tools/test_regen_patch.js` 进 CI），
+  预检在「上游改写」的结论里也会直接给出这条命令。
+- **产物自检的译文哨兵值回票价**：手工重写时漏了赞助对话框的两条按钮文案（`? ['否', '是']` / `: ['取消', local ? '运行' : '连接'],`），
+  这类漏译**不会**让构建失败、只会让窗口里冒英文，是 `postbuild` 的 `MAIN_SENTINELS` 把它抓了出来；补齐后自检转绿（`✓ 自检通过`）。
+- **两道行为补丁仍是 `KEEP`**：`stream-epoch`（3 条锚点唯一命中）与 `token-epoch`（2 条锚点唯一命中）——上游这两版没碰这块代码；
+  产物侧 `postbuild` 的 UI 哨兵 5/5、两道行为取证同样通过。
+- **`update.sh` 七步全绿**：待补翻 0 条、回归闸门 220 vs 220 新增 0 处、单词级文案差集（`uipos_gap`）未登记新增 0 处、
+  字面量占用 0 条、`mainscan` 零漏翻、补丁锚点预检 12/12 干净套用；残留扫描与上一版持平（`uipos` **16** 条全部已登记 / `fieldscan` 1 条 / `blindscan` 279 条疑似文案）。
+- **记一笔口径（第三次遇到）**：`uipos_gap` 仍把 `GPT-6 Luna` / `Solar Mini 4` / `Space Bunny Alpha` / `git init` / `Initial commit` 列进「本版产物里已看不见，可以清理」——
+  与 0.0.141 一样逐条复核过，五条都还在（不在 `uipos` 只认的属性位上），**照旧不要按提示删**。
+
+## [0.0.141] · 2026-09-24（已发布 `pack-v0.0.141`）
+
+跟随上游自动更新到 0.0.141。这是**迄今最小的一次适配**：上游只新写了**一句**界面文案，主进程一个字都没动。
+
+- **本版唯一的新文案**：`The sponsored task started, but its thread could not be opened`。它出在「接受赞助提案」那条流程里——
+  `acceptProposal` 拿到 `adProposalAccept` 返回的 `threadId` 之后，先把 `runThreadId` 写回提案状态（`TP(t,o,{openerId:i})`），
+  再调 `XS(t,e,threadId,openerId,"…")` 去打开那条新会话；`XS` 内部经 `ms(e,()=>le.threadPage(n,s),r)` 拉页面，失败时把 `r` 当提示弹给用户。
+  同一处的邻居（`Could not open that sponsored run` / `Could not open the conversation this offer was made in`）都已译好，这条按惯例收进 **`exact`**（全库仅 1 处），
+  译文「赞助任务已启动，但无法打开对应的会话」；尾标点跟随原文（原文无句号）。
+- **对差账**：片段级 1416 → 1417（新增 1 / 下线 0 / 疑似改写 0 组），字面量级 1990 → 1991（新增 1，其中 0 条片段级没报到）。
+  账对得上：片段级新增的那 1 条就是它，没有「只有字面量级才看得见」的隐藏项。
+- **词典**：exact 1355 → 1356（共 1709 → **1710** 条），替换数 2053 → **2054**（只 +1，与新增一条吻合，没有词条被吞）、
+  `all keys matched`、`missed_diagnose` 1710 条全命中（命中 UI 1710 / 只在主进程 0 / 只在上版 UI 0 / 两边都没有 0）。
+- **模板变量自动重映射 12 条**（`RENAMED` 12 / 歧义 0 / MISSING 0），首跑即写完，无一条需要人工改名。
+- **`electron/` 逐字节未变**：37 个文件 `diff -rq` 无输出（0.0.140 → 0.0.141），12 个主进程补丁**一次干净套用**、无需重锚定也没有三方合并；
+  `ui/` 侧只有主 bundle 换了名字（`index-Cj7G0cYf.js` → `index-NNtjSAl-.js`）。
+  因此 `mainscan` 的结论与上一版一致：零漏翻（约定保留 84 条，分类计数不变）。
+- **两道行为补丁仍是 `KEEP`**：`stream-epoch`（3 条锚点唯一命中，未打标记时仍丢事件、打上 `-1` 后不再丢）与
+  `token-epoch`（2 条锚点唯一命中，403 后同一次调用内重试成功、5xx 不误伤）——上游这两版都没碰这块代码；
+  产物侧 `postbuild` 的哨兵 5/5 与两道取证同样通过。
+- **`update.sh` 七步全绿**：待补翻 0 条、回归闸门 220 vs 220 新增 0 处、单词级文案差集（`uipos_gap`）未登记新增 0 处、
+  字面量占用 0 条；残留扫描与上一版持平（`uipos` **16** 条，全部已登记 / `fieldscan` 1 条 / `blindscan` 279 条疑似文案）。
+- **记一笔口径（第二次遇到，已复核）**：`uipos_gap` 又把 5 条登记项列进「本版产物里已看不见，可以清理」——
+  `GPT-6 Luna` / `Solar Mini 4` / `Space Bunny Alpha` / `git init` / `Initial commit`。逐条回 bundle 里查过：
+  **五条都还在且计数与上一版一致**（各 1 处，`Solar Mini 4` 3 处），只是都不在 `uipos` 只认的属性位上
+  （模型目录对象的 `displayName`、Git 命令行、`git commit -m "Initial commit"` 的参数），
+  而登记它们是给 `upstreamdiff` / 单词级差集用的，**照旧不要按那提示删**（0.0.135 的 `GPT-6 Luna` 就是这么误删过一次）。
+
+## [0.0.140] · 2026-09-24（已发布 `pack-v0.0.140`）
+
+跟随上游自动更新到 0.0.140（本机跨了 0.0.137–0.0.140 四个版本，一次追上）。这一版是**本次适配里最大的一次文案改写**：
+上游把「赞助工作前的本地 Git 准备」整段重写了措辞（快照 → 首次提交、预览 → 摘要），另有三块新功能带文案上线。
+
+- **Git setup 文案整段改写**：`snapshot` 的说法全部换成首次提交——`Set up local Git to track changes. No GitHub account or upload is needed.`
+  → `This folder needs local Git before sponsored work can start. Freebuff can set it up for you. No GitHub account or upload is needed.`；
+  `Create a Git repository and commit a checkpoint, then recheck.` → `Recheck, and Freebuff can create a local Git repository with a first commit for you.`；
+  `This Git repository needs a reviewed initial snapshot.` → `This Git repository needs a first commit.`；`Could not prepare a file preview. Nothing was approved.`
+  → `Could not prepare a file summary. Nothing was changed.` 等。**15 条 exact 因此下线**（`missed_diagnose` 报「只在上版 UI 出现」），
+  另有 `Review the initial snapshot. …` 这一整段被拆成 `${sp(R.length,"item")} … out and … ignored locally: ${…}` 那样的模板拼接句，
+  旧词条同样下线、按新句重写。新增的还有 `Aje`/`Mje`/`Dje` 三个状态表补全（`This repository has no commits yet. …`、
+  `Nothing changes until you approve it. Freebuff will not install Git automatically.`…）与 `$D` 的排除原因标签（`secrets and env files` /
+  `build output and generated files` / `Freebuff metadata` / `already in .gitignore` / `symlinks` / `files over 512 KB` / `unsupported entries`）。
+  顺手补了两条**老遗留**：`dependencies` 与 `symlinks`（0.0.136 就没人翻、词数太少三条通道都看不见）。
+- **三块新功能带新文案**：**上下文压缩**（`Compacting context…` / `Context compacted` / `Context compaction` / `Summary carried forward to the agent.` /
+  `Wait for context compaction to finish.`，以及 markdown 回执 `**Context compacted (${…})**`）；**降速提示**（`Slowed down.` /
+  ` This hour has used the compute` / `it covers` / `its ${h} ${ru} cover` / `, so each step now pauses about ` / `s.` / 续费按钮 `Renew for` /
+  `Renewing…` / `Start new hour` / `Starts a fresh hour and keeps this chat`，以及 `Your hour is up. Sending starts another hour of ${…} for ${…} ${ru}.`）；
+  **改动列表的路径过滤与提案（proposal）交互**（`Filter changed files by path` / `No matching files` / `Try another path.` /
+  `Showing … of … matching files. Filter by path to narrow the list.` / `Offered in another conversation. Start it from there.` /
+  `Open its conversation` / `Open pull request on GitHub` / `This offer was made in a conversation that is no longer here.`）。
+- **模型目录两条新条目 + 两条下线**：新增 `Solar Mini 4`（`displayName:"Solar Mini 4"`，`tagline:"Fast and light"`，
+  并作为 `Solar Pro 4` 的 `supersededBy` 目标：`notice:"Solar Mini 4 replaces Solar Pro 4"`、`actionLabel:"Switch to Solar Mini 4"`）与
+  `Space Bunny Alpha`（隐身模型，`taglineTooltip:"A stealth model from an anonymous provider. …"`）。模型名按约定保留英文（登进登记表），
+  **只有那两句成句的文案要翻**（`Solar Mini 4 replaces Solar Pro 4` / `Switch to Solar Mini 4` / 那条 tooltip）。
+- **两处少见的「不该进 exact」的判断**：
+  · `dependencies` 在 bundle 里有 **26 处**子串、其中只有 1 处是界面标签（`dependency:"dependencies"`），所以走 **`code` 分区**连上下文一起替换，
+    exact 会把它连同别处的代码串一起翻掉；
+  · `This project has too many files to summarize here (…)` 这条在 bundle 里是**单引号**串（`too_many_files:'…'`），
+    exact 只认双引号字面量、`pattern` 的锚点也不匹配 `too_many_files:`，同样只能走 `code`。
+- **`sp()` 是 0.0.140 新增的英文复数助手**：5 个调用点（`sp(n,"file")` / `sp(n,"item")`）**全部落在本次要翻的文案里**，
+  `sp(n,"个文件")` 会渲染成「2 个文件s」（默认第三参是 `` `${e}s` ``），而 `lint_dict` 的 **E3** 又只允许改插值里的字符串常量、不许改参数个数。
+  处置：加一条 `code` 把助手的默认复数改成单数（`n=\`${e}s\`)=>` → `n=e)=>`），中文量词就能直接当第二参用、且计数照旧显示。
+  这与 `code` 分区既有的那条 `" code comment",c.length===1?"":"s"` 是同一手法。
+- **`Delete thread` 放错分区的教训**：它是组件属性 `action:"Delete thread"`，`action:` 不在 `apply.js` 的 `ATTR_ANCHORS` 里，
+  放 `pattern` 会在构建末尾以 `[pattern] Delete thread` 报 MISSED；改放 `exact`（全库仅 1 处）才命中。
+
+对差账：片段级 1379 → 1416（新增 43 / 下线 6 / 疑似改写 8 组），字面量级 1931 → 1990（新增 73，其中 24 条片段级看不见）；
+**待补翻 0 条**（61 条新增 + Git 段整段改写 + 上面两条老遗留全部补进词典）。`electron/` 仍是 37 个文件，
+`diff -rq` 只有两个不同：`consent-window.cjs`（`ask()` 支持 `AbortSignal`——桥那头放弃时关窗当拒绝，纯行为、无文案）与
+`mcp-consent-bridge.cjs`（`escapeDisplay` → 新增的 `escapeLines` 助手 + 新的 `Uncommitted changes:` 文案 + 同意窗口的 `abandoned` 控制器）。
+`ui/` 侧只有主 bundle 变了（`index-BY1Nix4m.js` → `index-Cj7G0cYf.js`），`index.html` 只是换了个 bundle 名。
+
+发布资产（`hanhua-pack-0.0.140.zip` 30,445,690 B / `pack-manifest.json` / `pristine-0.0.140.json.gz`），
+四道闸门（主进程扫描 / 回归闸门 / 单词级文案差集 / 字面量占用）全过；线上包下载回来后独立哈希，
+与本地包、与 manifest 声明三方一致：
+
+```
+sha512(base64) = pvYw/JmWlZQQmB8kJdS+ThMlFMCRjo6a3QDbwpcO41gaBDMz74rG1AUtZCKcRXsYDimuzoCq8mA+b5C2CqOp8w==
+```
+
+- **词典：exact 1324 → 1355 / template 238 → 253 / code 15 → 19 / pattern 68 → 82**（共 1645 → **1709** 条），
+  替换数 1985 → **2053**、`all keys matched`、`missed_diagnose` **1709 条全部命中本版 UI bundle**（只在主进程 0 / 只在上版 UI 0 / 两边都没有 0）。
+- **模板变量自动重映射 62 条**（`RENAMED` 62 / `AMBIGUOUS` 7 / `MISSING` 0）：`ie.cwd` → `se.cwd`、`gl(x,"unknown error")` → `ga(x,"unknown error")`、
+  `If(t.balance)` → `Vf(t.balance)`、`xb` 一族 → `Bb` 一族、`U_.length` → `X_.length` 这类压缩短名由 `remap` 自动迁移。
+- **7 条 AMBIGUOUS 全部是「同一锚文本在 bundle 里有两份拷贝」**（`Dismiss notification: ${S.message}`、`Remove ${xe.configKey}`、
+  `Close ${Y.label}`、`Project: ${$r(t)}`、两条 `Regular price: ${ve}/${ut} Freebucks / hour`、`${s}${o?", working":…}`），
+  `remap` 按设计拒绝自动写回，**逐条人工**核对了 bundle 里两份的插值后改名（`${_.message}` / `${we.configKey}` / `${K.label}` /
+  `${Lr(t)}` / `${ge}`+`${ke}` / `${o}${a?…:l?…}`），并同步更新译文里的插值名（`lint_dict` 的 E3 会盯着这一致性）。
+- **主进程补丁重锚 + 补新文案**：12 个补丁一次干净套用，但 `electron-mcp-consent-bridge.cjs.patch` 需要重做——
+  它的两处上下文正落在上游改掉的同一行上，`reanchor_patch` 救不了（那是「上游改写」不是「行号漂移」）。
+  做法记在 `docs/更新维护.md`：**三方合并**（base=0.0.136 原版、ours=0.0.136 原版+旧补丁、other=0.0.140 原版），
+  冲突按「取上游的新写法 + 回填中文」解决，再把新的 `Uncommitted changes:` 那句翻上，最后 `diff -u` 生成补丁。
+- **探针锚点随上游结构放宽**：`probe_stream_epoch` 的「增量折叠」锚点写死了 `switch(x.type){case"text":…`，
+  0.0.140 在 `"text"` 前插了 `compaction` 分支，探针因此报 rc 2「无法取证」、补丁体检退化成 `UNKNOWN`。
+  锚点改成允许任意数量的前置 `case`（其 return 里不含分号），并给 `test_probe_stream_epoch` **补第 6 组用例**钉住这个容忍度。
+  放宽后两组行为补丁都是 `KEEP`（上游仍带着 stream-epoch 与 token-epoch 两个缺陷），**`UNKNOWN` 归零**。
+- **登记表增 5 条**：`agent-option-ask-action primary`（新的 CSS 类名组合，fragments）与 `Solar Mini 4` / `Space Bunny Alpha` /
+  `git init` / `Initial commit`（uiStrings，后两条是命令与提交信息：让用户照抄运行、且会原样出现在 git log 里，翻了就对不上）。
+  共 20 → **25 条**。**`GPT-6 Luna`（带空格）仍未删**——它在模型目录的 `displayName` 里、不在属性位，
+  `uipos_gap` 会把它列进「已看不见，可以清理」，但那是给 `upstreamdiff` 用的（本条曾被我按那提示误删，核对 bundle 后已恢复）。
+- **残留扫描与上一版持平**：`uipos` 16 条（全部已登记）/ `fieldscan` 1 条（`tagline: 0 Freebucks`，0.0.136 就有）/ `blindscan` 279 条（与上一版同量级，多为 CodeMirror / react-window 的内部报错）。
+  `uipos_gap` 报「本版界面位置英文 14 处、上一版 14 处，扣登记表后本版独有 0 处」；`mainscan` 疑似文案 0 条 / 短标签 0 条（约定保留 84 条，与上一版持平）。
+
 ## [0.0.136] · 2026-09-23（已发布 `pack-v0.0.136`）
 
 跟随上游自动更新到 0.0.136。这一版上游动的是**模型目录**（几处改名与下线），另有一条 Codex 更新回执改写：

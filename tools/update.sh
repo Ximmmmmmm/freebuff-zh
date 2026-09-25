@@ -388,7 +388,8 @@ esac
 case "${PATCH_ANCHOR:-skip}" in
   ok)     echo "  · 主进程补丁锚点预检：全部能干净套用 ✓" ;;
   broken) echo "  · 主进程补丁锚点预检：⚠ 有补丁套不上（分诊与修法见报告）——行号漂移用"
-          echo "      node tools/reanchor_patch.js --all --write 重锚定；上游改写则按新版原文改补丁正文" ;;
+          echo "      node tools/reanchor_patch.js --all --write 重锚定；上游改写用"
+          echo "      node tools/regen_patch.js --broken --write 重生成（用既有译文，行号由工具算）" ;;
   *)      echo "  · 主进程补丁锚点预检：跳过（缺原版 electron/ 快照或补丁目录）" ;;
 esac
 case "${PATCH_STATUS}" in

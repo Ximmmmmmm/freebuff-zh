@@ -1,6 +1,6 @@
 --- a/electron/mcp-consent-bridge.cjs
 +++ b/electron/mcp-consent-bridge.cjs
-@@ -98,39 +98,39 @@
+@@ -114,50 +114,50 @@
  function describeLaunch(spec) {
    const lines = []
    if (spec && typeof spec.command === 'string') {
@@ -32,16 +32,44 @@
      // The procedure is length-checked before display. Escape every unsafe
      // source character after that check so an 8,000-character procedure stays
      // complete even when visible escape sequences expand its rendered length.
--    lines.push(`Procedure:  ${escapeDisplay(spec.sponsored.procedure)}`)
-+    lines.push(`流程：  ${escapeDisplay(spec.sponsored.procedure)}`)
+-    lines.push(`Procedure:  ${escapeLines(spec.sponsored.procedure)}`)
++    lines.push(`流程：  ${escapeLines(spec.sponsored.procedure)}`)
      spec.sponsored.taskContext.forEach((message, index) => {
--      lines.push(`User task ${index + 1}:  ${escapeDisplay(message)}`)
-+      lines.push(`用户任务 ${index + 1}：  ${escapeDisplay(message)}`)
+-      lines.push(`User task ${index + 1}:  ${escapeLines(message)}`)
++      lines.push(`用户任务 ${index + 1}：  ${escapeLines(message)}`)
      })
 -    lines.push(`Folder:  ${clamp(spec.sponsored.folder)}`)
--    lines.push(`Branch:  ${clamp(spec.sponsored.branch)}`)
 +    lines.push(`文件夹：  ${clamp(spec.sponsored.folder)}`)
-+    lines.push(`分支：  ${clamp(spec.sponsored.branch)}`)
+     if (spec.sponsored.inPlace === true) {
+       // No branch to name, and the absence has to be stated: a dialog that
+       // simply drops the Branch line reads as the same decision with less
+       // detail, when it is a larger one.
+       lines.push(
+-        'Changes:  Written into the files in this folder, left uncommitted for you to review. Undo is available afterwards.',
++        '改动：  写入此文件夹中的文件，不提交，供你审查。之后可以撤销。',
+       )
+       // The undo is honest about its one limit rather than silent about it:
+       // a file the user edits themselves while this runs, or after it, is
+       // left alone by the undo instead of being overwritten. Said here
+       // because this dialog is where the undo is promised.
+       lines.push(
+-        'While it runs:  Avoid editing this folder yourself. Undo leaves any file you changed as yours, so those changes would stay.',
++        '运行期间：  请勿自行编辑此文件夹。撤销后你改过的文件仍归你所有，因此这些改动会保留。',
+       )
+     } else {
+-      lines.push(`Branch:  ${clamp(spec.sponsored.branch)}`)
++      lines.push(`分支：  ${clamp(spec.sponsored.branch)}`)
+     }
+     // The run starts from the last commit in its own worktree. Said plainly
+     // when the folder is dirty: a user approving "this folder" otherwise
+@@ -168,13 +168,13 @@
+           ? clamp(spec.sponsored.sourceCommit).slice(0, 12)
+           : ''
+       lines.push(
+-        `Uncommitted changes:  Not included. The task starts from your last commit${commit ? ` (${commit})` : ''}; your uncommitted edits stay exactly where they are.`,
++        `未提交的改动：  未包含。任务会从你最近一次提交开始${commit ? ` (${commit})` : ''};你未提交的修改会原样保留。`,
+       )
+     }
    } else if (spec && typeof spec.url === 'string') {
 -    lines.push(`Address:  ${clamp(spec.url)}`)
 +    lines.push(`地址：  ${clamp(spec.url)}`)
@@ -51,16 +79,34 @@
    }
    return lines.join('\n')
  }
-@@ -183,7 +183,7 @@
+@@ -231,7 +231,7 @@
  
  /** The identity sentence. The CLI says the same words (`sponsored-proposal-block.tsx`). */
  const SPONSORED_SENTENCE =
 -  ' wants to integrate itself into this project, on its own branch. Nothing is pushed until you review it.'
 +  ' 想要将它自己集成到此项目，并使用它自己的分支。在你审查之前，不会推送任何内容。'
- const sponsoredSentence = (advertiser) =>
-   `${clampName(advertiser)}${SPONSORED_SENTENCE}`
+ /**
+  * The same sentence for an in-place run, which is a DIFFERENT decision.
+  *
+@@ -246,7 +246,7 @@
+  * page's own copy (`consent-window.render.test.ts`).
+  */
+ const SPONSORED_IN_PLACE_SENTENCE =
+-  ' is sponsoring this agent run, so it’s free for you. Freebuff’s agent edits the files in the folder below and commits nothing. You can stop it anytime and undo it after.'
++  ' 赞助了这次智能体运行，所以对你免费。Freebuff 的智能体会编辑下面文件夹里的文件，但不会提交任何内容。你可以随时停止，之后也可以撤销。'
+ const sponsoredSentence = (advertiser, inPlace) =>
+   `${clampName(advertiser)}${inPlace ? SPONSORED_IN_PLACE_SENTENCE : SPONSORED_SENTENCE}`
  
-@@ -369,27 +369,27 @@
+@@ -263,7 +263,7 @@
+  * orchestrator will not use a Yes that does not.
+  */
+ const SPONSORED_WINDOWS_FLOOR_SENTENCE =
+-  'On Windows there is no sandbox. This task runs with your own Windows permissions, and your credentials are hidden from it but not locked away.'
++  '在 Windows 上没有沙箱。此任务以你自己的 Windows 权限运行，你的凭据对它不可见，但也没有被锁起来。'
+ 
+ function isRunnable(spec) {
+   return Boolean(
+@@ -467,10 +467,10 @@
          const explanation = sponsored
            ? ''
            : local
@@ -72,25 +118,37 @@
 +              '环境变量名会显示，其值不会。'
 +            : '这会向该地址发送请求，对方可能会要求你登录。\n' +
 +              '只有在你认识它的情况下才继续。'
+         // An in-place run answers an offer the user just accepted on the
+         // card, so it asks an ordinary question rather than raising a
+         // warning. Decline still holds focus (`defaultId`), so a stray Enter
+@@ -479,26 +479,26 @@
          const choice = await confirm(parent, {
-           type: 'warning',
-           buttons: sponsored
--            ? ['No', 'Yes']
--            : ['Cancel', local ? 'Run it' : 'Connect'],
-+            ? ['否', '是']
-+            : ['取消', local ? '运行' : '连接'],
+           type: inPlace ? 'question' : 'warning',
+           buttons: inPlace
+-            ? ['Not now', 'Start free run']
++            ? ['暂不', '开始免费运行']
+             : sponsored
+-              ? ['No', 'Yes']
+-              : ['Cancel', local ? 'Run it' : 'Connect'],
++              ? ['否', '是']
++              : ['取消', local ? '运行' : '连接'],
            defaultId: 0,
            cancelId: 0,
-           title: sponsored
--            ? 'Run this sponsored task?'
-+            ? '运行此赞助任务？'
-             : local
--              ? 'Run this connector?'
--              : 'Connect to this server?',
-+              ? '运行此连接器？'
-+              : '连接到此服务器？',
+           title: inPlace
+-            ? 'Start this free agent run?'
++            ? '开始这次免费智能体运行？'
+             : sponsored
+-              ? 'Run this sponsored task?'
++              ? '运行此赞助任务？'
+               : local
+-                ? 'Run this connector?'
+-                : 'Connect to this server?',
++                ? '运行此连接器？'
++                : '连接到此服务器？',
            message: sponsored
-             ? sponsoredSentence(spec.sponsored.advertiser)
+             ? windowsFloor
+               ? `${sponsoredSentence(spec.sponsored.advertiser, inPlace)}\n\n${SPONSORED_WINDOWS_FLOOR_SENTENCE}`
+               : sponsoredSentence(spec.sponsored.advertiser, inPlace)
              : local
 -              ? `Run "${clamp(name)}" on this computer?`
 -              : `Let Freebuff connect to "${clamp(name)}"?`,

@@ -51,6 +51,8 @@ jobs:
         run: node tools/test_lint_collisions.js
       - name: 补丁预检自测（行号漂移 vs 上游改写的分诊 / 重锚定幂等 / 镜像口径）
         run: node tools/test_patch_preflight.js
+      - name: 补丁重生成自测（映射提取 / 镜像口径 / 上游插行端到端 / 失败不写盘）
+        run: node tools/test_regen_patch.js
       - name: CI 闸门自测（假绿灯防线 / 跳过路径 / 退出码）
         run: node tools/test_ci_gates.js
       - name: 工具脚本语法冒烟

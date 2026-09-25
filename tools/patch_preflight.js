@@ -108,7 +108,10 @@ function main() {
     } else {
       console.log('       → 以下 hunk 的上下文在目标文件里找不到（上游改写了这段，重锚定救不了）：')
       for (const l of b.lost) console.log(`         ${l.file}：hunk @@ -${l.hunks.join('、@@ -')}`)
-      console.log('         需按新版原文改写补丁正文（find/apply 两侧都对一遍）。')
+      console.log('         按新版原文重维护补丁正文——别手抄 hunk（计数或缩进错一处，git 只会说 corrupt /')
+      console.log('         does not apply）：用补丁里既有的译文重生成到新版原文上，行号交给工具算：')
+      console.log(`         node tools/regen_patch.js "${path.join(path.relative(process.cwd(), patchDir), b.f)}" --write`)
+      console.log('         （映射不够时叠加来源：--from <上一版补丁>；先不加 --write 试运行看结论）')
     }
   }
   console.error(`\nERROR: 有 ${broken.length} 个补丁套不上（分诊与修法见上）`)

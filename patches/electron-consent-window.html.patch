@@ -1,52 +1,74 @@
 --- a/electron/consent-window.html
 +++ b/electron/consent-window.html
-@@ -62,14 +62,14 @@
-   button:focus-visible { outline: 2px solid var(--warn); outline-offset: 2px; }
- </style>
-
--<h1><span class="mark">▲</span> <span id="title">Approve this connector?</span></h1>
-+<h1><span class="mark">▲</span> <span id="title">批准此连接器？</span></h1>
- <p id="message"></p>
- <pre id="spec"></pre>
- <p id="detail"></p>
- <p class="sentence" id="sentence"><span class="who" id="who"></span><span id="rest"></span></p>
- <div class="foot">
--  <button id="no" type="button">Cancel</button>
--  <button id="yes" type="button" class="go">Approve</button>
-+  <button id="no" type="button">取消</button>
-+  <button id="yes" type="button" class="go">批准</button>
+@@ -153,7 +153,7 @@
+ 
+ <div class="card" id="card" data-sq>
+   <div class="head">
+-    <h1><span class="warn-mark">▲</span> <span id="title">Approve this connector?</span></h1>
++    <h1><span class="warn-mark">▲</span> <span id="title">批准此连接器？</span></h1>
+   </div>
+   <div class="body">
+     <p id="message"></p>
+@@ -170,8 +170,8 @@
+     <p class="floor" id="floor"></p>
+   </div>
+   <div class="foot">
+-    <button id="no" type="button" data-sq>Cancel</button>
+-    <button id="yes" type="button" class="go" data-sq>Approve</button>
++    <button id="no" type="button" data-sq>取消</button>
++    <button id="yes" type="button" class="go" data-sq>批准</button>
+   </div>
  </div>
-
- <script>
-@@ -92,7 +92,7 @@
-   }
-
+ 
+@@ -189,16 +189,16 @@
+   // this or put text of its own in its place. Pinned equal to the bridge's copy and to
+   // `SPONSORED_CONSENT_WINDOWS_FLOOR_SENTENCE` in common.
+   const WINDOWS_FLOOR_SENTENCE =
+-    'On Windows there is no sandbox. This task runs with your own Windows permissions, and your credentials are hidden from it but not locked away.'
++    '在 Windows 上没有沙箱。此任务以你自己的 Windows 权限运行，你的凭据对它不可见，但也没有被锁起来。'
+   // The words after the name, chosen by a flag and never sent as text. The in-place one is pinned
+   // equal to the bridge's `SPONSORED_IN_PLACE_SENTENCE`, the branch one to `SPONSORED_SENTENCE`.
+   const IN_PLACE_SENTENCE =
+-    ' is sponsoring this agent run, so it’s free for you. Freebuff’s agent edits the files in the folder below and commits nothing. You can stop it anytime and undo it after.'
++    ' 赞助了这次智能体运行，所以对你免费。Freebuff 的智能体会编辑下面文件夹里的文件，但不会提交任何内容。你可以随时停止，之后也可以撤销。'
+   const BRANCH_SENTENCE =
+-    ' wants to integrate itself into this project, on its own branch. Nothing is pushed until you review it.'
++    ' 想要将它自己集成到此项目，并使用它自己的分支。在你审查之前，不会推送任何内容。'
+   // The undo's one limit, said here because this dialog is where the undo is promised.
+   const UNDO_NOTE =
+-    'Undo puts back what it changed, but leaves alone any file you edit yourself while it runs.'
++    '撤销会恢复它改动过的内容，但不会动你在它运行期间自己编辑的文件。'
+   const MAX_FOLDER_CHARS = 400
+   const clampText = (value, max) => {
+     const text = String(value ?? '')
+@@ -280,7 +280,7 @@
+   document.fonts?.ready.then(paintAll)
+ 
    window.consent.ready((options) => {
 -    const [no, go] = options.buttons || ['Cancel', 'Approve']
 +    const [no, go] = options.buttons || ['取消', '批准']
      el('no').textContent = no
      // Two layouts share this window and nothing else: a connector's argv, cwd and env ARE the
-     // decision and need the field list; a sponsored task shows its short sentence plus the exact
-@@ -117,15 +117,15 @@
-       const who = clampName(sponsored.advertiser)
-       el('who').textContent = who
-       el('rest').textContent = who
--        ? ' wants to integrate itself into this project, on its own branch. Nothing is pushed until you review it.'
-+        ? ' 想要将它自己集成到此项目，并使用它自己的分支。在你审查之前，不会推送任何内容。'
-         : ''
+     // decision and need the field list, open; a sponsored task shows its short sentence and its
+@@ -313,7 +313,7 @@
+       el('folder').textContent = inPlace ? clampText(sponsored.folder, MAX_FOLDER_CHARS) : ''
+       el('undo-note').textContent = inPlace ? UNDO_NOTE : ''
        if (!who) {
 -        el('rest').textContent = 'This dialog could not say who is asking — do not approve.'
 +        el('rest').textContent = '此对话框无法说明请求方是谁——请勿批准。'
          el('rest').className = 'refuse'
          el('yes').disabled = true
        }
+@@ -321,7 +321,7 @@
+       document.body.classList.toggle('is-windows-floor', windowsFloor)
+       el('floor').textContent = windowsFloor ? WINDOWS_FLOOR_SENTENCE : ''
      }
 -    el('title').textContent = options.title || 'Approve this connector?'
 +    el('title').textContent = options.title || '批准此连接器？'
      el('message').textContent = options.message || ''
      // Two separate fields, never one string re-split on a delimiter: the spec contains a command
      // and arguments a human may have pasted from the internet, and text that can choose where the
-@@ -133,7 +133,7 @@
+@@ -329,7 +329,7 @@
      // Blank is not a legal render here: an empty box above an Approve button asks a human to
      // approve a launch the dialog is not describing. Refuse loudly instead.
      el('spec').textContent =
@@ -54,4 +76,4 @@
 +      options.specText || '(此对话框无法描述将要运行的内容——请勿批准)'
      el('detail').textContent = options.explanation ?? ''
      if (!options.specText) el('yes').disabled = true
-     el('yes').textContent = go
+     // Collapsed only for a sponsored task, and never over a refusal: a spec that could not be

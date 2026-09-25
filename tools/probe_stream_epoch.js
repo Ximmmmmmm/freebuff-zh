@@ -27,7 +27,9 @@ const fs = require('fs')
 // 所以 minifier 改名不影响。结构真被改写时抽不到 → 无法取证，而不是猜。
 const ANCHORS = {
   foldParts: [
-    /function ([A-Za-z_$][\w$]*)\((\w+),(\w+),(\w+)\)\{switch\(\3\.type\)\{case"text":\{if\(!\3\.text\)return/,
+    // 0.0.140 起 switch 里在 "text" 之前多了别的分支（compaction 等），允许任意数量的前置
+    // case（它们的 return 语句里不含分号）：结构判定仍要求 "text" 分支后面紧跟 `if(!x.text)return`。
+    /function ([A-Za-z_$][\w$]*)\((\w+),(\w+),(\w+)\)\{switch\(\3\.type\)\{(?:case"[a-z_]+":[^;]*;)*case"text":\{if\(!\3\.text\)return/,
     '增量折叠',
   ],
   foldEvent: [

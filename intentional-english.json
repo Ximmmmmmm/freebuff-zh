@@ -12,6 +12,10 @@
   ],
   "fragments": [
     {
+      "text": "msg sponsored-task",
+      "why": "CSS 类名（`className:\"msg sponsored-task\"`，紧跟另一个消息卡片类 `msg sponsored-offer`），是给样式表定位赞助任务卡片用的，翻掉就没有对应样式了——与已登记的 `streak-day on` 同类。"
+    },
+    {
       "text": "Failed to get offset for index:",
       "why": "react-window 内部 console.warn（列表虚拟化的诊断输出，只在开发者控制台可见，不是界面文案）。按项目惯例日志/控制台串保留英文。"
     },
@@ -30,6 +34,10 @@
     {
       "text": "model-badge muted",
       "why": "CSS 类名组合（`className: \"model-badge muted\"`，0.0.132 新增，就在 `Paid plan` 徽标那段——文案本身已翻），是给样式表看的，翻掉就没有对应样式了。与 streak-day on 同类。"
+    },
+    {
+      "text": "agent-option-ask-action primary",
+      "why": "CSS 类名组合（`className:\"agent-option-ask-action primary\"`，0.0.140 新增的「开启新时段」按钮），是给样式表看的，翻掉就没有对应样式了。与 streak-day on / model-badge muted 同类。"
     }
   ],
   "uiStrings": [
@@ -92,6 +100,22 @@
     {
       "text": "Sonnet 5",
       "why": "模型名（同上）"
+    },
+    {
+      "text": "Solar Mini 4",
+      "why": "模型名（0.0.140 新增 `displayName:\"Solar Mini 4\"`，是 Solar Pro 4 的迁移目标；displayName 按约定保留英文，与选择器里其他模型一致）"
+    },
+    {
+      "text": "Space Bunny Alpha",
+      "why": "模型名（0.0.140 新增 `displayName:\"Space Bunny Alpha\"`，隐身模型；同上）"
+    },
+    {
+      "text": "git init",
+      "why": "命令（Git setup 的 `too_many_files` 说明里让用户照抄运行的命令行，翻译掉就不再是命令）"
+    },
+    {
+      "text": "Initial commit",
+      "why": "Git 提交信息（说明里给出的 `git commit -m \"Initial commit\"` 参数，实际会出现在用户的 git log 里，保留英文才不会与真实提交信息对不上）"
     }
   ]
 }

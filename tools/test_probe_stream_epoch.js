@@ -75,5 +75,22 @@ chk(threw, '4) probe() 对垃圾输入抛错（不会静默返回缺陷状态）
 const a = runCli([garbage, '--expect', 'absent'])
 chk(a.code === 2, `5) --expect absent + 抽不到 → 仍 rc 2（实际 ${a.code}）`)
 
-console.log(fail ? `\n${fail} 项失败` : '\n全部通过（5 组用例）')
+// 6) foldParts 的锚点要容忍 switch 里 "text" 之前多出来的 case：
+//    0.0.140 在 "text" 前插了 compaction 分支，写死「switch 后紧跟 "text"」会让探针
+//    退化成 rc 2「无法取证」，补丁去留就没人能判了。这里用一个最小形状钉住这个容忍度。
+const foldShape = path.join(WORK, 'fold-shape.js')
+fs.writeFileSync(
+  foldShape,
+  'function lead(t,e,n){switch(e.type){case"compaction":return[...wl(t),{kind:"compaction",id:n(),receipt:e.receipt}];' +
+    'case"text":{if(!e.text)return t;return[...t,{kind:"text",text:e.text}]}}}\n',
+)
+let foldErr = ''
+try {
+  probe(fs.readFileSync(foldShape, 'utf8'))
+} catch (err) {
+  foldErr = err.message
+}
+chk(!/增量折叠/.test(foldErr), `6) 前置 case 不影响 foldParts 锚点（抽不到时报：${foldErr || '（已抽出）'}）`)
+
+console.log(fail ? `\n${fail} 项失败` : '\n全部通过（6 组用例）')
 process.exit(fail ? 1 : 0)

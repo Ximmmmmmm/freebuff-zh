@@ -199,6 +199,13 @@ const MAIN_SENTINELS = {
     '导出为 Markdown…',
     '移到新窗口',
     '将标签页移到新窗口',
+    // 窗口按钮区（titleBarOverlay）跟随 UI 的 --chrome / --faint / --tabbar-height（产物改动，不是翻译）：
+    // 上游给 UI 换了新配色、又把 --tabbar-height 覆盖成 48px，主进程那张影子表却留着旧值，
+    // 于是窗口按钮区在标签条右侧露出一块颜色、高度与图标深浅都对不上的矩形。
+    'const HANHUA_SHELL_COLORS = (() => {',
+    'overlay: HANHUA_SHELL_COLORS.light,',
+    'overlaySymbol: HANHUA_SHELL_COLORS.symbolLight,',
+    'height: HANHUA_SHELL_COLORS.height,',
   ],
   'electron/orchestrator-failure.cjs': [
     '编排器未能在规定时间内就绪。',
@@ -214,6 +221,12 @@ const MAIN_SENTINELS = {
   ],
   'electron/linux-launch.cjs': ['无法启动所需的子进程。'],
   'electron/open-in.cjs': ['复制路径'],
+  // 0.0.145 新增：「暂停更新」设置面板的两条用户可见报错（经 IPC 抛回渲染进程，
+  // 由设置页的 catch 显示成 O.message）
+  'electron/updater.cjs': [
+    '请选择今天或之后的日期。',
+    '无法保存更新偏好设置。',
+  ],
 }
 // 可选哨兵：对应的主进程文件只存在于较新的 Freebuff 版本里（老版本 asar 里没有），
 // 因此缺失只警告不报错，存在则必须带译文哨兵。

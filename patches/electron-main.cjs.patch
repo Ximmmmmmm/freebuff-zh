@@ -1,6 +1,71 @@
 --- a/electron/main.cjs
 +++ b/electron/main.cjs
-@@ -509,14 +509,14 @@
+@@ -171,10 +171,52 @@
+ /** @type {string | null} */
+ let appUrl = null
+ 
++// 汉化包补丁：窗口按钮区（titleBarOverlay）跟随渲染进程的 --chrome / --faint / --tabbar-height。
++// 上游换了 UI 的浅色配色（:root[data-theme=light] 在 CSS 里出现两次、后一份生效，--chrome 变成
++// 带绿的 #edf1ee），--tabbar-height 又被 .app-workspace 覆盖成 48px，而主进程这张影子表没跟着
++// 改（浅色仍留着旧的 #e9e9eb、高度写死 54），于是窗口按钮区在标签条右侧露出一块颜色与高度都
++// 对不上的矩形。这里改成从 UI 的 CSS 里读实际值——以后再换配色，窗口按钮区自动跟上；读不到时
++// 回落到下面这组当前值，不会比上游更糟。
++const HANHUA_SHELL_COLORS = (() => {
++  const fallback = { dark: '#0f0f0f', light: '#edf1ee', symbolDark: '#9a9aa0', symbolLight: '#63636b', height: 48 }
++  try {
++    const uiDir = path.join(process.resourcesPath, 'orchestrator', 'ui')
++    const html = fs.readFileSync(path.join(uiDir, 'index.html'), 'utf8')
++    const href = html.match(/href="\.?\/?assets\/([^"]+\.css)"/)
++    if (!href) return fallback
++    const css = fs.readFileSync(path.join(uiDir, 'assets', href[1]), 'utf8')
++    // 同一选择器可能出现多次，后一份生效：从最后一块往前找
++    const lastVar = (re, name) => {
++      const blocks = [...css.matchAll(re)]
++      for (let i = blocks.length - 1; i >= 0; i--) {
++        const hit = blocks[i][1].match(new RegExp('--' + name + ':\\s*([^;}]+)'))
++        if (hit) return hit[1].trim()
++      }
++      return null
++    }
++    const heights = [...css.matchAll(/--tabbar-height:\s*([\d.]+)px/g)]
++    const barHeight = heights.length ? Math.round(parseFloat(heights[heights.length - 1][1])) : fallback.height
++    // 标签条底部那条 1px 边框（--border）会被原生 overlay 盖住，右侧就只剩色块、没有分界线了：
++    // 把按钮区高度减掉这条边框的宽度，那条线才露得出来。
++    const barRule = [...css.matchAll(/\.tabbar\s*\{([^}]*)\}/g)].map((m) => m[1]).find((b) => b.includes('border-bottom'))
++    const barBorder = (barRule || '').match(/border-bottom:\s*([\d.]+)px/)
++    const barInset = barBorder ? parseFloat(barBorder[1]) : 0
++    return {
++      dark: lastVar(/:root\s*\{([^}]*)\}/g, 'chrome') || fallback.dark,
++      light: lastVar(/:root\[data-theme=light\]\s*\{([^}]*)\}/g, 'chrome') || fallback.light,
++      symbolDark: lastVar(/:root\s*\{([^}]*)\}/g, 'faint') || fallback.symbolDark,
++      symbolLight: lastVar(/:root\[data-theme=light\]\s*\{([^}]*)\}/g, 'faint') || fallback.symbolLight,
++      height: Math.max(0, barHeight - barInset),
++    }
++  } catch {
++    return fallback
++  }
++})()
++
+ const SHELL_THEMES = {
+   dark: {
+     background: '#0c0d0f',
+-    overlay: '#0a0a0b',
++    overlay: HANHUA_SHELL_COLORS.dark,
+-    overlaySymbol: '#9a9aa0',
++    overlaySymbol: HANHUA_SHELL_COLORS.symbolDark,
+     // the renderer's --surface-2 / --brand-dim: the splash bar and the one the app holds after it
+     // are the same bar, and a colour change between them would show as a flicker
+@@ -183,7 +225,7 @@
+   },
+   light: {
+     background: '#f3f3f4',
+-    overlay: '#e9e9eb',
++    overlay: HANHUA_SHELL_COLORS.light,
+-    overlaySymbol: '#63636b',
++    overlaySymbol: HANHUA_SHELL_COLORS.symbolLight,
+     splashTrack: '#ffffff',
+     splashBar: '#2c7405',
+@@ -509,14 +551,14 @@
    const buttons = []
    const actions = []
    if (compatibilityBuildUrl) {
@@ -18,7 +83,7 @@
    actions.push(() => {})
  
    const options = {
-@@ -541,10 +541,13 @@
+@@ -541,10 +583,13 @@
    return new Promise((resolve, reject) => {
      const { bun, args, cwd, uiDir, wasmDir, packaged } = resolveOrchestrator()
      const capture = createStderrCapture(bun, args)
@@ -36,7 +101,7 @@
      apiLaunchToken = launchId
      let exited = false
      let ready = false
-@@ -586,7 +589,7 @@
+@@ -586,7 +631,7 @@
      }
  
      if (!shellLifetime) {
@@ -45,7 +110,7 @@
        return
      }
      const env = {
-@@ -641,10 +644,10 @@
+@@ -641,10 +686,10 @@
        rejectStartup(
          failure('spawn', {
            errorMessage:
@@ -59,7 +124,7 @@
          }),
        )
      })
-@@ -731,7 +734,7 @@
+@@ -731,7 +776,7 @@
          closed
            ? failure('timeout')
            : failure('cleanup', {
@@ -68,7 +133,16 @@
              }),
        )
      }
-@@ -1084,15 +1087,13 @@
+@@ -912,7 +957,7 @@
+           titleBarOverlay: {
+             color: colors.overlay,
+             symbolColor: colors.overlaySymbol,
+-            height: 54,
++            height: HANHUA_SHELL_COLORS.height,
+           },
+         }
+       : {}),
+@@ -1084,15 +1129,13 @@
    try {
      const response = askSync(parent, {
        type: 'question',
@@ -88,7 +162,7 @@
        // a stray Return keeps the agents alive
        defaultId: 0,
        cancelId: 0,
-@@ -1177,8 +1178,8 @@
+@@ -1177,8 +1220,8 @@
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return []
    const res = await dialog.showOpenDialog(win, {
@@ -99,7 +173,7 @@
      properties: attachmentDialogProperties(kind),
    })
    if (res.canceled) return []
-@@ -1207,13 +1208,13 @@
+@@ -1207,13 +1250,13 @@
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return []
    const res = await dialog.showOpenDialog(win, {
@@ -117,7 +191,7 @@
          extensions: [...VIEWABLE_IMAGE_EXTENSIONS, ...OTHER_IMAGE_EXTENSIONS],
        },
      ],
-@@ -1231,8 +1232,8 @@
+@@ -1231,8 +1274,8 @@
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return null
    const res = await dialog.showOpenDialog(win, {
@@ -128,7 +202,7 @@
      properties: ['openDirectory', 'createDirectory'],
    })
    return res.canceled || res.filePaths.length === 0 ? null : res.filePaths[0]
-@@ -1242,10 +1243,10 @@
+@@ -1242,10 +1285,10 @@
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return false
    if (typeof filename !== 'string' || typeof content !== 'string') {
@@ -141,7 +215,7 @@
      defaultPath: path.basename(filename),
      filters: [{ name: 'Markdown', extensions: ['md'] }],
      properties: ['createDirectory', 'showOverwriteConfirmation'],
-@@ -1338,17 +1339,17 @@
+@@ -1338,17 +1381,17 @@
  ipcMain.handle('shell:openIn', async (_event, request) => {
    try {
      if (!request || typeof request !== 'object' || Array.isArray(request)) {
@@ -164,7 +238,7 @@
  
      if (target.id === 'copy-path') {
        clipboard.writeText(resolved.requested)
-@@ -1361,7 +1362,7 @@
+@@ -1361,7 +1404,7 @@
        }
      } else {
        const args = launchArgs(target, resolved, line)
@@ -173,7 +247,7 @@
        await new Promise((resolve, reject) => {
          const child = spawn(target.executable, args, {
            cwd: launchCwd(target, resolved),
-@@ -1378,7 +1379,7 @@
+@@ -1378,7 +1421,7 @@
      }
      return { ok: true, path: resolved.requested, openedPath: resolved.opened, fallback: resolved.fallback }
    } catch (error) {
@@ -182,7 +256,20 @@
    }
  })
  
-@@ -1511,10 +1512,10 @@
+@@ -1452,7 +1495,11 @@
+   for (const win of BrowserWindow.getAllWindows()) {
+     win.setBackgroundColor(colors.background)
+     if (process.platform === 'win32') {
+-      win.setTitleBarOverlay({ color: colors.overlay, symbolColor: colors.overlaySymbol })
++      win.setTitleBarOverlay({
++        color: colors.overlay,
++        symbolColor: colors.overlaySymbol,
++        height: HANHUA_SHELL_COLORS.height,
++      })
+     }
+   }
+ }
+@@ -1511,10 +1558,10 @@
        resolve(action)
      }
      const menu = Menu.buildFromTemplate([
@@ -197,7 +284,7 @@
      ])
      menu.popup({
        window: BrowserWindow.fromWebContents(event.sender) ?? undefined,
-@@ -1537,10 +1538,10 @@
+@@ -1537,9 +1584,9 @@
              label: app.name,
              submenu: [
                { role: 'about' },
@@ -209,8 +296,7 @@
                { type: 'separator' },
                { role: 'services' },
                { type: 'separator' },
-               { role: 'hide' },
-@@ -1549,7 +1550,7 @@
+@@ -1549,7 +1596,7 @@
                { type: 'separator' },
                {
                  // not `role: 'quit'`: that reaches app.quit() directly, with no chance to ask
@@ -219,7 +305,7 @@
                  accelerator: 'Command+Q',
                  click: () => requestQuit(),
                },
-@@ -1558,16 +1559,16 @@
+@@ -1558,16 +1605,16 @@
          ]
        : []),
      {
@@ -240,7 +326,7 @@
            accelerator: 'CmdOrCtrl+Shift+T',
            click: () => sendMenuCommand('reopen-tab'),
          },
-@@ -1576,24 +1577,24 @@
+@@ -1576,24 +1623,24 @@
          // other, and on a fresh install its menu lists only the project already open — so ⌘O is
          // where someone who has never heard the word "space" is going to look.
          {
@@ -272,7 +358,7 @@
          { role: 'toggleDevTools' },
          { type: 'separator' },
          { role: 'resetZoom' },
-@@ -1603,15 +1604,15 @@
+@@ -1603,15 +1650,15 @@
          { role: 'togglefullscreen' },
        ],
      },
@@ -291,7 +377,7 @@
              ],
            },
          ]),
-@@ -1759,7 +1760,7 @@
+@@ -1763,7 +1810,7 @@
      if (err?.orchestratorFailure) {
        await showOrchestratorFailure(err.orchestratorFailure, win)
      } else {
@@ -300,7 +386,7 @@
      }
      app.quit()
      return
-@@ -1878,9 +1879,9 @@
+@@ -1882,9 +1929,9 @@
        canRelaunch: !!relaunchExecPath,
      })
      const buttons = canRetryWithoutSandbox
@@ -313,7 +399,7 @@
      // A launch failure this early can land before `ready`, where the dialog
      // module throws — and an exception here would replace the message we came to
      // show with a silent crash, which is the exact failure being fixed.
-@@ -1888,7 +1889,7 @@
+@@ -1892,7 +1939,7 @@
      // buttons, so the pre-ready path explains and quits rather than offering the
      // retry. Nothing is running yet, so there is nothing to tear down.
      if (!app.isReady()) {
@@ -322,7 +408,7 @@
        app.exit(1)
        return
      }
-@@ -1896,7 +1897,7 @@
+@@ -1900,7 +1947,7 @@
      try {
        response = dialog.showMessageBoxSync({
          type: 'error',

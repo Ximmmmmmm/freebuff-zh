@@ -137,6 +137,7 @@ find "${WORK}/main" -type f \( -name '*.cjs' -o -name '*.html' -o -name '*.js' -
     #   行号漂移（上游在前面插了几行）→ 一条命令重锚定；上游改写 → 补丁正文要人工重维护。
     echo "  先分诊：node tools/patch_preflight.js    # 行号漂移 vs 上游改写，附逐 hunk 结论" >&2
     echo "  行号漂移 → node tools/reanchor_patch.js --all --write（只改 @@ 头，补丁正文不动）" >&2
+    echo "  上游改写 → node tools/regen_patch.js --broken --write（用既有译文重生成，行号由工具算）" >&2
     exit 1
   fi
 done)

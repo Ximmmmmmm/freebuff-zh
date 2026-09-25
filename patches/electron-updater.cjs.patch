@@ -1,0 +1,19 @@
+--- a/electron/updater.cjs
++++ b/electron/updater.cjs
+@@ -493,6 +493,6 @@
+   ipcMain.handle('update:set-pause', (_event, until) => {
+     if (until !== null && !validPauseDate(until, Date.now()))
+-      throw new Error('Choose today or a future date.')
++      throw new Error('请选择今天或之后的日期。')
+     const state = loadState(app, fs, path)
+     // Resuming should offer the current release again, even if it was shown
+     // before the user chose to pause.
+@@ -501,7 +501,7 @@
+     if (!saveState(app, fs, path, {
+       ...state,
+       pausedUntil: until,
+       ...(until !== null ? { promptedVersion: undefined } : {}),
+     }))
+-      throw new Error('Could not save the update preference.')
++      throw new Error('无法保存更新偏好设置。')
+     if (until !== null) {
