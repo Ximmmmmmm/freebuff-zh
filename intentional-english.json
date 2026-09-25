@@ -7,7 +7,7 @@
     "uiStrings 是给单词级差集体检（tools/uipos_gap.js）用的：那些位置的词数少于 2 个，upstreamdiff 与 regress 都看不见，只有这道体检会报（品牌名 / 模型名 / 命令 / JSON 片段 / 第三方库文案）。uipos 把模板插值渲染成 `${…}`，登记时照那个形式写。",
     "能翻的不要塞进来：先补进词典（UI）或 patches/electron-*.patch（主进程）。",
     "tools/upstreamdiff.js 也读这张表（fragments + uiStrings 两节都认）：登记过的条目单列一节、带理由，不进它的「待补翻」计数与退出码判定。以前它不读，于是同一件事在 regress / uipos_gap 那叫「已登记」、在它那永远算「待补翻 1 条」（0.0.132 的 model-badge muted 就是这种状态）。",
-    "随着上游改动，登记项可能自己消失；regress（fragments）与 uipos_gap（uiStrings）都会把「本版已看不见的登记项」列出来提醒清理，但不会因此失败。uiStrings 那侧的判据是**整串还在不在产物里**，别看 uipos 的集合：uipos 只认界面位置，为字面量通道登记的条目（模型名 displayName: 那种、命令行）它本来就看不见，拿它的集合判定会把这 5 条年年报成死条目。",
+    "随着上游改动，登记项可能自己消失；regress（fragments）与 uipos_gap（uiStrings）都会把「整串已不在本版产物里」的登记项列出来提醒清理，但不会因此失败——两处共用同一条判据（tools/regress.js 的 presenceProbe：抹插值 + 折叠空白后看整串还在不在产物里）。别看某一条通道的集合：regress 的片段集合带词数下限与 CODEISH 过滤，uipos 只认界面位置，为字面量通道登记的条目（模型名 displayName: 那种、命令行）它们本来就看不见，拿它们的集合判定会把这些条目年年报成死条目。",
     "另有一类**不需要登记**：含裸反引号或 `void` 的片段（如跨模板定界符抽出的 `:Xt?` - -menu`:void 0,`）在片段提取阶段就被当成代码滤掉了（`CODEISH`），根本进不了任何清单。那类第三方库消息（shiki / oniguruma / react-window 用反引号引用标识符的那种）本来就按惯例保留英文，而跨模板的代码片段会随压缩改名换个样子再来，登记只会过期。"
   ],
   "fragments": [

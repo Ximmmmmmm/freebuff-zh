@@ -14,7 +14,7 @@
 // 登记表是**两道闸门共用**的：本工具认界面位置，tools/upstreamdiff.js 还认它的**字面量
 // 通道**（≥2 词的短串，典型是 `displayName:"Solar Mini 4"` 这种 uipos 根本不扫的位置）。
 // 所以「哪些登记项已经死了」不能拿 uipos 的集合去问（它只能替自己那一半作证），
-// 要问产物本身——判据见下面 stale 那段。
+// 要问产物本身——判据是 regress.js 的 `presenceProbe`，本工具与 regress 共用同一份。
 //
 // 用法：
 //   node tools/uipos_gap.js --bundle <本版产物：bundle / 目录 / pack zip>
@@ -25,10 +25,11 @@
 const fs = require('fs')
 const path = require('path')
 const { execFileSync } = require('child_process')
-// normText 是读登记表三个工具（regress / upstreamdiff / uipos_gap）共用的归一化，
-// 定义在 tools/regress.js：两侧过同一道处理（抹插值 + 折叠空白 + 去首尾），`${…}` 形态的
-// 登记项（如 `Action: ${…}${…}.`）才能对上产物原文。
-const { resolveBundle, normText } = require('./regress.js')
+// presenceProbe 是「登记项还活着吗」的**唯一判据**，与 regress 共用（定义在 tools/regress.js）：
+// 归一化（抹插值 + 折叠空白 + 去首尾）后看整串还在不在本版产物里；`${…}` 形态的登记项
+// （如 `Action: ${…}${…}.`）也就能对上产物原文。详见 regress.js 里那段注释。
+// normText（同一套归一化）也由那里导出，upstreamdiff 一并用它读登记表。
+const { resolveBundle, presenceProbe } = require('./regress.js')
 
 function usage(msg) {
   if (msg) console.error('ERROR: ' + msg)
@@ -101,14 +102,10 @@ function main() {
   const prev = opt.prev ? resolveBundle(path.resolve(opt.prev)) : null
   if (opt.prev && !prev) usage(`在 ${opt.prev} 下找不到主 bundle`)
 
-  // 产物整串（归一化一次）——给下面「登记项整串还在不在」的判据当干草堆。读不到就跳过这道
-  // 提醒：宁可少一条提醒，也不能因为读不到文件就把整张登记表都报成死条目。
-  let haystack = ''
-  try {
-    haystack = normText(fs.readFileSync(cur, 'utf8'))
-  } catch (e) {
-    if (!opt.quiet) console.log(`  ! 读不到产物内容（${e.message}），跳过登记表清理提醒`)
-  }
+  // 登记项死没死的判据与 regress 同一套（regress.js 的 presenceProbe）：整串还在不在产物里。
+  // 读不到产物时 probe 为 null——由此跳过这道提醒，不拿「读不到」当成「全都没了」。
+  const { probe, error } = presenceProbe(cur)
+  if (!probe && !opt.quiet) console.log(`  ! 读不到产物内容（${error}），跳过登记表清理提醒`)
 
   const allow = loadAllow(opt.allow)
   const curSet = parseUipos(runUipos(cur))
@@ -137,14 +134,11 @@ function main() {
 
   // 登记项在本版已经不存在了（上游删掉/改了/我们自己翻掉了）→ 提醒清理，不失败。
   //
-  // 判据是「整串还在不在产物里」，**不是**「uipos 还看不看得见」：登记表是两道闸门共用的，
+  // 判据见 presenceProbe：**不是**「uipos 还看不看得见」——登记表是三道通道共用的，
   // 只为 upstreamdiff 的字面量通道登记的条目（模型名 `displayName:"Solar Mini 4"`、
-  // 命令行 `git init` 这类）永远进不了 curSet，用旧判据就会年年把同 5 条报成「可以清理」
-  // （0.0.140 → 0.0.147 每版一次）。只要那段英文还出现在产物里（在哪个位置都算），这条登记
-  // 就还有用处；整串都没了才算死条目。代价是「挪到别的位置、恰好又被别的串包含」会漏报——
-  // 这道提醒本来就是提示不是判据，宁可少报一次。
-  const stillPresent = (text) => haystack.includes(normText(text))
-  const stale = haystack ? [...allow.entries.keys()].filter((x) => !stillPresent(x)) : []
+  // 命令行 `git init` 这类）永远进不了 curSet，拿 uipos 的集合算就会年年把同 5 条报成
+  // 「可以清理」（0.0.140 → 0.0.147 每版一次）。
+  const stale = probe ? [...allow.entries.keys()].filter((x) => !probe(x)) : []
   if (stale.length && !opt.quiet) {
     console.log(`\n## 登记表里有 ${stale.length} 条在本版产物里已看不见（整串都没了），可以清理`)
     for (const x of stale.slice(0, 10)) console.log(`   · ${x}`)

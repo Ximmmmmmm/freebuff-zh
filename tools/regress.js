@@ -62,6 +62,31 @@ function stripInterp(s) {
 // 共用这一份——以前 upstreamdiff 自己拄了一份一模一样的，uipos_gap 再拄一份就是三处漂移。
 const normText = (s) => stripInterp(String(s)).replace(/\s+/g, ' ').trim()
 
+// 登记表「这条登记还活着吗」的**唯一判据**（regress / uipos_gap 共用；upstreamdiff 只读表不报死条目）。
+//
+// 为什么不能问任何一条通道：三条通道读的是同一张表，但各自只看得见其中一半——
+//   · regress 看的是**自己从产物里抽出来的片段集合**，它带词数下限（片段级 ≥3 词）与
+//     CODEISH 过滤，短标签 / 单词文案 / 代码味的片段本来就进不来；
+//   · uipos_gap 只看界面位置（children: / label: / title: / placeholder: / aria-label:）；
+//   · upstreamdiff 比的是英文原版快照，跟产物根本不是同一条链路。
+// 拿任何一条通道的集合算「已看不见」，都会把别条通道登记着的条目误报成死条目
+// （0.0.140 → 0.0.147 那 5 条模型名 / 命令，就是 uipos_gap 拿自己的集合算出来的）。
+//
+// 判据：**这段英文（抹插值 + 折叠空白）还在不在本版产物里**。还在 = 这条登记仍有通道
+// 要它站岗；整串都没了（上游删掉 / 改写，或我们自己翻成了中文）= 死条目，提醒清理。
+// 代价是「挪到别的位置、恰好又被别的串包含」会漏报——这道提醒本来就是提示不是判据。
+//
+// 返回 { probe, error }：读不到产物时 probe 为 null、error 是原因，调用方据此**跳过**这道
+// 提醒（宁可少一条提示，也不能因为读不到文件就把整张登记表报成死条目）。
+function presenceProbe(bundleFile) {
+  try {
+    const haystack = normText(fs.readFileSync(bundleFile, 'utf8'))
+    return { probe: (text) => haystack.includes(normText(text)), error: null }
+  } catch (e) {
+    return { probe: null, error: e.message }
+  }
+}
+
 const WORD = /[A-Za-z]{2,}/g;
 
 // 出现这些就基本是代码，不是给人看的文案。注意 } 不在此列：嵌套模板会让它把上一层的
@@ -319,11 +344,23 @@ function main() {
   if (kept.length) {
     console.log(`  ⓘ 已登记的「有意保留英文」${kept.length} 处（不进失败判定）：`);
     for (const x of kept) console.log(`    · ${x.slice(0, 200)}\n      ↳ ${allow.entries.get(x) || '（登记表里没写理由，建议补上）'}`);
-    // 登记项随上游改动消失后不会被使用，留着会让人误以为还有效——提醒清理，但不失败。
-    const gone = [...allow.entries.keys()].filter((x) => !newSet.has(x))
-    if (gone.length) {
-      console.log(`  ⓘ 登记表里有 ${gone.length} 条在本版产物里已看不见，可以清理：`);
-      for (const x of gone.slice(0, 10)) console.log('    · ' + x.slice(0, 200));
+  }
+
+  // 登记项随上游改动消失后不会被使用，留着会让人误以为还有效——提醒清理，但不失败。
+  // 判据只有一条（见 presenceProbe）：整串还在不在产物里。以前是拿 `newSet`（本工具自己
+  // 抽出的片段集合）算的，两处都把这道提醒挂在 `kept` 分支里，于是：
+  //   · 只被别条通道登记的条目年年被误报成「可以清理」；
+  //   · 本版没有任何新增英文片段（最常见的情况）时，这道提醒根本不会跑。
+  if (allow.path) {
+    const { probe, error } = presenceProbe(newBundle)
+    if (!probe) {
+      console.log(`  ! 读不到本版产物内容（${error}），跳过登记表清理提醒`)
+    } else {
+      const gone = [...allow.entries.keys()].filter((x) => !probe(x))
+      if (gone.length) {
+        console.log(`  ⓘ 登记表里有 ${gone.length} 条在本版产物里已看不见（整串都没了），可以清理：`)
+        for (const x of gone.slice(0, 10)) console.log('    · ' + x.slice(0, 200))
+      }
     }
   }
 
@@ -452,6 +489,7 @@ function collectLiteralsFromSource(src) {
 module.exports = {
   stripInterp,
   normText,
+  presenceProbe,
   collectFragments,
   collectFragmentsFromSource,
   collectLiteralsFromSource,

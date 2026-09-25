@@ -5,7 +5,9 @@
 // 覆盖：
 //   1. 未登记的新增英文片段 → rc 1，并提示登进 intentional-english.json；
 //   2. 已登记 → 不进失败判定，rc 0，且把理由一并打印出来；
-//   3. 登记项在产物里已消失 → 提醒可清理，但不失败；
+//   3. 登记项在产物里已消失（整串都没了）→ 提醒可清理，但不失败；
+//      而「在产物里、但抽不成片段」的（只被别条通道登记）**不算**死条目；
+//      本版没有任何新增片段时也要跑这道提醒（以前挂在「已登记」分支里，常规全绿时永远看不到）；
 //   4. --no-allow → 忽略登记表（临时想看真实的全清单）；
 //   5. --allow-file 指向不存在的文件 / 非法 JSON / 未知参数 → 该报的报（2 或 0）。
 'use strict'
@@ -49,6 +51,18 @@ fs.writeFileSync(
     2,
   ) + '\n',
 )
+// 一个单词文案的产物：片段级要 ≥3 词，`"Theme"` 抽不成片段（但确实在产物里）
+const labelDir = mk('label', [shared, 'var d={label:"Theme"};'])
+// 只登记那个单词文案：它在 labelDir 的产物里（所以不算死），但片段级（≥3 词）本来就抽不出来
+const allowLabelFile = path.join(WORK, 'allow-label.json')
+fs.writeFileSync(
+  allowLabelFile,
+  JSON.stringify(
+    { fragments: [{ text: 'Theme', why: '夹具：单词文案，片段级（≥3 词）本来就抽不出来' }] },
+    null,
+    2,
+  ) + '\n',
+)
 fs.writeFileSync(path.join(WORK, 'allow-bad.json'), '{ not json')
 
 const run = (args) => {
@@ -81,6 +95,19 @@ chk(/未发现未登记的新增英文片段/.test(r2.out), '  结论写「未�
 const r3 = run([oldDir, newDir, '--allow-file', goneFile])
 chk(r3.code === 0, `登记项消失不影响退出码（rc ${r3.code}）`)
 chk(/可以清理/.test(r3.out) && /This line disappeared in the new build\./.test(r3.out), '  列出已消失的登记项')
+
+// 3b) 登记项还在产物里（只是抽不成片段）→ 不算死条目
+const rLabel = run([oldDir, labelDir, '--allow-file', allowLabelFile])
+chk(rLabel.code === 0, `单词文案不成片段也不影响退出码（rc ${rLabel.code}）`)
+chk(!/可以清理/.test(rLabel.out), '在产物里但进不了片段集合的登记项不算死条目（旧判据会误报）')
+
+// 3c) 本版没有任何新增片段时也要提醒清理死条目（以前这段挂在 kept 分支里）
+const rGoneOnly = run([oldDir, oldDir, '--allow-file', goneFile])
+chk(rGoneOnly.code === 0, `无新增片段 + 有死条目 → rc ${rGoneOnly.code}（期望 0）`)
+chk(
+  /可以清理/.test(rGoneOnly.out) && /This line disappeared in the new build\./.test(rGoneOnly.out),
+  '  没有新增片段时照样提醒清理死条目',
+)
 
 // 4) 默认走仓库根的登记表：夹具片段不在里面 → 仍然拦下
 const r4 = run([oldDir, newDir])
