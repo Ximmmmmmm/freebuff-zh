@@ -50,6 +50,10 @@ const SEMANTIC_PROPERTIES = new Set([
 // 全在渲染进程内派生：page 只存在 zustand 内存 store 里，不落盘、不走 IPC、不发请求
 // （`settings.opened` 之类遥测用的是另一组常量），所以整表一致替换即可安全翻成中文。
 // 前提与 Connected 相同，新增条目必须同样满足：同表同值、进程内派生、不写盘不跨进程。
+//
+// 0.0.148 的 Updates 页（上游把「暂停更新」整段删掉、换成新设置页）是同一张表的第七个成员：
+//   R1e=[…,"Updates"] → h!=="Updates"||… 过滤导航 → t==="Updates"&&p.jsx(cOe,{}) 选页面
+// 与 0.0.131 那批完全同构，所以照样整表替换（词典里 "Updates" → "更新"）。
 const CONSISTENT_LABELS = new Set([
   '已连接',
   '通用',
@@ -58,6 +62,7 @@ const CONSISTENT_LABELS = new Set([
   '项目',
   '技能',
   'API 提供商',
+  '更新',
   '计划审查',
 ])
 

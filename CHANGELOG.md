@@ -4,6 +4,36 @@
 > 逐条账目（对差统计、词典条数与替换次数、各扫描的残留条数、发布包哈希）与工具口径不收在这里——
 > 需要时看 `git log`：每次适配与发布的提交里都写着完整过程。
 
+## [0.0.148] · 2026-09-26（已发布 `pack-v0.0.148`）
+
+上游做的是**把「更新」这一整块重写**：设置页新增 **Updates** 一节（版本号、检查更新、一行状态），
+**整个「暂停更新」机制被删掉**（`updater.cjs` 里的暂停状态、`update:set-pause` 与它的两条报错全无），
+更新卡片换成了一套新状态表（检查中 / 已最新 / 可用 / 下载中 / 待安装 / 安装中 / 失败 / 不可用），
+顺带给赞助提案补了**连接账户**流程（`Connect and start`、`Open <广告主>`、卡片上的 `(Ad)` 标记）
+与任务队列的几句状态文案（`Working on the current step` / `Waiting for the queue to resume`）。
+
+- **文案**：真新增 62 条（`exact` 43 / `template` 17 / `code` 2），下线 47 条旧词条——最大的一坨是「暂停更新」面板
+  （`Paused through ` / `App updates` / `Resume updates` 一族）与更新卡片旧状态表（`All up to date` / `Keep this version` /
+  `Install and restart` / `Restart now` 等）；另有 69 条 `template` 因上游重压缩改了变量名，由 `tools/remap.js` 自动迁移（译文未动）。
+- **主进程**：`electron/` 37 个文件里 `main.cjs` / `preload.cjs` / `updater.cjs` 三份变了；
+  **`patches/electron-updater.cjs.patch` 整条退场**（补丁数 13 → 12）——它翻的两条报错随「暂停更新」机制一起被上游删掉，
+  `tools/postbuild.js` 里对应的两条 `updater.cjs` 译文哨兵同步删除；其余 12 个补丁一次干净套用，无需重锚定。
+- **非翻译改动**：`tools/semantic_guard.js` 的 `CONSISTENT_LABELS` 加入 `更新`——Updates 一节与 0.0.131 那批设置标签同构
+  （同一张表里既做比较又做显示），整表替换才不会留下半截英文。
+- **登记表**：新增 2 条「有意保留英文」——`/api/ad/proposal/ /connect`（`adProposalConnect` 的 API 路径）
+  与 `noopener noreferrer sponsored`（赞助卡片的 `rel` 属性值）；两条都是代码串，不是给人读的界面文案。
+- **三道体检全绿**：上游新增文案 0 条待补翻；回归闸门（对比 `pack-v0.0.147`）新版独有英文 0 处；
+  单词级界面文案差集 0 处（界面属性位置残留英文 17 → 14 条）。四道发布闸门全绿。
+- **影响面**：`targetVersion` / `packVersion` 同时升到 0.0.148，已装 0.0.147 的机器按常规比较会自动拉到这一版。
+
+### 记一笔：`pattern` 短词会撞上「字面量占用」闸门的假阳性
+
+Updates 那节的标题 `Version` 本该按惯例进 `pattern`（短词只翻界面属性位置），但 `tools/lint_collisions.js`
+对 `pattern` 词条是按「字面量**包含**该词」判的（防的是 pattern 替换字面量内部子串那种情形），
+而主进程那些未压缩文件里，提取器会把跨引号的代码配成**超长字面量**，`webContents.send(...)` 那段正好落在里面
+——闸门于是报「IPC / 事件通道名」。实测 `node tools/apply.js updater.cjs` 替换次数为 **0**、逐字节无差异，是纯假阳性。
+该词条改用 `exact`（整个产物里 `"Version"` 只有那一处，就是节标题）：`exact` 的判据是**整串相等**，不会被超长字面量沾到。
+
 ## [0.0.147] · 2026-09-25（已发布 `pack-v0.0.147`）
 
 上游做的是**「时段到点后不再每次都问」**：设置页新增 **Sessions** 一节（说明 + 一个开关

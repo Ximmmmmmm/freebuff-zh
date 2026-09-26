@@ -38,6 +38,14 @@
     {
       "text": "agent-option-ask-action primary",
       "why": "CSS 类名组合（`className:\"agent-option-ask-action primary\"`，0.0.140 新增的「开启新时段」按钮），是给样式表看的，翻掉就没有对应样式了。与 streak-day on / model-badge muted 同类。"
+    },
+    {
+      "text": "/api/ad/proposal/ /connect",
+      "why": "API 路径（`adProposalConnect` 的请求地址 `/api/ad/proposal/${encodeURIComponent(t)}/connect`，0.0.148 新增），是写给服务端读的 URL，不是界面文案；提取器把插值抹成空格后把它当成片段报出来。与 bun install / git init 同类——翻掉请求直接打不通。"
+    },
+    {
+      "text": "noopener noreferrer sponsored",
+      "why": "HTML rel 属性值（`rel:\"noopener noreferrer sponsored\"`，0.0.148 给赞助卡片链接的 target=_blank 加上了 sponsored），浏览器按这个字符串判定链接关系；与 className 那几条同类，翻掉就不再是有效的 rel 值。"
     }
   ],
   "uiStrings": [

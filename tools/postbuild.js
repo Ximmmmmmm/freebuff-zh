@@ -221,12 +221,9 @@ const MAIN_SENTINELS = {
   ],
   'electron/linux-launch.cjs': ['无法启动所需的子进程。'],
   'electron/open-in.cjs': ['复制路径'],
-  // 0.0.145 新增：「暂停更新」设置面板的两条用户可见报错（经 IPC 抛回渲染进程，
-  // 由设置页的 catch 显示成 O.message）
-  'electron/updater.cjs': [
-    '请选择今天或之后的日期。',
-    '无法保存更新偏好设置。',
-  ],
+  // electron/updater.cjs 的译文哨兵随「暂停更新」补丁一起退场：0.0.148 上游删掉了
+  // 整个暂停机制（loadState / saveState / validPauseDate 与 set-pause IPC 全无），
+  // 那两条报错已不存在，补丁与哨兵都不再需要。
 }
 // 可选哨兵：对应的主进程文件只存在于较新的 Freebuff 版本里（老版本 asar 里没有），
 // 因此缺失只警告不报错，存在则必须带译文哨兵。
