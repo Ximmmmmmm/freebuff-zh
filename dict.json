@@ -1640,7 +1640,6 @@
     "Supabase may help with ${FD[o.angle]} in this project.": "Supabase 可能对这个项目里的 ${FD[o.angle]} 有帮助。",
     "Agent changed ${UD(t)}": "智能体更改了 ${UD(t)}",
     " — not committed: ${VD[I.exclusion??\"unsupported\"]}": " — 不提交：${VD[I.exclusion??\"unsupported\"]}",
-    "${n.todos.filter(gDe).length}/${n.todos.length} done": "${n.todos.filter(gDe).length}/${n.todos.length} 已完成",
     "You’re on Freebuff ${t.currentVersion}.": "你当前使用的是 Freebuff ${t.currentVersion}。",
     "Freebuff ${t.version} is ready": "Freebuff ${t.version} 已就绪",
     "Freebuff ${t.version} installs when idle": "Freebuff ${t.version} 将在空闲时安装",
@@ -1648,7 +1647,8 @@
     "${t.version} is ready and installs when you’re idle": "${t.version} 已就绪，空闲时会安装",
     "Connect your ${e.advertiserName} account": "连接你的 ${e.advertiserName} 账户",
     "Starts without it in ${m} min if you do nothing.": "若不操作，${m} 分钟后就会在没有它的情况下开始。",
-    "${t.title} (Ad)": "${t.title}（广告）"
+    "${t.title} (Ad)": "${t.title}（广告）",
+    "${n.todos.filter(vDe).length}/${n.todos.length} done": "${n.todos.filter(vDe).length}/${n.todos.length} 已完成"
   },
   "code": {
     "run_file_change_hooks:\"Hooks\"": "run_file_change_hooks:\"文件变更钩子\"",
