@@ -2,6 +2,9 @@
 # 只跑不依赖专有产物（app.asar / ui 资源）的检查，完整构建仍在本地进行。
 # 其中 snapshot-gates 跑的是 release.sh 的那四道发布闸门（同名、同判据），只是「本版产物」
 # 改用「快照 + 词典 + 补丁」在前置步骤重建——漏翻 / 单词级英文 / 字面量占用在 PR 阶段就能拦下。
+# 版本刚 bump、本版原版还没发布时它退到「近似模式」：拿上一版快照当替身，闸一 / 闸二 / 闸三
+# 只列差异清单（不作判定），闸四与镜像重建仍硬拦；本版新增的英文文案在这里看不到，由发布前的
+# release.sh 四道闸门（真实产物）把关——细节见 tools/ci_gates.sh 的文件头。
 name: lint
 
 on:
@@ -78,9 +81,9 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
-      # 快照与上一版包的取回都在脚本内部（pristine.js import --from-release / Release 资产下载），
-      # 不单列步骤：版本刚 bump、Release 还没发时脚本会打 ::warning:: 并 rc 0（本地 update.sh /
-      # release.sh 上的同名闸门才是最终把关），单列一步会让那种情况直接把 job 打红。
+      # 快照、替身与上一版包的取回都在脚本内部（pristine.js import --from-release / Release 资产
+      # 下载），不单列步骤：本版原版拿不到时脚本自己退到近似模式（上一版快照当替身），连替身都
+      # 拿不到才打 ::warning:: 并 rc 0——单列一步会让那两种情况直接把 job 打红。
       - name: 四道发布闸门（主进程漏翻 / 回归 / 单词级文案 / 字面量占用）+ 补丁锚点预检
         env:
           # 只为不吃共享出口 IP 的匿名 API 限额；仓库公开，没它也基本能用。

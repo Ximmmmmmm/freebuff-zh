@@ -9,9 +9,14 @@
 //      ::warning:: 且不拦 CI，这是有意设计（本地 update.sh / release.sh 的同名闸门更严格），
 //      但必须让它在输出里说清楚，而且**不得**打印「全部通过」——否则「跳过」和「通过」在
 //      CI 上看不出差别。
+//   3. **近似模式放水**：版本刚 bump、本版原版还没发布时，四道闸门跑在「上一版快照当替身」重建的
+//      产物上。替身与原版的差别没法归因，于是闸一 / 闸二 / 闸三 的差异只作核对清单（不拦 CI）——
+//      但**版本无关的判据不许跟着放水**：闸四字面量占用、镜像能否重建、补丁文件在不在仍是硬拦。
+//      这里两个方向都钉：该软的那三道在替身上报差异时 rc 必须 0 且打 ::warning::；该硬的那几项
+//      必须 rc 1 且打 ::error::（否则近似模式就成了「bump 那次 PR 什么都能过」）。
 //
-// 夹具一律用 --snapshot / --patches / --prev 显式传入：自测不联网（脚本里那两条从 Release 取
-// 快照 / 取上一版包的路径由 workflow 上的真实运行覆盖）。
+// 夹具一律用 --snapshot / --patches / --prev / --approx 显式传入：自测不联网（脚本里那三条
+// 从 Release 取快照 / 取上一版快照 / 取上一版包的路径由 workflow 上的真实运行覆盖）。
 'use strict'
 const fs = require('fs')
 const path = require('path')
@@ -158,6 +163,61 @@ chk(noPatches.code === 1, `补丁目录空着 → rc 1（实际 ${noPatches.code
 chk(/::error::[^\n]*没有 electron-\*\.patch/.test(noPatches.out), '明说补丁目录里没有 electron-*.patch')
 chk(/::error::闸一未执行/.test(noPatches.out), '闸一 拒绝在不可信的镜像上给结论')
 chk(passed(noPatches.out, '闸四'), '闸四 不受影响，照常给出结论')
+
+// --- 近似模式：本版原版还没发布，用上一版快照当替身（--approx 显式给，自测不联网）-----------
+const approx = (snap, ...extra) => run(['--approx', SNAP(snap), '--patches', PATCHES, ...extra])
+
+// 1) 替身干净：四道闸门照跑，闸一 / 闸二 / 闸三 在替身上没有差异，但**不许**说「全部通过」
+const apOk = approx('snap-ok', '--prev', PREV_OK)
+chk(apOk.code === 0, `近似模式・干净替身 → rc 0（实际 ${apOk.code}）`)
+// 本版原版版本号从 manifest 读（跟着 bump 走），替身版本号来自夹具快照的 snapshot.json（0.0.0）
+const TARGET = JSON.parse(fs.readFileSync(path.join(REPO, 'manifest.json'), 'utf8')).targetVersion
+const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+chk(
+  new RegExp(`近似模式：本版原版 v${esc(TARGET)} 还没发布，用替身 v0\\.0\\.0`).test(apOk.out),
+  '输出开头说明这是近似模式、本版原版是哪个版本、替身是哪个版本',
+)
+chk(/能判定：/.test(apOk.out) && /只列差异：/.test(apOk.out) && /看不到：/.test(apOk.out), '横幅逐条说明「能判定 / 只列差异 / 看不到」')
+chk(
+  ['附加·补丁锚点预检', '闸一', '闸二', '闸三'].every((g) =>
+    apOk.out.split('\n').some((l) => l.includes(g) && l.includes('在替身上一处差异都没有')),
+  ),
+  '闸一 / 闸二 / 闸三 + 补丁预检：替身上没有差异时明说「一处差异都没有」',
+)
+chk(passed(apOk.out, '闸四'), '闸四 在近似模式下照样给出硬结论')
+chk(/全部通过/.test(apOk.out) === false, '近似模式不得打印「全部通过」（闸一 / 闸二 / 闸三 没作判定）')
+chk(/只列差异的闸一 \/ 闸二 \/ 闸三：在替身上一处差异都没有/.test(apOk.out), '小结里点明哪几道只列差异、以及它们这次没有差异')
+chk(/release\.sh 四道闸门/.test(apOk.out), '小结里点明最终把关还是 release.sh 四道闸门（真实产物）')
+chk(!/::error::/.test(apOk.out), '近似模式・干净替身没有任何 ::error::')
+
+// 2) 替身上有差异（上一版译过、这一版没词条了）：只列清单、不拦 CI，且清单本身要看得见
+const apDiff = approx('snap-regress', '--prev', PREV_OK)
+chk(apDiff.code === 0, `近似模式・替身有差异 → 仍然 rc 0（实际 ${apDiff.code}）`)
+chk(/::warning::.*闸二/.test(apDiff.out), '闸二 的差异打 ::warning::（不是 ::error::）')
+chk(/::error::/.test(apDiff.out) === false, '差异不作判定，全程没有 ::error::')
+chk(/差异清单（近似模式只作核对清单，不判定）/.test(apDiff.out), '差异以「核对清单」的名义打印')
+chk(apDiff.out.split('\n').some((l) => l.startsWith('   |') && l.includes('This project will be deleted permanently')), '清单里逐条列出差异（带 | 前缀，便于从 CI 日志里认出来）')
+chk(/只列差异、未判定：闸二/.test(apDiff.out), '小结点名闸二：只列了差异、没作判定')
+
+// 3) 近似模式不许放水：版本无关的判据（闸四）在替身上照样硬拦
+const apBad = approx('snap-bad', '--prev', PREV_OK)
+chk(apBad.code === 1, `近似模式・替身上有词条被代码占用 → rc 1（实际 ${apBad.code}）`)
+chk(/::error::.*闸四/.test(apBad.out), '闸四 在近似模式下仍然 ::error::（版本无关的判据不放水）')
+chk(/::warning::.*闸一/.test(apBad.out) && /::error::闸一/.test(apBad.out) === false, '闸一 的差异在近似模式下只是 ::warning::')
+chk(/::warning::.*闸三/.test(apBad.out) && /::error::闸三/.test(apBad.out) === false, '闸三 的差异在近似模式下只是 ::warning::')
+chk(/本地复现/.test(apBad.out) && /--approx/.test(apBad.out), '失败时给出的复现命令带 --approx（照原样再跑一次是近似模式）')
+
+// 4) 近似模式也不许在不可信的镜像上给结论（补丁目录空着 → 闸一未执行 + rc 1）
+const apNoPatch = run(['--approx', SNAP('snap-ok'), '--patches', path.join(WORK, 'patches-empty'), '--prev', PREV_OK])
+chk(apNoPatch.code === 1, `近似模式・补丁目录空着 → rc 1（实际 ${apNoPatch.code}）`)
+chk(/::error::[^\n]*没有 electron-\*\.patch/.test(apNoPatch.out), '明说补丁目录里没有 electron-*.patch')
+chk(/::error::闸一未执行/.test(apNoPatch.out), '闸一 拒绝在不可信的镜像上给结论')
+chk(passed(apNoPatch.out, '闸四'), '闸四 不受影响，照常给出结论')
+
+// 5) 近似模式的参数契约
+chk(run(['--snapshot', SNAP('snap-ok'), '--approx', '0.0.114']).code === 2, '--snapshot 与 --approx 互斥 → rc 2')
+chk(run(['--approx', SNAP('nope')]).code === 2, '--approx 目录不存在 / 不含 electron → rc 2')
+chk(run(['--approx', '0.0.999']).code === 2, '--approx 版本没有可用快照 → rc 2')
 
 // --- 参数契约 ----------------------------------------------------------------------
 chk(run(['--bad']).code === 2, '未知参数 → rc 2')
