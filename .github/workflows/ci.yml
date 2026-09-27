@@ -1,5 +1,7 @@
 # 词典与工具链质量门禁。
 # 只跑不依赖专有产物（app.asar / ui 资源）的检查，完整构建仍在本地进行。
+# 其中 snapshot-gates 跑的是 release.sh 的那四道发布闸门（同名、同判据），只是「本版产物」
+# 改用「快照 + 词典 + 补丁」在前置步骤重建——漏翻 / 单词级英文 / 字面量占用在 PR 阶段就能拦下。
 name: lint
 
 on:
@@ -66,8 +68,9 @@ jobs:
             bash -n "$f"
           done
 
-  # 三道闸门单独一个 job：它们要一份「本版英文原版快照」（Release 资产 pristine-<版本>.json.gz），
-  # 而上面那批自测全用合成夹具、不碰网络——分开跑，网络抖动就不会把纯自测带红。
+  # 四道发布闸门单独一个 job：它们要一份「本版英文原版快照」（Release 资产 pristine-<版本>.json.gz）
+  # 与一份「上一版已发布包」，而上面那批自测全用合成夹具、不碰网络——分开跑，网络抖动就不会
+  # 把纯自测带红。
   snapshot-gates:
     runs-on: ubuntu-latest
     steps:
@@ -75,10 +78,10 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
-      # 快照的取回放在脚本内部（pristine.js import --from-release），不单列一步：
-      # 版本刚 bump、Release 还没发时脚本会打 ::warning:: 并 rc 0（本地 update.sh / release.sh
-      # 上的同名闸门才是最终把关），单列一步会让那种情况直接把 job 打红。
-      - name: 三道快照闸门（字面量占用 / 补丁锚点预检 / 单词级界面文案）
+      # 快照与上一版包的取回都在脚本内部（pristine.js import --from-release / Release 资产下载），
+      # 不单列步骤：版本刚 bump、Release 还没发时脚本会打 ::warning:: 并 rc 0（本地 update.sh /
+      # release.sh 上的同名闸门才是最终把关），单列一步会让那种情况直接把 job 打红。
+      - name: 四道发布闸门（主进程漏翻 / 回归 / 单词级文案 / 字面量占用）+ 补丁锚点预检
         env:
           # 只为不吃共享出口 IP 的匿名 API 限额；仓库公开，没它也基本能用。
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
