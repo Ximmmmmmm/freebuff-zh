@@ -4,19 +4,19 @@
 ![GitHub last commit](https://img.shields.io/github/last-commit/Ximmmmmmm/freebuff-zh)
 ![GitHub Repo stars](https://img.shields.io/github/stars/Ximmmmmmm/freebuff-zh?style=social)
 ![GitHub forks](https://img.shields.io/github/forks/Ximmmmmmm/freebuff-zh?style=social)
-[![Target](https://img.shields.io/badge/目标-Freebuff%20Desktop%20v0.0.150-blue)](https://freebuff.com)
+[![Target](https://img.shields.io/badge/目标-Freebuff%20Desktop%20v0.0.152-blue)](https://freebuff.com)
 [![lint](https://github.com/Ximmmmmmm/freebuff-zh/actions/workflows/ci.yml/badge.svg)](https://github.com/Ximmmmmmm/freebuff-zh/actions/workflows/ci.yml)
 
 **中文关键词 / Keywords**: Freebuff 汉化、Freebuff 中文版、Freebuff Chinese localization、AI coding agent 中文、Freebuff 翻译、Electron 汉化、localization pack
 
-Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.150）的**简体中文汉化包**，直接修改已打包产物，无需源码、不涉及任何联网改动。
+Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.152）的**简体中文汉化包**，直接修改已打包产物，无需源码、不涉及任何联网改动。
 
 > **English**: A Simplified-Chinese localization pack for Freebuff Desktop — the free AI coding agent. Patches the packaged app directly, no source build required. If you're a Chinese-speaking Freebuff user, this is for you.
 
 ## ✨ 特性
 
-- **覆盖全面**：渲染进程约 2113 处文案 + 主进程菜单 / 对话框 / 同意窗口全面中文化
-- **词典驱动**：`dict.json` 共 1748 条（exact 1382 / template 265 / code 20 / pattern 81），幂等应用、可审计
+- **覆盖全面**：渲染进程约 2164 处文案 + 主进程菜单 / 对话框 / 同意窗口全面中文化
+- **词典驱动**：`dict.json` 共 1791 条（exact 1408 / template 274 / code 21 / pattern 88），幂等应用、可审计
 - **可复现构建**：`build.sh` 从「原版 + 词典 + 补丁」**逐字节重建**产物，每次适配都过一遍防呆自检
 - **漏翻藏不住**：构建后自检、UI 残留扫描、主进程扫描、上游新增文案对差、单词级差集、字面量占用、补丁锚点预检与重生成——每类静默失败都有对应闸门
 - **跟着上游走**：Freebuff 出新版后 `bash tools/update.sh` 一条命令跑完迁移（重映射 → 体检 → 构建 → 扫描 → 差集 → 汇总）

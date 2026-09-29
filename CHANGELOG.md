@@ -4,6 +4,36 @@
 > 逐条账目（对差统计、词典条数与替换次数、各扫描的残留条数、发布包哈希）与工具口径不收在这里——
 > 需要时看 `git log`：每次适配与发布的提交里都写着完整过程。
 
+## [0.0.152] · 2026-09-29（已发布 `pack-v0.0.152`）
+
+上游这一版把**引导与余额这两块界面翻新了**：新用户会先过一套多步提问（`A few quick questions`，
+带 `choose any` / `least to most` 两种题型提示、`Skip this question` / `Done — skip the rest` / `Skip all`
+三种退出方式），设置页多出 **Permissions** 一节（说明智能体什么时候会停下来等批准，
+以及 `Full access` 开关），侧栏余额卡从一句话拆成 **Daily / Wallet** 两行，
+文案里的「余额」也一并改叫 **wallet**（`Your Freebucks wallet balance…` / `Freebucks wallet balance unavailable`）；
+任务队列新增「本轮结束后暂停」与「标签页等待策略」两组文案（`Pause queue` / `Keep this tab open` /
+`Close tab when done` / `Waiting for …` / `Restarts once you pause for a minute.`），
+模型目录把 `Muse Spark 1.3 replaces Muse Spark 1.2` 的迁移提示搬到界面上。
+
+- **文案**：真新增 45 条（`exact` 27 / `template` 10 / `code` 1 / `pattern` 7），下线 5 条，
+  另有 11 条条目因上游改写、重压缩换了变量名而**原地迁移**（`${h?…}` → `${d?…}`、
+  `lp(P.length,"item")` → `cp(…)`、`" code comment",h.length` → `,f.length` 等，译文未动）。
+  片段级 1457 → 1480 处（新增 22、下线 3、疑似改写 4 组），字面量级 2026 → 2062 条。
+  词典 1751 → 1791 条，替换总数 2117 → 2164、全命中。
+- **通道问题**：`Could not save your answers.` 在 bundle 里是**模板插值内部**的字面量，
+  整条写进 `template` 会让片段级对差判成「未覆盖」（它按 key 剥掉插值后比对）；
+  拆成 `exact`（内层句子）＋ `code`（插值之后的 `} Carrying on anyway.`）两条，两通道都能看见。
+  另有两条新增文案（`Permissions` 与整段 `Agents already edit files…`）因为**带分号**被字面量通道
+  当成代码滤掉，只从 `uipos_gap` 那一侧报出来——两道体检互补，谁也不能少跑。
+- **主进程**：`electron/` 37 个文件里 `main.cjs` 与 `preload.cjs` 变了，新增的是「会话列表右键菜单」这条 IPC
+  （`menu:threadContext` ＋ `preload` 的 `threadContextMenu`），菜单里只有一项 **`Delete Thread`**（运行中禁用）。
+  它进了 `patches/electron-main.cjs.patch`（补丁新增一个 hunk）与 `postbuild` 的 `MAIN_SENTINELS`；
+  其余 12 个补丁一次干净套用，无需重锚定或 `regen`。
+- **UI 行为补丁**：两组仍为 `KEEP`——上游没碰流式序号与令牌缓存那两处代码，探针在原版里都能复现、在产物里都能证伪。
+- **四道发布闸门全绿**：主进程英文扫描 0 条疑似文案；回归闸门（对比 `pack-v0.0.151`）新版独有英文 0 处；
+  单词级界面文案差集 0 处（界面属性位置残留英文 14 条，与上一版持平）；字面量占用无冲突。
+- **影响面**：`targetVersion` / `packVersion` 同时升到 0.0.152，已装 0.0.151 的机器按常规比较会自动拉到这一版。
+
 ## [0.0.151] · 2026-09-28（已发布 `pack-v0.0.151`）
 
 上游这一版是**安全加固 + 一处小界面**：orchestrator 现在要求**每个** `/api/` 请求都带 launch secret（以前只管写操作），
