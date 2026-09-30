@@ -4,6 +4,47 @@
 > 逐条账目（对差统计、词典条数与替换次数、各扫描的残留条数、发布包哈希）与工具口径不收在这里——
 > 需要时看 `git log`：每次适配与发布的提交里都写着完整过程。
 
+## [0.0.154] · 2026-09-30（已发布 `pack-v0.0.154`）
+
+上游这一版给**外壳补上了应用级导航**：侧栏顶部多了 `App navigation`（`Home` 按钮 +
+`Navigation history` 历史回跳），标签页行上可直接 `Close tab`，历史条目打不开会报
+`Could not open this history entry.`；项目侧栏的「…」按钮接入整套菜单（`Project actions` /
+`Project actions for <项目名>`）；**受限访问**换了新说法（`Limited access, verify country` 与
+`Limited access. Verify your country from home internet or mobile data, without a VPN.`，
+验证打不开是 `Couldn't open verification. Please try again.`）；工具提示补了**相对时间**
+（`Just now` / `${n}m ago` / `${i}h ago` / `${r}d ago` / `${s} ${s===1?"week":"weeks"} ago`）
+与「N 个会话需要输入」计数（`chat needs` / `chats need`），迁移提示提到 `your API provider`。
+上一版的 `Back to threads`（返回会话）与 `Drag to reorder projects`（拖拽排序提示）随改版下线，
+三条队列发件的 `(Enter)` 快捷键模板一并不再用。
+
+- **文案**：新增 9 条片段 / 14 条字面量（13 条直接覆盖，1 条 CSS 类名 `app desktop-shell`
+  登进登记表），下线 5 条，疑似改写 0 组。词典 1821 → 1829 条（`exact` 1440 / `template` 276 /
+  `code` 25 / `pattern` 88），替换总数 2203 → 2213、全命中。
+- **被删条目的复核**：上一轮把 14 条「0.0.154 原版里够不着」的条目直接核销，本版 uipos 闸门
+  抓回一条漏网——`Remove ${Te.configKey}`（连接器移除按钮的 aria-label）不是下线，而是上游
+  重压缩换了变量名，已按新形态 `Remove ${ye.configKey}` 迁移回词典。
+- **主进程**：`electron/` 37 个文件里 `main.cjs` / `splash.cjs` 变了——上游重调了 shell 主题
+  （深/浅色 overlay 底色与符号色、启动屏轨道与进度条配色）与标题栏高度（54 → 48，macOS 补了
+  `trafficLightPosition`）；`patches/electron-main.cjs.patch` 三个 hunk 随之重维护，
+  12 个补丁一次干净套用（无需 reanchor / regen）。
+- **UI 行为补丁**：两组仍判 `KEEP`——行为取证（stream-epoch / token-epoch）在产物里全部通过。
+- **登记表**：新增 1 条 fragments（`app desktop-shell`，主窗口与线程窗口的根 CSS 类名）。
+- **四道发布闸门全绿**：主进程英文扫描 0 条；回归闸门（对比 `pack-v0.0.153`）新版独有英文 0 处；
+  单词级界面文案差集 0 处（本版初检的 3 处——`Home` / `Project actions for ${…}` / `Remove ${…}`
+  ——已全部覆盖）；字面量占用无冲突（初检 4 条假阳性，见下）。
+- **影响面**：`targetVersion` / `packVersion` 同时升到 0.0.154，已装 0.0.153 的机器按常规比较会自动拉到这一版。
+
+### 记一笔：`pattern` 词条的闸门判据与替换语义对齐
+
+上游本版在主进程新增了 `menu:tabContext` / `shell:revealChange` / `discord:setEnabled` 等 IPC 通道名，
+`tools/lint_collisions.js` 旧判据对 `pattern` 词条按「字面量**包含**该词」判，于是把 `Context` /
+`Enabled` / `Enable` / `Change` 四条报成「会被写坏」。实测是假阳性：产物里 React 内部的
+`"Context"`（`displayName||"Context"`）逐字节未动，`apply.js` 对 `main.cjs` 的替换仅 1 处（注释里的
+`Claude Code is signed out`）——`pattern` 的替换和 `exact` 一样是**整串相等**（`dict.pattern[lit.value]`），
+真正做子串替换的是 `code` 分区。判据已改为与替换语义逐一对齐（exact / pattern 整串，code 子串），
+自测补了四条用例钉住。这四条词条也因此能留在 `pattern`：`Context` 在产物里是「UI 一处、React 内部两处」，
+改走 `exact` 会把 React 的 displayName 一起翻掉。
+
 ## [0.0.153] · 2026-09-30（已发布 `pack-v0.0.153`）
 
 上游这一版把**赞助任务与 MCP 连接两块补齐了**：赞助提案多了「最小化」按钮（`Minimize sponsored task`）

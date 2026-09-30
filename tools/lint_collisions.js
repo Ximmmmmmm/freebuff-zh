@@ -184,8 +184,16 @@ function main() {
       for (const f of files) {
         let seen = false
         for (const lit of f.lits) {
-          // pattern 分区替换的是字面量**内部**的子串，所以这里按包含判断
-          const isTarget = part === 'pattern' ? lit.value.includes(key) : lit.value === key
+          // 分区判据与 apply.js 的替换语义逐一对齐（错配一次就会假报/漏报，见下方 0.0.154 记录）：
+          //   exact / pattern —— 整串替换（pattern 也是 `dict.pattern[lit.value]`，字面量内容
+          //     与 key 逐字节相等才写回；收集范围限于 UI 属性锚点，见 apply.js 的 patternLiterals）
+          //   code —— 子串替换（`new RegExp(esc(en), 'g')`，用于复数吸收这类片段）
+          // 0.0.154 实测：词条 `Context` 的 pattern 位置只有 UI 的 `children:"Context"`，产物里
+          // React 内部的 `"Context"`（`displayName||"Context"`）逐字节未动；上游本版新增的
+          // `menu:tabContext` / `shell:revealChange` / `discord:setEnabled` 只是通道名**内部的子串**，
+          // pattern 永远替换不到——旧的 includes 判定把这 4 条报成「会被写坏」，是假阳性
+          // （与 CHANGELOG [0.0.148] 记的 `Version` 假阳性同源）。
+          const isTarget = part === 'code' ? lit.value.includes(key) : lit.value === key
           if (!isTarget) continue
           seen = true
           if (!kinds.has(f.file)) kinds.set(f.file, posKind(f.src, lit.start))

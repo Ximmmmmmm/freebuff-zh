@@ -1,12 +1,15 @@
 #!/usr/bin/env node
 // lint_collisions 自测（不依赖 Freebuff 产物，CI 可跑）。
 //
-// 钉住三件事：
+// 钉住四件事：
 //   1. 判据本身：路径参数 / 比较位置 / IPC 通道名 三种「字面量在代码里当值用」的形态必须报；
 //   2. 假阳性防线：标识符里的子串（`discordEnabled` 之于词条 `Enabled`）**不能**报——
 //      第一版实现就是栽在这儿（用 includes() 全文件扫），实测 2 条假阳性；
 //   3. Cookies 形态：`for (const suffix of ['Network/Cookies','Cookies'])` 这种「隔一个变量
 //      才被喂进 path.join」的坑，局部规则抓不到，必须至少落进「位置形态=数组元素」的提示里。
+//   4. 分区判据与 apply.js 对齐（0.0.154）：exact / pattern 是**整串**替换
+//      （`menu:tabContext` 这类通道名内部的子串不能报；`ipcMain.handle('Home')` 整串要报），
+//      code 是**子串**替换（`new RegExp(esc(en),'g')`，落在通道名里也要报）。
 'use strict'
 const fs = require('fs')
 const path = require('path')
@@ -132,6 +135,23 @@ chk(/"Close"/.test(rSoft.out), '提示项：跨文件复用的标签列出来')
 chk(/"Filter"[^\n]*数组元素/.test(rSoft.out), '提示项带位置形态：数组元素（Cookies 形态的坑靠它提示）')
 chk(/"Mode"[^\n]*键值（label: …）/.test(rSoft.out), '提示项带位置形态：对象键值')
 chk(!/"Enabled"/.test(rSoft.out), '假阳性防线：标识符子串 discordEnabled 不触发词条 Enabled')
+
+// --- 端到端：分区判据（exact/pattern 整串、code 子串）与 apply.js 语义对齐 -------------------
+write(
+  'electron/anchors.cjs',
+  [
+    "ipcMain.handle('menu:tabContext', () => 1)", // 通道名**内部**的子串：pattern 替换不到，不能报
+    "ipcMain.handle('shell:revealChange', () => 1)", // 同上
+    "ipcMain.handle('Home', () => 1)", // 整串相等：pattern 能替换到，必须报
+  ].join('\n') + '\n',
+)
+const rPatternSub = run(['--electron', electronDir, '--dict', dictOf({ pattern: { Context: '上下文', Change: '修改' } })])
+chk(rPatternSub.code === 0 && !/"Context"/.test(rPatternSub.out), 'pattern 子串（menu:tabContext / shell:revealChange）不报')
+const rPatternWhole = run(['--electron', electronDir, '--dict', dictOf({ pattern: { Home: '主页' } })])
+chk(rPatternWhole.code === 1 && /"Home"/.test(rPatternWhole.out), "pattern 整串（ipcMain.handle('Home')）报")
+write('electron/code-sub.cjs', "ipcMain.handle('Menu:open', () => 1)\n")
+const rCodeSub = run(['--electron', electronDir, '--dict', dictOf({ code: { 'Menu:': '菜单：' } })])
+chk(rCodeSub.code === 1 && /"Menu:"/.test(rCodeSub.out), 'code 子串（Menu:open 含 Menu:）报')
 
 // --- 端到端：干净词典 ---------------------------------------------------------------
 const rClean = run(['--electron', electronDir, '--dict', dictOf({ exact: { 'No such text': '无' } })])

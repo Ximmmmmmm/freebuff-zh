@@ -66,6 +66,10 @@
     {
       "text": "/api/mcp/servers/ /connection",
       "why": "API 路径（`mcpServers` 一族的 `/api/mcp/servers/${encodeURIComponent(t)}/connection`，0.0.153 新增的「编辑 MCP 连接」），同上。"
+    },
+    {
+      "text": "app desktop-shell",
+      "why": "CSS 类名（主窗口外壳 className:`app desktop-shell${…}`（0.0.154 起按 shell 状态拼接）与线程独立窗口 className:\"app desktop-shell thread-window-shell\" 的根类名，是给样式表定位的，翻掉整页样式就失去锚点——与已登记的 `streak-day on` / `agent-option-ask-action primary` 同类）"
     }
   ],
   "uiStrings": [
