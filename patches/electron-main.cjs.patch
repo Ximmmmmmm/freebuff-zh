@@ -284,15 +284,6 @@
      ])
      menu.popup({
        window: BrowserWindow.fromWebContents(event.sender) ?? undefined,
-@@ -1552,7 +1552,7 @@
-       resolve(action)
-     }
-     const menu = Menu.buildFromTemplate([
--      { label: 'Delete Thread', enabled: !running, click: () => done('delete') },
-+      { label: '删除会话', enabled: !running, click: () => done('delete') },
-     ])
-     menu.popup({
-       window: BrowserWindow.fromWebContents(event.sender) ?? undefined,
 @@ -1537,9 +1584,9 @@
              label: app.name,
              submenu: [

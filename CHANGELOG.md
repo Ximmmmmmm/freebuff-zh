@@ -4,6 +4,47 @@
 > 逐条账目（对差统计、词典条数与替换次数、各扫描的残留条数、发布包哈希）与工具口径不收在这里——
 > 需要时看 `git log`：每次适配与发布的提交里都写着完整过程。
 
+## [0.0.153] · 2026-09-30（已发布 `pack-v0.0.153`）
+
+上游这一版把**赞助任务与 MCP 连接两块补齐了**：赞助提案多了「最小化」按钮（`Minimize sponsored task`）
+与**取消确认**（`Cancel this task` → `Cancel this task? It has not started, so nothing in your project
+changes.`，配 `Cancel task` / `Keep it` 两颗按钮），暂停中的提案给出 `Held — press Resume to start it`
+与 **`Resume`** 按钮，任务队列补了 `Queued — starting shortly` / `Queued — starts when the Mission
+finishes`；连接器侧新增**「编辑连接」表单**（`Edit connection` / `Save connection` / `Server URL` /
+`Working directory` / `Arguments (JSON array)` / `Saves to ` 与 `. Environment variables and headers
+are preserved. …` / ` You may need to sign in again at the new address.`，标题是
+`["Edit ", <名称>, " connection"]` 拼串）；模型目录新增 **`GPT-6.1 Sol`**（tagline `OpenAI flagship`），
+给 `Muse Spark 1.3` 补了新徽标（`New: Meta's Muse Spark 1.3, 1M context, on every paid plan.`）与
+`Falls back when busy`，`GLM 5.3 Flash` 挂上**限时促销价**（`Ending soon` / `Promotional · 1 session
+a day` / `Deal ends Sep 30 · 15/hr after`）；侧栏新增**「需要输入」状态**（`Needs input` /
+`${m} · Needs input` / `${m}${i?", needs input":…}`）与 `${t} ${t===1?"thread needs":"threads need"}
+input` 计数标签。**上游把 0.0.152 刚上线的会话列表右键菜单整条删了**（`menu:threadContext` 与 preload 的
+`threadContextMenu` 都不在了），更新对话框的六条旧文案、一条标注空间提示与两条旧模型 tagline 一并下线。
+
+- **文案**：真新增 39 条（`exact` 35 / `template` 1 / `code` 3），下线 9 条，另有 9 条因上游改写、
+  重压缩换了变量名而**原地迁移**（译文未动：`Project: ${f}` → `${h}`、`Remove ${Oe.configKey}` →
+  `${Te.configKey}`、`([I,z])` → `([Q,z])`、`" code comment",f.length` → `,h.length` 等）。
+  片段级 1480 → 1496 处（新增 24、下线 9、疑似改写 0 组），字面量级 2062 → 2091 条
+  （新增 37，其中 15 条片段级没报到）。词典 1791 → 1821 条，替换总数 2162 → 2203、全命中。
+- **通道拆分**：两条模板整条写进 `template` 会让片段级对差判成「未覆盖」（它按 key 剥掉插值后比对），
+  按 0.0.152 的同款做法拆开——侧栏状态标签拆成三条 `exact`（`, needs input` / `, working` /
+  `, unread update`），计数标签拆成两句 `exact` ＋ 一条 `code` 收掉插值后的 `} input`。
+- **词典够不着的位置**：菜单项 `Delete` 被上游加了图标（值从 `children:"Delete"` 变成数组元素）、
+  `["Edit ", <名称>, " connection"]` 是 children 拼串——`pattern` 只认第 0 层字面量，够不着，
+  两处都改走 `code` 精确片段。
+- **主进程**：`electron/` 37 个文件里 `main.cjs` / `preload.cjs` 变了——上游**删掉**了 0.0.152 的
+  `menu:threadContext` 与 `threadContextMenu`，补丁里对应的那个 hunk 与 `tools/postbuild.js` 的
+  `删除会话` 哨兵一并退场；其余 11 个补丁一次干净套用（补丁数仍 12，无需 reanchor / regen）。
+- **UI 行为补丁**：两组仍判 `KEEP`——上游没碰流式序号与令牌缓存，探针在原版里都能复现、在产物里都能证伪。
+- **登记表**：新增 5 条 fragments（`peak deal-ending` / `peak promotional` / `recommended new-model`
+  三个 CSS 类名，与 API 路径 `/api/ad/proposal/ /cancel`、`/api/mcp/servers/ /connection`）
+  与 1 条 uiStrings（模型名 `GPT-6.1 Sol`）。
+- **四道发布闸门全绿**：主进程英文扫描 0 条疑似文案；回归闸门（对比 `pack-v0.0.152`）新版独有英文 0 处；
+  单词级界面文案差集 0 处（本版初检报出的 5 处界面位置英文——`Cancel task` / `Resume` / `Delete` /
+  `Edit ` / `${…} · Needs input`——已全部补翻；残留英文 14 → 13 条，均为品牌名 / 模型名 / 代码串）；
+  字面量占用无冲突。
+- **影响面**：`targetVersion` / `packVersion` 同时升到 0.0.153，已装 0.0.152 的机器按常规比较会自动拉到这一版。
+
 ## [0.0.152] · 2026-09-29（已发布 `pack-v0.0.152`）
 
 上游这一版把**引导与余额这两块界面翻新了**：新用户会先过一套多步提问（`A few quick questions`，

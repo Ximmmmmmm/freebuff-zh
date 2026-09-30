@@ -4,19 +4,19 @@
 ![GitHub last commit](https://img.shields.io/github/last-commit/Ximmmmmmm/freebuff-zh)
 ![GitHub Repo stars](https://img.shields.io/github/stars/Ximmmmmmm/freebuff-zh?style=social)
 ![GitHub forks](https://img.shields.io/github/forks/Ximmmmmmm/freebuff-zh?style=social)
-[![Target](https://img.shields.io/badge/目标-Freebuff%20Desktop%20v0.0.152-blue)](https://freebuff.com)
+[![Target](https://img.shields.io/badge/目标-Freebuff%20Desktop%20v0.0.153-blue)](https://freebuff.com)
 [![lint](https://github.com/Ximmmmmmm/freebuff-zh/actions/workflows/ci.yml/badge.svg)](https://github.com/Ximmmmmmm/freebuff-zh/actions/workflows/ci.yml)
 
 **中文关键词 / Keywords**: Freebuff 汉化、Freebuff 中文版、Freebuff Chinese localization、AI coding agent 中文、Freebuff 翻译、Electron 汉化、localization pack
 
-Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.152）的**简体中文汉化包**，直接修改已打包产物，无需源码、不涉及任何联网改动。
+Freebuff Desktop（`@codebuff/freebuff-desktop` v0.0.153）的**简体中文汉化包**，直接修改已打包产物，无需源码、不涉及任何联网改动。
 
 > **English**: A Simplified-Chinese localization pack for Freebuff Desktop — the free AI coding agent. Patches the packaged app directly, no source build required. If you're a Chinese-speaking Freebuff user, this is for you.
 
 ## ✨ 特性
 
-- **覆盖全面**：渲染进程约 2164 处文案 + 主进程菜单 / 对话框 / 同意窗口全面中文化
-- **词典驱动**：`dict.json` 共 1791 条（exact 1408 / template 274 / code 21 / pattern 88），幂等应用、可审计
+- **覆盖全面**：渲染进程约 2203 处文案 + 主进程菜单 / 对话框 / 同意窗口全面中文化
+- **词典驱动**：`dict.json` 共 1821 条（exact 1434 / template 275 / code 24 / pattern 88），幂等应用、可审计
 - **可复现构建**：`build.sh` 从「原版 + 词典 + 补丁」**逐字节重建**产物，每次适配都过一遍防呆自检
 - **漏翻藏不住**：构建后自检、UI 残留扫描、主进程扫描、上游新增文案对差、单词级差集、字面量占用、补丁锚点预检与重生成——每类静默失败都有对应闸门
 - **跟着上游走**：Freebuff 出新版后 `bash tools/update.sh` 一条命令跑完迁移（重映射 → 体检 → 构建 → 扫描 → 差集 → 汇总）
@@ -98,7 +98,7 @@ bash build.sh <app.asar> <ui-dir>   # 或显式指定原版文件
 ## ⚠️ 注意事项
 
 - **自动更新会覆盖汉化**：应用自带 electron-updater。装有多开控制器时会自动换回中文（无开关、无需点按钮）；不用控制器就重新执行 `apply.sh`。
-- **有意保留英文的部分**：编程语言名、主题名、键盘键名、模型名、内部枚举与类型名、库内部错误信息、`Freebucks` 品牌词——改动会破坏逻辑或品牌一致性。当前界面属性位置残留英文 **14 条**，均属上述类别。
+- **有意保留英文的部分**：编程语言名、主题名、键盘键名、模型名、内部枚举与类型名、库内部错误信息、`Freebucks` 品牌词——改动会破坏逻辑或品牌一致性。当前界面属性位置残留英文 **13 条**，均属上述类别。
 - **界面汉化 ≠ AI 回复中文**：本包只翻译界面文案。想让 AI 固定用简体中文回复，需要家目录的 `~\.AGENTS.md` 语言规则（配套多开控制器启动时会自动写入，含**抗注入条款**；不依赖汉化包与 Freebuff 版本，仅对新会话生效）。
 - 汉化不涉及任何联网、上传或凭据改动。
 

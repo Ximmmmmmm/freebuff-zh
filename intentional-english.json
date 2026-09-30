@@ -46,6 +46,26 @@
     {
       "text": "noopener noreferrer sponsored",
       "why": "HTML rel 属性值（`rel:\"noopener noreferrer sponsored\"`，0.0.148 给赞助卡片链接的 target=_blank 加上了 sponsored），浏览器按这个字符串判定链接关系；与 className 那几条同类，翻掉就不再是有效的 rel 值。"
+    },
+    {
+      "text": "peak deal-ending",
+      "why": "CSS 类名（`dealEndingSoon` 徽标的 `cls:\"peak deal-ending\"`，0.0.153 新增的「优惠即将结束」角标），是给样式表定位用的，翻掉就没有对应样式了——与已登记的 `streak-day on` / `model-badge muted` 同类。"
+    },
+    {
+      "text": "peak promotional",
+      "why": "CSS 类名（`promotional` 徽标的 `cls:\"peak promotional\"`，0.0.153 新增的「促销价」角标），同上。"
+    },
+    {
+      "text": "recommended new-model",
+      "why": "CSS 类名（新模型徽标的 `cls:\"recommended new-model\"`，配合已翻译的 `New` 角标文案），同上。"
+    },
+    {
+      "text": "/api/ad/proposal/ /cancel",
+      "why": "API 路径（`adProposalCancel` 的请求地址 `/api/ad/proposal/${encodeURIComponent(t)}/cancel`，0.0.153 新增的「取消赞助任务」），是写给服务端读的 URL，不是界面文案；与已登记的 `/api/ad/proposal/ /connect` 同类——翻掉请求直接打不通。"
+    },
+    {
+      "text": "/api/mcp/servers/ /connection",
+      "why": "API 路径（`mcpServers` 一族的 `/api/mcp/servers/${encodeURIComponent(t)}/connection`，0.0.153 新增的「编辑 MCP 连接」），同上。"
     }
   ],
   "uiStrings": [
@@ -124,6 +144,10 @@
     {
       "text": "Initial commit",
       "why": "Git 提交信息（说明里给出的 `git commit -m \"Initial commit\"` 参数，实际会出现在用户的 git log 里，保留英文才不会与真实提交信息对不上）"
+    },
+    {
+      "text": "GPT-6.1 Sol",
+      "why": "模型名（0.0.153 新增模型，`displayName:\"GPT-6.1 Sol\"`，displayName 按约定保留英文，与选择器里其他模型一致）"
     }
   ]
 }

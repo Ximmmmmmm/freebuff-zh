@@ -199,8 +199,6 @@ const MAIN_SENTINELS = {
     '导出为 Markdown…',
     '移到新窗口',
     '将标签页移到新窗口',
-    // 会话列表右键菜单（0.0.152 新增「Delete Thread」）
-    '删除会话',
     // 窗口按钮区（titleBarOverlay）跟随 UI 的 --chrome / --faint / --tabbar-height（产物改动，不是翻译）：
     // 上游给 UI 换了新配色、又把 --tabbar-height 覆盖成 48px，主进程那张影子表却留着旧值，
     // 于是窗口按钮区在标签条右侧露出一块颜色、高度与图标深浅都对不上的矩形。
