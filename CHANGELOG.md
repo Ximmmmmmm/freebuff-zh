@@ -4,6 +4,80 @@
 > 逐条账目（对差统计、词典条数与替换次数、各扫描的残留条数、发布包哈希）与工具口径不收在这里——
 > 需要时看 `git log`：每次适配与发布的提交里都写着完整过程。
 
+## [0.0.155] · 2026-10-01（已发布 `pack-v0.0.155`）
+
+上游这一版加了**跨项目搜索**：顶部搜索能搜会话、文件与文件内容（`Search chats and files` /
+`Files and folders` / `Recent chats` / `Across your projects` / `File content`），检索过程中给出
+`Looking through your projects…` / `Updating search results…`，查无结果时提示 `No matches found` 与
+`Try another word, chat topic, or file name.`，空态是 `Your recent chats will appear here`；结果面板带
+`Replace all matches` 与 `Close search`。设置页新增 **`Interface size`**（`Scale text, icons, and
+controls…`、`${n} pixels`、两端标注 `Smaller` / `Larger`），窗口缩放随之从 WebView 改为主进程写一份
+本机偏好（并同步窗口按钮区高度）。**手机同步整条下线**（`Sign in to enable.` / `Mirror to my phone` /
+`This computer:` / `No matching threads.` / `Search threads` 等 7 条不再出现），工具输出侧补了
+`Delete file` / `Opening…`。
+
+- **文案**：片段级新增 27 处、下线 4 处、疑似改写 2 组；字面量级新增 40 条。词典 1829 → 1867 条
+  （`exact` 1469 / `template` 276 / `code` 33 / `pattern` 89），替换总数 2213 → 2255、全命中。
+  73 条模板变量自动迁移，8 条 remap 歧义（上游重压缩换了变量名）逐条按新形态修好，没有条目掉队。
+- **单词级补漏**：`uipos_gap` 闸门报出的 7 处本版新界面文案——编辑工具的 diff 标签（`Before` / `After`）、
+  界面大小滑杆两端的标注（`Smaller` / `Larger`）、命令面板的快捷键提示（` Navigate ` / ` Open`，保留
+  原样的空格分隔）、diff 分段的 aria-label `Edit ${n+1}: ${path}`——每条在 bundle 里都只有 1 处出现、
+  且都落在界面位置，全部按 `exact` / `template` 精确替换。
+- **主进程**：`main.cjs` 补丁用 `regen_patch` 重生成（27 hunks / 435 行）、`mcp-consent-bridge.cjs` 重
+  锚定，其余一次干净套用；**新增第 13 个补丁** `electron-zoom-menu.cjs.patch`——上游把缩放菜单从
+  Electron 内建 `role`（随系统语言自动本地化）换成硬编码 `label`，`Actual Size` / `Zoom In` / `Zoom Out`
+  会以英文直接出现在 View 菜单里，补翻成「实际大小 / 放大 / 缩小」并加译文哨兵。
+- **约定保留**新增 6 条：界面缩放的 IPC 校验与安全错误 2 条（渲染端 catch 后显示自己的文案）、内存版
+  safeStorage 的错误串 2 条（该文件仅 dev / 测试注入，打包版永不加载）、日志 1 条、字体名 `Google Sans` 1 条。
+- **UI 行为补丁**：两组仍判 `KEEP`；窗口按钮区行为取证（`tools/probe_shell_colors.js`）随 0.0.154.1 一并进
+  `build.sh` 自检，本版产物全绿（深色 / 浅色 / 高度与界面 CSS 一致）。
+- **四道发布闸门全绿**：主进程英文扫描 0 条疑似文案；回归闸门（对比 `pack-v0.0.154`）0 处；单词级界面文案
+  差集 0 处（初检 7 处已补）；字面量占用无冲突。
+- **影响面**：`targetVersion` / `packVersion` 同时升到 0.0.155；上一轮改动（窗口按钮区配色修正）原计划单独发
+  0.0.154.1，现并入本版一起发布。
+
+### 记一笔：语义守卫被正则字面量带偏，`regen_patch` 静默丢块
+
+本版 bundle 新增了一处带裸引号的正则字面量（`/[\n"\\]/g`），`tools/semantic_guard.js` 的扫描器不认正则，
+把它当成字符串起点，引号配对整体错位 2600 字符，于是把 Freebucks 定价的中文误报成「semantic API argument」
+——`postbuild` 直接中止构建（0.0.154 没有这处正则，所以直到这一版才暴露）。修法是给扫描器补上正则词法
+（`isRegexStart` / `skipRegex`，模板 `${}` 内部一并处理），并新增 `tools/test_semantic_guard.js`（5 组用例，
+含真实产物回放）进 CI。
+
+另一处是 `tools/regen_patch.js`：它只搬「删除块 + 等长新增块」的映射，纯新增块带不上——0.0.154.1 的
+`HANHUA_SHELL_COLORS` 插入段（61 行）就这么被静默丢过一次（靠 `postbuild` 哨兵才逮住）。现在
+`plainAdditions()` 会把纯新增块在输出里点名，`tools/test_regen_patch.js` 也补了对应用例；本次重生成
+`main.cjs` 补丁时靠它把丢掉的那段原样回插。
+
+### 记一笔：`Edit` / `Write` 的精确制导
+
+`Edit` / `Write` 既是界面文案（差异评论的编辑按钮、工具名 → 显示标签表），又是协议工具名的**比较值**
+（`n === "Edit"`，比较对象来自外部数据）——整体 `exact` 会把后者一起翻掉，语义守卫当场拦下。现在改成
+`pattern` 一处 + 8 条 `code` 具名片段，只翻显示位置，两处协议比较保持英文。
+
+### 并入的窗口按钮区配色修正（原计划 `pack-v0.0.154.1`）
+
+0.0.154 装机后，窗口右上角那三个系统按钮（— □ ×）底下一块矩形颜色与标签条**对不上**（实测按钮区
+`#f0f0f0` 中性灰、标签条 `#e3e7e4`，差 13 级；高度是对的）。成因是这版上游把最外层配色改成**转发**：
+CSS 里 `:root[data-theme=light]{--shell-base:#e3e7e4; … --chrome:var(--shell-base)}`，而标题栏补丁的
+`lastVar()` 取到的是字符串 `var(--shell-base)`，直接当了 `titleBarOverlay.color`——那不是颜色，
+Electron 只好回落成系统默认底色。**哨兵全绿**：`overlay: HANHUA_SHELL_COLORS.light,` 这行文本一个字
+都没变，变的只是它的值。浅色下的正确值恰好等于补丁的 `fallback`，所以看起来「像是对的」。
+
+- **修法**：`HANHUA_SHELL_COLORS` 里顺着 `var()` 引用解到底（同一选择器的块从后往前找，最多 6 层、
+  防环），并要求结果匹配颜色字面量（`#hex` / `rgb()` / `hsl()`）；解不出、成环、不是颜色一律按
+  「读不到」处理，回落 `fallback`——最坏等于上游写死值，不会比原版更糟。深色侧同一处转发一并修好。
+- **新的行为取证**：`tools/probe_shell_colors.js`——把产物 `main.cjs` 里的 `HANHUA_SHELL_COLORS`
+  **原样抽出来**跑一遍，再拿界面 CSS **独立**解一遍（不复用补丁的代码），比对底色 / 图标色 / 高度。
+  判据刻意分成两层：① 四个颜色必须都是颜色字面量（把「转发没解到底」直接钉死）；② 必须等于界面
+  CSS 级联的实际值。`build.sh` 的自检（`tools/postbuild.js`）现在会对产物跑它，rc 1 直接中止构建；
+  自测 `tools/test_probe_shell_colors.js` 进 CI，其中「修好的块 rc 0 / 旧写法 rc 1」两条用例直接
+  从 `patches/electron-main.cjs.patch` 的新增行里拼块——补丁改坏了自测就红。
+- **踩坑（写给下一个探针）**：块里用的 `fs` / `path` 是 main.cjs 的**模块级**绑定，沙箱必须一并注入；
+  少了它们块会进 `catch`、静默回落成写死值，探针于是把「读不到 CSS」误报成「值不对」。同样地，
+  取界面 CSS 时按 `resourcesPath/orchestrator/ui` 搭临时舞台目录——直接指 `output/ui` 是读不到的。
+- **影响面**：这一轮原计划单独发 0.0.154.1，现并入 0.0.155 一起发布——装机后右上角那块色差随之消失。
+
 ## [0.0.154] · 2026-09-30（已发布 `pack-v0.0.154`）
 
 上游这一版给**外壳补上了应用级导航**：侧栏顶部多了 `App navigation`（`Home` 按钮 +

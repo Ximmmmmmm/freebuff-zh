@@ -206,6 +206,9 @@ const MAIN_SENTINELS = {
     'overlay: HANHUA_SHELL_COLORS.light,',
     'overlaySymbol: HANHUA_SHELL_COLORS.symbolLight,',
     'height: HANHUA_SHELL_COLORS.height,',
+    // 0.0.154 修的那一半：CSS 最外层的 --chrome 是 `var(--shell-base)` 的转发，必须解到底再交出去。
+    // 没有它就等于回到「把 var(...) 字符串当颜色」——哨兵只查上面那几行文本，查不出这个差别。
+    'const shellColor = (re, name, fallbackValue) => {',
   ],
   'electron/orchestrator-failure.cjs': [
     '编排器未能在规定时间内就绪。',
@@ -221,6 +224,9 @@ const MAIN_SENTINELS = {
   ],
   'electron/linux-launch.cjs': ['无法启动所需的子进程。'],
   'electron/open-in.cjs': ['复制路径'],
+  // 0.0.155 起缩放菜单从 Electron 内建 role（随系统语言自动本地化）换成硬编码 label，
+  // 三项都会直接出现在 View 菜单里，靠 patches/electron-zoom-menu.cjs.patch 补翻。
+  'electron/zoom-menu.cjs': ['实际大小', '放大', '缩小'],
   // electron/updater.cjs 的译文哨兵随「暂停更新」补丁一起退场：0.0.148 上游删掉了
   // 整个暂停机制（loadState / saveState / validPauseDate 与 set-pause IPC 全无），
   // 那两条报错已不存在，补丁与哨兵都不再需要。
@@ -250,6 +256,26 @@ if (mainSrc) {
     const text = fs.readFileSync(f, 'utf8')
     for (const s of MAIN_SENTINELS[rel]) {
       if (!text.includes(s)) bad(`${rel} 缺少译文哨兵「${s}」—— 对应补丁可能未套用`)
+    }
+  }
+  // 窗口按钮区不能只看哨兵：0.0.154 装机后右上角那块色差就是「补丁文本一个字节没变、值却不对」
+  // （把 `var(--shell-base)` 当颜色交出去，Electron 回落成系统默认底色），哨兵全绿、用户照样看得见。
+  // 所以再拿产物 main.cjs 与产物 ui 跑一次行为取证：rc 1 = 值不对（挡住），rc 2 = 拿不到证据（只警告）。
+  {
+    const mainCjs = path.join(mainSrc, 'electron', 'main.cjs')
+    if (fs.existsSync(mainCjs)) {
+      try {
+        execFileSync(
+          process.execPath,
+          [path.join(__dirname, 'probe_shell_colors.js'), mainCjs, '--ui', path.join(outDir, 'ui'), '--expect', 'ok'],
+          { stdio: 'pipe' },
+        )
+        ok('窗口按钮区行为取证通过（底色 / 图标色 / 高度与界面 CSS 一致）')
+      } catch (e) {
+        const out = `${e.stdout || ''}${e.stderr || ''}`.trim()
+        if (e.status === 1) bad(`窗口按钮区与界面 CSS 对不上（tools/probe_shell_colors.js）:\n${out}`)
+        else warn(`窗口按钮区行为取证拿不到证据（rc ${e.status ?? '?'}）—— 补丁效果未经实测，仅凭哨兵放行:\n${out}`)
+      }
     }
   }
   for (const rel of Object.keys(OPTIONAL_SENTINELS)) {

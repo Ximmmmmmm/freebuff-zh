@@ -40,10 +40,13 @@ jobs:
         run: node tools/test_pristine.js
       - name: UI 行为补丁自测（改名抗性 / 唯一命中 / 幂等）
         run: node tools/test_ui_code_patch.js
+      - name: 语义守卫自测（正则字面量不假阳性 / 真语义位置仍拦下）
+        run: node tools/test_semantic_guard.js
       - name: 行为取证探针自测（拿不到证据必须 rc 2，不冒充判决）
         run: |
           node tools/test_probe_stream_epoch.js
           node tools/test_probe_token_epoch.js
+          node tools/test_probe_shell_colors.js
       - name: 退场判定自测（决策表 / 退出码契约 / 删除清单完整性）
         run: node tools/test_ui_patch_status.js
       - name: 词条命中体检自测（只在主进程 / 只在上版 / 哪都没有 / 退出码）

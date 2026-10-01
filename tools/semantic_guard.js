@@ -120,6 +120,49 @@ function decodeDoubleQuoted(raw) {
   }
 }
 
+// 正则字面量的词法：扫描器只走引号 / 模板，而正则体里的裸引号 / 反引号会把后面的
+// 引号配对整体带偏——0.0.155 实测 `var XG=/[\n"\\\\]/g`（正则体内一个裸引号）让此后
+// 2600 字符的代码被判成「一个字面量」，审计把该段里的中文（Freebucks 定价）报成
+// 「API 参数里出现中文」，postbuild 据此中止构建（假阳性）。
+//
+// 判断一个 `/` 是正则开头还是除号：看上一个有效字符——标点（`(` `=` `,` `:` `[` …）后
+// 是正则，标识符 / `)` / `]` / 数字后是除号；`return` / `typeof` 这类关键字以标识符结尾，
+// 单独按词尾判定。判错一个方向都要出事：当正则越过会吞掉真命中（漏报），当除号越过会把
+// 后面的引号配对带偏（假阳性，正是本次事故）。所以只在标点后严格成立时才跳过。
+const REGEX_ALLOWED_AFTER = '([{,;=:!&|?+-*%~^<>'
+const REGEX_KEYWORD_BEFORE = /(?:^|[^\w$])(?:return|typeof|instanceof|new|delete|void|do|else|in|of|case|yield|await)$/
+
+function isRegexStart(source, at) {
+  for (let p = at - 1; p >= 0; p--) {
+    const ch = source[p]
+    if (ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r') continue
+    if (REGEX_ALLOWED_AFTER.includes(ch)) return true
+    return REGEX_KEYWORD_BEFORE.test(source.slice(Math.max(0, p - 12), p + 1))
+  }
+  return true
+}
+
+// 从 `/` 之后跳到正则结束：处理转义与字符类（`[/]` 里的 `/` 不结束正则），带上 flags。
+// 不是正则（未闭合 / 跨行）返回 -1，交给正常扫描。
+function skipRegex(source, from, to) {
+  let i = from
+  let inClass = false
+  while (i < to) {
+    const ch = source[i]
+    if (ch === '\\') { i += 2; continue }
+    if (ch === '[') { inClass = true; i++; continue }
+    if (ch === ']') { inClass = false; i++; continue }
+    if (ch === '/' && !inClass) {
+      i++
+      while (i < to && /[a-z]/i.test(source[i])) i++
+      return i
+    }
+    if (ch === '\n') return -1
+    i++
+  }
+  return -1
+}
+
 /**
  * 扫出「中文落在语义位置」的字面量。
  *
@@ -159,6 +202,11 @@ function findUnsafeMatches(source) {
         const close = source.indexOf('*/', i + 2)
         i = close < 0 || close > to ? to : close + 2
         continue
+      }
+      // 正则字面量整体跳过（正则体里的引号 / 反引号不是字符串定界符）
+      if (c === '/' && isRegexStart(source, i)) {
+        const after = skipRegex(source, i + 1, to)
+        if (after > 0) { i = after; continue }
       }
       if (c === '"' || c === "'") {
         let raw = ''
@@ -207,6 +255,23 @@ function findUnsafeMatches(source) {
                 k++
                 continue
               }
+              // 表达式里的注释与正则：`["}]` 这种正则里的引号 / 花括号同样会带偏配平
+              if (cc === '/') {
+                if (source[k + 1] === '/') {
+                  const nl = source.indexOf('\n', k)
+                  k = nl < 0 || nl > to ? to : nl + 1
+                  continue
+                }
+                if (source[k + 1] === '*') {
+                  const close = source.indexOf('*/', k + 2)
+                  k = close < 0 || close > to ? to : close + 2
+                  continue
+                }
+                if (isRegexStart(source, k)) {
+                  const after = skipRegex(source, k + 1, to)
+                  if (after > 0) { k = after; continue }
+                }
+              }
               if (cc === '{') depth++
               else if (cc === '}') depth--
               k++
@@ -236,4 +301,6 @@ module.exports = {
   contextReason,
   findUnsafeMatches,
   hasCJK,
+  isRegexStart,
+  skipRegex,
 }

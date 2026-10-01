@@ -1,6 +1,6 @@
 --- a/electron/main.cjs
 +++ b/electron/main.cjs
-@@ -174,10 +174,52 @@
+@@ -177,11 +177,72 @@
  /** @type {string | null} */
  let appUrl = null
  
@@ -10,6 +10,8 @@
 +// 未必同值，抄错一次按钮区就在标签条右侧露出一块对不上的矩形。这里改成从 UI 的 CSS 里读实际值，
 +// 以后再换配色自动跟上；读不到时回落到下面这组当前值（＝上游本版的写死值），不会比上游更糟。
 +// 上游若再改这一节，补丁本身不用跟：CSS 读得到就用 CSS 的值。
++// 唯一的例外是**转发**：0.0.154 起最外那层写的是 `--chrome: var(--shell-base)`，读到的
++// 必须是一路解到底的颜色字面量（见下面的 shellColor）。
 +const HANHUA_SHELL_COLORS = (() => {
 +  const fallback = { dark: '#292b2a', light: '#e3e7e4', symbolDark: '#dedfdd', symbolLight: '#232b26', height: 48 }
 +  try {
@@ -27,6 +29,23 @@
 +      }
 +      return null
 +    }
++    // 变量常只是转发：`--chrome: var(--shell-base)`。把 `var(--shell-base)` 这个字符串当颜色
++    // 交给 Electron 不是颜色——按钮区会退回系统默认底色（中性灰），在标签条右侧露出一块对
++    // 不上的矩形。所以顺着引用解到底，并要求结果确实像个颜色字面量；解不出来 / 解出来不是
++    // 颜色时一律按「读不到」处理，回落 fallback（最坏等于上游写死的那组值）。
++    const isColor = (v) => /^(#[0-9a-fA-F]{3,8}|rgba?\(|hsla?\()/.test(v)
++    const shellColor = (re, name, fallbackValue) => {
++      const seen = []
++      let value = lastVar(re, name)
++      while (value && seen.length < 6) {
++        const ref = value.match(/^var\(\s*--([\w-]+)\s*(?:,\s*(.+?))?\s*\)$/)
++        if (!ref) break
++        if (seen.includes(ref[1])) return fallbackValue // 自引用 / 成环
++        seen.push(ref[1])
++        value = lastVar(re, ref[1]) || (ref[2] ? ref[2].trim() : null)
++      }
++      return value && isColor(value) ? value : fallbackValue
++    }
 +    const heights = [...css.matchAll(/--tabbar-height:\s*([\d.]+)px/g)]
 +    const barHeight = heights.length ? Math.round(parseFloat(heights[heights.length - 1][1])) : fallback.height
 +    // 标签条底部那条 1px 边框（--border）会被原生 overlay 盖住，右侧就只剩色块、没有分界线了：
@@ -35,10 +54,10 @@
 +    const barBorder = (barRule || '').match(/border-bottom:\s*([\d.]+)px/)
 +    const barInset = barBorder ? parseFloat(barBorder[1]) : 0
 +    return {
-+      dark: lastVar(/:root\s*\{([^}]*)\}/g, 'chrome') || fallback.dark,
-+      light: lastVar(/:root\[data-theme=light\]\s*\{([^}]*)\}/g, 'chrome') || fallback.light,
-+      symbolDark: lastVar(/:root\s*\{([^}]*)\}/g, 'faint') || fallback.symbolDark,
-+      symbolLight: lastVar(/:root\[data-theme=light\]\s*\{([^}]*)\}/g, 'faint') || fallback.symbolLight,
++      dark: shellColor(/:root\s*\{([^}]*)\}/g, 'chrome', fallback.dark),
++      light: shellColor(/:root\[data-theme=light\]\s*\{([^}]*)\}/g, 'chrome', fallback.light),
++      symbolDark: shellColor(/:root\s*\{([^}]*)\}/g, 'faint', fallback.symbolDark),
++      symbolLight: shellColor(/:root\[data-theme=light\]\s*\{([^}]*)\}/g, 'faint', fallback.symbolLight),
 +      height: Math.max(0, barHeight - barInset),
 +    }
 +  } catch {
@@ -50,22 +69,24 @@
    dark: {
      background: '#292b2a',
 -    overlay: '#292b2a',
-+    overlay: HANHUA_SHELL_COLORS.dark,
 -    overlaySymbol: '#dedfdd',
++    overlay: HANHUA_SHELL_COLORS.dark,
 +    overlaySymbol: HANHUA_SHELL_COLORS.symbolDark,
      // the renderer's --surface-2 / --brand-dim: the splash bar and the one the app holds after it
      // are the same bar, and a colour change between them would show as a flicker
-@@ -186,7 +228,7 @@
+     splashTrack: '#282a29',
+@@ -189,8 +250,8 @@
    },
    light: {
      background: '#e3e7e4',
 -    overlay: '#e3e7e4',
-+    overlay: HANHUA_SHELL_COLORS.light,
 -    overlaySymbol: '#232b26',
++    overlay: HANHUA_SHELL_COLORS.light,
 +    overlaySymbol: HANHUA_SHELL_COLORS.symbolLight,
      splashTrack: '#e9ede8',
      splashBar: '#5e774e',
-@@ -512,14 +554,14 @@
+   },
+@@ -535,14 +596,14 @@
    const buttons = []
    const actions = []
    if (compatibilityBuildUrl) {
@@ -83,7 +104,7 @@
    actions.push(() => {})
  
    const options = {
-@@ -544,10 +586,13 @@
+@@ -567,10 +628,10 @@
    return new Promise((resolve, reject) => {
      const { bun, args, cwd, uiDir, wasmDir, packaged } = resolveOrchestrator()
      const capture = createStderrCapture(bun, args)
@@ -91,17 +112,14 @@
 -    // Published to the renderer only once the orchestrator holding it is the
 -    // one being started; a crash restart mints a new one and the renderer
 -    // re-reads it on its next call.
-+    // 汉化包补丁：orchestrator 崩溃重启时沿用本次应用会话已发出的 launch id。
-+    // 渲染进程（preload.cjs 的 apiToken）只把这个令牌读一次就永久缓存，并不会
-+    // 「在下次调用时重读」；重启换一个新 id 的话，此后每个写操作（发消息 / 停止 /
-+    // 编辑 / 重命名…）都会被本机 orchestrator 判为 403 {"error":"forbidden"}，
-+    // 界面只显示「消息未发送: forbidden」，直到窗口重载。复用同一 id 不改变安全
-+    // 边界：它依旧只经同步 IPC 交给本窗口，从不进 argv。
++    // 汉化包补丁：orchestrator 崩溃重启时沿用本次应用会话已发出的 launch id（渲染进程
++    // preload.cjs 的 apiToken 只把令牌读一次就永久缓存，换新 id 会让此后每个写操作被
++    // 判 403 forbidden：发消息 / 停止 / 编辑 / 重命名…；复用同一 id 不改变安全边界）。
 +    const launchId = apiLaunchToken ?? randomUUID()
      apiLaunchToken = launchId
      let exited = false
      let ready = false
-@@ -589,7 +634,7 @@
+@@ -612,7 +673,7 @@
      }
  
      if (!shellLifetime) {
@@ -109,8 +127,8 @@
 +      rejectStartup(failure('spawn', { errorMessage: 'Shell 生命周期服务不可用。' }))
        return
      }
-     const env = {
-@@ -651,10 +696,10 @@
+     // No secret goes in `env`. Another process of the same user reads a child's STARTING environment
+@@ -682,10 +743,10 @@
        rejectStartup(
          failure('spawn', {
            errorMessage:
@@ -124,7 +142,7 @@
          }),
        )
      })
-@@ -750,7 +795,7 @@
+@@ -793,7 +854,7 @@
          closed
            ? failure('timeout')
            : failure('cleanup', {
@@ -133,7 +151,7 @@
              }),
        )
      }
-@@ -934,7 +979,7 @@
+@@ -977,7 +1038,7 @@
            titleBarOverlay: {
              color: colors.overlay,
              symbolColor: colors.overlaySymbol,
@@ -142,7 +160,7 @@
            },
          }
        : {}),
-@@ -1106,15 +1151,13 @@
+@@ -1151,15 +1212,15 @@
    try {
      const response = askSync(parent, {
        type: 'question',
@@ -157,12 +175,14 @@
 -        'continue automatically from their latest saved step. Completed steps, conversation ' +
 -        'context, and changes already written to your files are kept.',
 -      buttons: ['Cancel', 'Quit anyway'],
-+        '退出将立即停止智能体。下次打开 Freebuff 时，中断的轮次将从最近保存的步骤自动继续。已完成的步骤、对话上下文以及已写入你文件的更改都会保留。',
++        '退出将立即停止智能体。下次打开 Freebuff 时，中断的轮次将从最近保存的步骤' +
++        '自动继续。已完成的步骤、对话上下文，以及已经写入你文件的更改' +
++        '都会保留。',
 +      buttons: ['取消', '仍要退出'],
        // a stray Return keeps the agents alive
        defaultId: 0,
        cancelId: 0,
-@@ -1199,8 +1242,8 @@
+@@ -1244,8 +1305,8 @@
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return []
    const res = await dialog.showOpenDialog(win, {
@@ -173,7 +193,7 @@
      properties: attachmentDialogProperties(kind),
    })
    if (res.canceled) return []
-@@ -1229,13 +1272,13 @@
+@@ -1274,13 +1335,13 @@
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return []
    const res = await dialog.showOpenDialog(win, {
@@ -191,7 +211,7 @@
          extensions: [...VIEWABLE_IMAGE_EXTENSIONS, ...OTHER_IMAGE_EXTENSIONS],
        },
      ],
-@@ -1253,8 +1296,8 @@
+@@ -1298,8 +1359,8 @@
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return null
    const res = await dialog.showOpenDialog(win, {
@@ -202,7 +222,7 @@
      properties: ['openDirectory', 'createDirectory'],
    })
    return res.canceled || res.filePaths.length === 0 ? null : res.filePaths[0]
-@@ -1264,10 +1307,10 @@
+@@ -1309,10 +1370,10 @@
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return false
    if (typeof filename !== 'string' || typeof content !== 'string') {
@@ -215,7 +235,7 @@
      defaultPath: path.basename(filename),
      filters: [{ name: 'Markdown', extensions: ['md'] }],
      properties: ['createDirectory', 'showOverwriteConfirmation'],
-@@ -1360,17 +1403,17 @@
+@@ -1405,17 +1466,17 @@
  ipcMain.handle('shell:openIn', async (_event, request) => {
    try {
      if (!request || typeof request !== 'object' || Array.isArray(request)) {
@@ -238,7 +258,7 @@
  
      if (target.id === 'copy-path') {
        clipboard.writeText(resolved.requested)
-@@ -1383,7 +1426,7 @@
+@@ -1428,7 +1489,7 @@
        }
      } else {
        const args = launchArgs(target, resolved, line)
@@ -247,7 +267,7 @@
        await new Promise((resolve, reject) => {
          const child = spawn(target.executable, args, {
            cwd: launchCwd(target, resolved),
-@@ -1400,7 +1443,7 @@
+@@ -1445,7 +1506,7 @@
      }
      return { ok: true, path: resolved.requested, openedPath: resolved.opened, fallback: resolved.fallback }
    } catch (error) {
@@ -256,20 +276,16 @@
    }
  })
  
-@@ -1474,7 +1517,11 @@
+@@ -1519,7 +1580,7 @@
    for (const win of BrowserWindow.getAllWindows()) {
      win.setBackgroundColor(colors.background)
      if (process.platform === 'win32') {
 -      win.setTitleBarOverlay({ color: colors.overlay, symbolColor: colors.overlaySymbol })
-+      win.setTitleBarOverlay({
-+        color: colors.overlay,
-+        symbolColor: colors.overlaySymbol,
-+        height: HANHUA_SHELL_COLORS.height,
-+      })
++      win.setTitleBarOverlay({ color: colors.overlay, symbolColor: colors.overlaySymbol, height: HANHUA_SHELL_COLORS.height })
      }
    }
  }
-@@ -1533,10 +1580,10 @@
+@@ -1587,10 +1648,10 @@
        resolve(action)
      }
      const menu = Menu.buildFromTemplate([
@@ -284,7 +300,7 @@
      ])
      menu.popup({
        window: BrowserWindow.fromWebContents(event.sender) ?? undefined,
-@@ -1559,9 +1606,9 @@
+@@ -1613,9 +1674,9 @@
              label: app.name,
              submenu: [
                { role: 'about' },
@@ -296,7 +312,7 @@
                { type: 'separator' },
                { role: 'services' },
                { type: 'separator' },
-@@ -1571,7 +1618,7 @@
+@@ -1625,7 +1686,7 @@
                { type: 'separator' },
                {
                  // not `role: 'quit'`: that reaches app.quit() directly, with no chance to ask
@@ -305,7 +321,7 @@
                  accelerator: 'Command+Q',
                  click: () => requestQuit(),
                },
-@@ -1580,16 +1627,16 @@
+@@ -1634,16 +1695,16 @@
          ]
        : []),
      {
@@ -326,7 +342,7 @@
            accelerator: 'CmdOrCtrl+Shift+T',
            click: () => sendMenuCommand('reopen-tab'),
          },
-@@ -1598,24 +1645,24 @@
+@@ -1652,24 +1713,24 @@
          // other, and on a fresh install its menu lists only the project already open — so ⌘O is
          // where someone who has never heard the word "space" is going to look.
          {
@@ -357,8 +373,8 @@
 +        { label: '重新加载应用', accelerator: 'CmdOrCtrl+R', click: () => reloadApp() },
          { role: 'toggleDevTools' },
          { type: 'separator' },
-         { role: 'resetZoom' },
-@@ -1625,15 +1672,15 @@
+         ...zoomMenuItems(process.platform, (action) => interfaceZoom.command(action)),
+@@ -1677,15 +1738,15 @@
          { role: 'togglefullscreen' },
        ],
      },
@@ -377,7 +393,7 @@
              ],
            },
          ]),
-@@ -1785,7 +1832,7 @@
+@@ -1850,7 +1911,7 @@
      if (err?.orchestratorFailure) {
        await showOrchestratorFailure(err.orchestratorFailure, win)
      } else {
@@ -386,7 +402,7 @@
      }
      app.quit()
      return
-@@ -1904,9 +1951,9 @@
+@@ -1969,9 +2030,9 @@
        canRelaunch: !!relaunchExecPath,
      })
      const buttons = canRetryWithoutSandbox
@@ -399,7 +415,7 @@
      // A launch failure this early can land before `ready`, where the dialog
      // module throws — and an exception here would replace the message we came to
      // show with a silent crash, which is the exact failure being fixed.
-@@ -1914,7 +1961,7 @@
+@@ -1979,7 +2040,7 @@
      // buttons, so the pre-ready path explains and quits rather than offering the
      // retry. Nothing is running yet, so there is nothing to tear down.
      if (!app.isReady()) {
@@ -408,7 +424,7 @@
        app.exit(1)
        return
      }
-@@ -1922,7 +1969,7 @@
+@@ -1987,7 +2048,7 @@
      try {
        response = dialog.showMessageBoxSync({
          type: 'error',

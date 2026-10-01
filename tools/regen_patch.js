@@ -76,6 +76,29 @@ function translationMap(patchText) {
   return { map, unpaired }
 }
 
+// 纯函数：补丁文本 → 纯新增块（前面没有删除块的 add 段）。
+// 它们不是「译文映射」，重生成带不上——0.0.154.1 的 HANHUA_SHELL_COLORS 插入段就是这么从
+// 补丁里消失的（postbuild 哨兵逮住了，但那已是事后）。挑出来在重生成时点名，别让它悄悄丢。
+function plainAdditions(patchText) {
+  const segs = []
+  for (const raw of patchText.split('\n')) {
+    const l = raw.replace(/\r$/, '')
+    if (l.startsWith('@@ ') || l.startsWith('--- ') || l.startsWith('+++ ') || l.startsWith('diff ')) continue
+    const type = l.startsWith('-') ? 'del' : l.startsWith('+') ? 'add' : null
+    if (!type) continue
+    const last = segs[segs.length - 1]
+    if (last && last.type === type) last.lines.push(l.slice(1))
+    else segs.push({ type, lines: [l.slice(1)] })
+  }
+  const out = []
+  for (let i = 0; i < segs.length; i++) {
+    if (segs[i].type !== 'add') continue
+    if (segs[i - 1] && segs[i - 1].type === 'del') continue
+    out.push(segs[i].lines)
+  }
+  return out
+}
+
 // 纯函数：把映射套到目标行上；同一条英文行给了两种译文时报冲突（保留先到的那条）
 function applyMap(targetLines, map) {
   const byEn = new Map()
@@ -160,6 +183,13 @@ function regenOne(mirror, patchFile, opts) {
   }
   console.log(`  套用：替换 ${applied.replaced} 行 · 未命中 ${applied.missing.length} 行`)
   for (const en of applied.missing) console.log(`  ⚠ 新版原文里没有这一行（上游改写了那句？译文要按新句改）：${JSON.stringify(en)}`)
+  const plain = plainAdditions(text)
+  if (plain.length) {
+    const total = plain.reduce((n, b) => n + b.length, 0)
+    console.log(`  ! 补丁含 ${plain.length} 处纯新增块（共 ${total} 行，无对应删除行）——重生成只搬译文映射，不会带上它们：`)
+    for (const b of plain) console.log(`      ${JSON.stringify(b[0])}…（${b.length} 行）`)
+    console.log('      生成后务必核对 postbuild 的译文哨兵；少了就得把它们补回补丁（0.0.154.1 的 HANHUA_SHELL_COLORS 即此）')
+  }
   if (self.unpaired.length) {
     console.error(`  ✗ 有 ${self.unpaired.length} 个删除块配不上对（行数不等）——需要人工看：`)
     for (const block of self.unpaired) console.error(`      ${JSON.stringify(block)}`)
@@ -276,4 +306,4 @@ function main() {
 
 if (require.main === module) main()
 
-module.exports = { translationMap, applyMap, buildDiff }
+module.exports = { translationMap, plainAdditions, applyMap, buildDiff }

@@ -1,6 +1,6 @@
 --- a/electron/mcp-consent-bridge.cjs
 +++ b/electron/mcp-consent-bridge.cjs
-@@ -114,50 +114,50 @@
+@@ -117,50 +117,50 @@
  function describeLaunch(spec) {
    const lines = []
    if (spec && typeof spec.command === 'string') {
@@ -62,7 +62,7 @@
      }
      // The run starts from the last commit in its own worktree. Said plainly
      // when the folder is dirty: a user approving "this folder" otherwise
-@@ -168,13 +168,13 @@
+@@ -171,13 +171,13 @@
            ? clamp(spec.sponsored.sourceCommit).slice(0, 12)
            : ''
        lines.push(
@@ -79,7 +79,7 @@
    }
    return lines.join('\n')
  }
-@@ -231,7 +231,7 @@
+@@ -234,7 +234,7 @@
  
  /** The identity sentence. The CLI says the same words (`sponsored-proposal-block.tsx`). */
  const SPONSORED_SENTENCE =
@@ -88,7 +88,7 @@
  /**
   * The same sentence for an in-place run, which is a DIFFERENT decision.
   *
-@@ -246,7 +246,7 @@
+@@ -249,7 +249,7 @@
   * page's own copy (`consent-window.render.test.ts`).
   */
  const SPONSORED_IN_PLACE_SENTENCE =
@@ -97,7 +97,7 @@
  const sponsoredSentence = (advertiser, inPlace) =>
    `${clampName(advertiser)}${inPlace ? SPONSORED_IN_PLACE_SENTENCE : SPONSORED_SENTENCE}`
  
-@@ -263,7 +263,7 @@
+@@ -266,7 +266,7 @@
   * orchestrator will not use a Yes that does not.
   */
  const SPONSORED_WINDOWS_FLOOR_SENTENCE =
@@ -106,7 +106,7 @@
  
  function isRunnable(spec) {
    return Boolean(
-@@ -467,10 +467,10 @@
+@@ -493,10 +493,10 @@
          const explanation = sponsored
            ? ''
            : local
@@ -121,7 +121,7 @@
          // An in-place run answers an offer the user just accepted on the
          // card, so it asks an ordinary question rather than raising a
          // warning. Decline still holds focus (`defaultId`), so a stray Enter
-@@ -479,26 +479,26 @@
+@@ -505,26 +505,26 @@
          const choice = await confirm(parent, {
            type: inPlace ? 'question' : 'warning',
            buttons: inPlace

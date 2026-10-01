@@ -1,0 +1,23 @@
+diff --git a/electron/zoom-menu.cjs b/electron/zoom-menu.cjs
+index c84d049..ca8309d 100644
+--- a/electron/zoom-menu.cjs
++++ b/electron/zoom-menu.cjs
+@@ -1,10 +1,13 @@
+ function zoomMenuItems(platform, command) {
+   return [
+-    { label: 'Actual Size', accelerator: 'CmdOrCtrl+0', click: () => command('reset') },
+-    { label: 'Zoom In', accelerator: 'CmdOrCtrl+=', click: () => command('in') },
+-    { label: 'Zoom In', accelerator: 'CmdOrCtrl+Plus', visible: false, click: () => command('in') },
+-    ...(platform === 'win32' ? [{ label: 'Zoom In', accelerator: 'CmdOrCtrl+numadd', visible: false, click: () => command('in') }] : []),
+-    { label: 'Zoom Out', accelerator: 'CmdOrCtrl+-', click: () => command('out') },
++    // 汉化包补丁：0.0.155 起缩放菜单从 Electron 内建 role（由系统按语言自动本地化）
++    // 改成硬编码 label —— 这三项会直接出现在 View 菜单里，属于界面文案。
++    // （accelerator 是快捷键串，原样不动。）
++    { label: '实际大小', accelerator: 'CmdOrCtrl+0', click: () => command('reset') },
++    { label: '放大', accelerator: 'CmdOrCtrl+=', click: () => command('in') },
++    { label: '放大', accelerator: 'CmdOrCtrl+Plus', visible: false, click: () => command('in') },
++    ...(platform === 'win32' ? [{ label: '放大', accelerator: 'CmdOrCtrl+numadd', visible: false, click: () => command('in') }] : []),
++    { label: '缩小', accelerator: 'CmdOrCtrl+-', click: () => command('out') },
+   ]
+ }
+ 

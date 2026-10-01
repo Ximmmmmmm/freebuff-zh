@@ -7,12 +7,14 @@
 //      （夹具里放一句 `const label = "Cancel"`，它只会以「取消」的样子出现在生成结果里）；
 //   3. 真实场景：上游在 hunk 中间插行 → 旧补丁的上下文在新版里根本不存在（套不上），
 //      regen 只用映射就把它重新生成成**能干净套用**的补丁，且 --write 落盘后幂等；
-//   4. 失败要响：块配不上对 → rc 1 且不写盘；映射行在新版找不到 → 只警告（可能是上游删了那句）。
+//   4. 失败要响：块配不上对 → rc 1 且不写盘；映射行在新版找不到 → 只警告（可能是上游删了那句）；
+//   5. 纯新增块要点名：regen 只搬「删除块 + 等长新增块」的映射，纯新增块带不上——必须在
+//      输出里出声（0.0.154.1 的 HANHUA_SHELL_COLORS 插入段被静默丢过一次，靠 postbuild 哨兵才逮住）。
 'use strict'
 const fs = require('fs')
 const path = require('path')
 const { execFileSync } = require('child_process')
-const { translationMap, applyMap } = require('./regen_patch.js')
+const { translationMap, plainAdditions, applyMap } = require('./regen_patch.js')
 const { buildMirror } = require('./reanchor_patch.js')
 const { checkApply } = require('./patch_preflight.js')
 
@@ -102,6 +104,25 @@ const fromPatch = write(
   ].join('\n'),
 )
 
+// 含「纯新增块」的补丁：regen 的映射只认「删除块 + 等长新增块」，纯新增块搬不过去，
+// 所以必须在输出里点名，让维护者知道要拿原补丁里的新增段回插（0.0.154.1 被静默丢过一次）
+const insertPatch = write(
+  'patches/electron-insert.cjs.patch',
+  [
+    '--- a/electron/sample.cjs',
+    '+++ b/electron/sample.cjs',
+    '@@ -6,0 +7,2 @@',
+    '+// 汉化包补丁：新增的说明行',
+    '+const extra = 1',
+    '@@ -41,4 +43,4 @@',
+    ' function greet(name) {',
+    '-  return `Hello ${name}`',
+    '+  return `你好 ${name}`',
+    ' }',
+    '',
+  ].join('\n'),
+)
+
 let fail = 0
 const chk = (ok, msg) => {
   console.log((ok ? '  ok  ' : '  FAIL ') + msg)
@@ -128,6 +149,11 @@ const conflicts = applyMap(mirrored, [['  return `Hello ${name}`', '甲'], ['  r
 chk(conflicts.conflicts.length === 1 && conflicts.lines.join('\n').includes('甲'), '同一句两份译文 → 报冲突并保留先到的')
 fs.rmSync(mirror, { recursive: true, force: true })
 
+// --- 1b) 纯新增块点名 ----------------------------------------------------------------
+const pa = plainAdditions(fs.readFileSync(insertPatch, 'utf8'))
+chk(pa.length === 1 && pa[0].length === 2 && pa[0][0] === '// 汉化包补丁：新增的说明行', `纯新增块点名：${pa.length} 处 / ${pa[0] ? pa[0].length : '-'} 行`)
+chk(translationMap(fs.readFileSync(insertPatch, 'utf8')).map.length === 1, '译文映射仍只取「删除块 + 等长新增块」（纯新增块不进映射）')
+
 // --- 2) 端到端：真跑一遍 CLI（先确认旧补丁确实套不上）---------------------------------
 chk(applies(oldPatch, snapshot).ok === false, '夹具前置条件：旧补丁在镜像里确实套不上（上游插行的形态）')
 const dry = run([REGEN, oldPatch, '--snapshot', snapshot])
@@ -146,6 +172,11 @@ chk(!/老上下文/.test(after), '旧上下文没被搬进新补丁')
 chk(applies(oldPatch, snapshot).ok === true, '重生成的补丁在镜像里能干净套用 ✓')
 chk(run([REGEN, oldPatch, '--snapshot', snapshot, '--write']).code === 0, '再跑一次仍然 rc 0（幂等可重跑）')
 chk(fs.readFileSync(oldPatch, 'utf8') === after, '再跑一次内容不再变化（幂等）')
+
+// --- 2b) 含纯新增块的补丁：仍能重生成，但纯新增块必须在输出里点名 ---------------------
+const dryIns = run([REGEN, insertPatch, '--snapshot', snapshot])
+chk(dryIns.code === 0, `含纯新增块仍能重生成（rc ${dryIns.code}）`)
+chk(/纯新增块/.test(dryIns.out) && /新增的说明行/.test(dryIns.out), '  纯新增块在输出里点名（不静默）')
 
 // --- 3) --from 叠加映射 + 未命中只警告 -------------------------------------------------
 const dryFrom = run([REGEN, oldPatch, '--snapshot', snapshot, '--from', fromPatch])

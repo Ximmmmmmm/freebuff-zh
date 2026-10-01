@@ -215,6 +215,7 @@ keep('日志 / 控制台', [
   '[path-repair] shell=${shell ?? (none)} (${source})',
   '[renderer] ${name}: ${message}',
   '[unserializable params]',
+  'Could not save interface size:',
   '[restart ${restartAttempts}] ${header}',
   '[${new Date().toISOString()}] Starting Freebuff orchestrator',
   'discord presence connected',
@@ -232,6 +233,14 @@ keep('启动诊断（内部错误串，经 errorMessage 才有样式）', [
   // （用户可见的只有 activityFor 里那几句，已由 patches/electron-discord-presence.cjs.patch 翻译）。
   'handshake timed out',
   'closed before ready',
+])
+keep('界面缩放的 IPC 校验 / 安全错误（0.0.155 新增；渲染端 catch 后显示自己的文案，见 dict.json 的「无法保存界面大小」）', [
+  'Invalid interface size',
+  'Untrusted interface size request',
+])
+keep('内存版 safeStorage 的错误串（0.0.155 新增文件；仅 dev / 测试注入，打包版永不加载，见文件头注释）', [
+  'Encryption is not available.',
+  'Decryption is not available.',
 ])
 keep('bridge / CDP 的 HTTP 协议错误（调用方按 kind 判定，不是给用户读的文案）', [
   'request body too large',
@@ -280,6 +289,7 @@ keep('品牌名 / 应用名 / 字体名（产品名，且被用于探测与匹�
   'Task Manager',
   'Activity Monitor',
   'Segoe UI',
+  'Google Sans',
 ])
 keep('命令（用户要照抄运行 / 报错里给出的命令行）', [
   '  ./Freebuff.AppImage --disable-gpu',
