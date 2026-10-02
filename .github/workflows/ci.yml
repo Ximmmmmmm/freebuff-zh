@@ -26,6 +26,8 @@ jobs:
         run: node tools/lint_dict.js
       - name: remap 自测（模板变量迁移 + 半截模板 + lint 负面用例）
         run: node tools/test_remap.js
+      - name: 模板骨架底层自测（解析 / 骨架 / 标识符改名 / 三种捕获形态；remap 与 resituate 共用一份）
+        run: node tools/test_literal_skeleton.js
       - name: blindscan 自测（原版 vs 产物的英文片段对差）
         run: node tools/test_blindscan.js
       - name: uipos 自测（锚点必须是属性名：字符串内容 / 属性读取两类误报）
@@ -51,6 +53,8 @@ jobs:
         run: node tools/test_ui_patch_status.js
       - name: 词条命中体检自测（只在主进程 / 只在上版 / 哪都没有 / 退出码）
         run: node tools/test_missed_diagnose.js
+      - name: 旧词条重新定位自测（模板 / 代码片段 / 字面量三路定位 + 写回自证 + 退出码）
+        run: node tools/test_resituate.js
       - name: 回归闸门自测（登记表逐条豁免 / 未登记仍拦 / --allow-english / 退出码）
         run: node tools/test_regress.js
       - name: 单词级界面文案差集自测（解析口径 / 两侧差集 / 登记表 / 退出码）

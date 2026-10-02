@@ -68,6 +68,38 @@
       "why": "API 路径（`mcpServers` 一族的 `/api/mcp/servers/${encodeURIComponent(t)}/connection`，0.0.153 新增的「编辑 MCP 连接」），同上。"
     },
     {
+      "text": ".explorer, .explorer-header",
+      "why": "DOM 选择器（0.0.156 新增的「焦点是否落在资源管理器内」判断，用 closest 查 .explorer 与 .explorer-header 两个类名），是 querySelector 认的字符串，不是界面文案——翻掉判断永远为 false；与已登记的 streak-day on 那类 CSS 锚点同类。"
+    },
+    {
+      "text": "fpc fpc-- fpc--asset",
+      "why": "CSS 类名组合（Freebuff 自家广告卡的外层类名，0.0.156 新增的广告位预览与插播视觉），抹掉插值后是三节类名 fpc / fpc-- / fpc--asset——翻掉就没有对应样式，与已登记的 streak-day on 同类。"
+    },
+    {
+      "text": "gpc gpc-- gpc--asset",
+      "why": "CSS 类名组合（Greptile 赞助卡，同上，0.0.156 新增）。"
+    },
+    {
+      "text": "rpc rpc-- rpc--asset",
+      "why": "CSS 类名组合（Runable 赞助卡，同上，0.0.156 新增）。"
+    },
+    {
+      "text": "placement-custom-creative is-",
+      "why": "CSS 类名组合（广告位预览的「自定义素材」容器外层类名，0.0.156 新增，按图片适配方式拼出 is-fill 或 is-fit），是给样式表看的，同上。"
+    },
+    {
+      "text": "/api/byok/connections/ /models",
+      "why": "API 路径（BYOK 自定义模型的 `/api/byok/connections/${…}/models`，0.0.156 新增「添加模型」表单），是写给服务端读的 URL，不是界面文案；与已登记的 `/api/ad/proposal/ /connect` 同类——翻掉请求直接打不通。"
+    },
+    {
+      "text": "/placement-previews/runable- .webp",
+      "why": "静态素材路径（`/placement-previews/runable-${…}.webp`，0.0.156 新增的赞助卡配图），文件名拼出来的资源地址，翻掉图就 404——与 `/api/…` 那类路径同类。"
+    },
+    {
+      "text": "/placement-previews/greptile- .webp",
+      "why": "静态素材路径（`/placement-previews/greptile-${…}.webp`，同上）。"
+    },
+    {
       "text": "app desktop-shell",
       "why": "CSS 类名（主窗口外壳 className:`app desktop-shell${…}`（0.0.154 起按 shell 状态拼接）与线程独立窗口 className:\"app desktop-shell thread-window-shell\" 的根类名，是给样式表定位的，翻掉整页样式就失去锚点——与已登记的 `streak-day on` / `agent-option-ask-action primary` 同类）"
     }
@@ -152,6 +184,38 @@
     {
       "text": "GPT-6.1 Sol",
       "why": "模型名（0.0.153 新增模型，`displayName:\"GPT-6.1 Sol\"`，displayName 按约定保留英文，与选择器里其他模型一致）"
+    },
+    {
+      "text": "Acme Deploys",
+      "why": "商家名（0.0.156 广告位预览与赞助提案里的示例广告主 `const SDe=\"Acme Deploys\"`，与它的 uuid 广告主 token 成对出现），是品牌名，不译。"
+    },
+    {
+      "text": "Greptile",
+      "why": "品牌名（0.0.156 新增的赞助卡品牌 `label:\"Greptile\"`，与 Discord / Freebuff 同类）。"
+    },
+    {
+      "text": "Runable",
+      "why": "品牌名（同上，0.0.156 新增的赞助卡品牌）。"
+    },
+    {
+      "text": "'Guest'",
+      "why": "广告卡里模拟代码截图的字符串字面量（Greptile 赞助卡演示 `return user?.name ?? 'Guest'` 的假 diff），属于演示用的代码内容，不是界面文案——与 `git init` / `Initial commit` 那类「照抄进代码里的内容」同类。"
+    },
+    {
+      "text": "getUser()",
+      "why": "同上（Greptile 赞助卡假 diff 里 `const user = await getUser()` 的调用片段）。"
+    },
+    {
+      "text": "user =",
+      "why": "同上（同一段假 diff 的赋值语句片段）。"
+    },
+    {
+      "text": "user?.name ??",
+      "why": "同上（假 diff 的表达式片段）。"
+    },
+    {
+      "text": "localhost:3000",
+      "why": "广告卡里模拟浏览器地址栏的内容（Freebuff 自家广告的产品预览框），是演示用的地址串，不是文案；与假代码同类。"
     }
   ]
 }

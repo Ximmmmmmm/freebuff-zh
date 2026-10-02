@@ -30,6 +30,20 @@
 // 自测：node tools/test_remap.js（合成变量改名的 bundle，CI 会跑）。
 const fs = require('fs')
 const path = require('path')
+// 模板解析 / 骨架 / 标识符改名这几位是与 resituate.js 共用的底层（口径必须一致，
+// 否则两个工具会对同一条词条给出互相矛盾的结论），统一放在 literal_skeleton.js。
+const {
+  parseTemplate,
+  skeletonOf,
+  idents,
+  renameTo,
+  innerOf,
+  balancedExpr,
+  templateRegex,
+  STRICT_CAP,
+  BALANCED_CAP,
+  LAZY_CAP,
+} = require('./literal_skeleton.js')
 
 const REPO = path.join(__dirname, '..')
 
@@ -49,118 +63,6 @@ if (!bundleFile) {
 if (!fs.existsSync(bundleFile)) {
   console.error(`ERROR: 找不到 bundle：${bundleFile}`)
   process.exit(1)
-}
-
-// --- 模板字面量解析：把 `固定${expr}固定…` 切成 lit/expr 交错段 --------------------
-// 逐字符扫描，尊重引号字符串与嵌套花括号；不做完整 JS 语法分析（minified 表达式足够规整）。
-function parseTemplate(s) {
-  const parts = []
-  let lit = ''
-  let i = 0
-  const pushLit = () => {
-    if (lit !== '') parts.push({ t: 'lit', v: lit })
-    lit = ''
-  }
-  while (i < s.length) {
-    if (s[i] === '$' && s[i + 1] === '{') {
-      let depth = 1
-      let j = i + 2
-      let q = null // 当前处于哪种引号内
-      while (j < s.length && depth > 0) {
-        const c = s[j]
-        if (q) {
-          if (c === '\\') j++
-          else if (c === q) q = null
-        } else if (c === '"' || c === "'" || c === '`') {
-          q = c
-        } else if (c === '{') depth++
-        else if (c === '}') depth--
-        j++
-      }
-      if (depth !== 0) {
-        // 半截模板：`${…` 一直到串尾都没有闭合。把它记成 partial 表达式后收工
-        // （只有末段可能是 partial，因为再往后就没有字符了）。
-        pushLit()
-        parts.push({ t: 'expr', v: s.slice(i + 2), partial: true })
-        return parts
-      }
-      pushLit()
-      parts.push({ t: 'expr', v: s.slice(i + 2, j - 1) })
-      i = j
-    } else {
-      lit += s[i]
-      i++
-    }
-  }
-  pushLit()
-  return parts
-}
-
-const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-
-// 表达式骨架：抹掉字符串字面量后比较。译文允许改写插值内部的字符串常量
-// （`${r.title||"new thread"}` → `${r.title||"新会话"}`，lint_dict 的 E3 同样按骨架放行），
-// 这种「译文自己的写法变体」不在 key 的插值表里，得靠骨架找到对应位置再改名。
-const skeletonOf = (e) => e.replace(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`/g, '')
-
-// 表达式里的标识符 token（跳过字符串字面量内部，名字不翻）
-function idents(e) {
-  const out = []
-  let i = 0
-  while (i < e.length) {
-    const c = e[i]
-    if (c === '"' || c === "'" || c === '`') {
-      let j = i + 1
-      while (j < e.length) {
-        if (e[j] === '\\') j += 2
-        else if (e[j] === c) {
-          j++
-          break
-        } else j++
-      }
-      i = j
-    } else if (/[A-Za-z_$]/.test(c)) {
-      let j = i
-      while (j < e.length && /[\w$]/.test(e[j])) j++
-      out.push({ start: i, end: j, name: e.slice(i, j) })
-      i = j
-    } else i++
-  }
-  return out
-}
-
-// 把 s 的标识符按位置换成 names（数量必须一致，即骨架相同才成立）；对不上返回 null
-function renameTo(s, names) {
-  const a = idents(s)
-  if (a.length !== names.length) return null
-  let out = ''
-  let last = 0
-  a.forEach((t, i) => {
-    out += s.slice(last, t.start) + names[i]
-    last = t.end
-  })
-  return out + s.slice(last)
-}
-
-// 去掉插值的 `${` / `}` 外壳（半截模板没有收尾花括号）
-const innerOf = (e) => (e.startsWith('${') ? e.slice(2).replace(/\}$/, '') : e)
-
-// 捕获到的表达式必须括号平衡且不含反引号，否则认为边界切错了
-function balancedExpr(e) {
-  if (!e || e.length > 300 || e.includes('`')) return false
-  let d = 0
-  let q = null
-  for (let k = 0; k < e.length; k++) {
-    const c = e[k]
-    if (q) {
-      if (c === '\\') k++
-      else if (c === q) q = null
-    } else if (c === '"' || c === "'") q = c
-    else if (c === '(' || c === '{' || c === '[') d++
-    else if (c === ')' || c === '}' || c === ']') d--
-    if (d < 0) return false
-  }
-  return d === 0
 }
 
 // --- 载入 ----------------------------------------------------------------------
@@ -187,48 +89,23 @@ for (const [key, zh] of Object.entries(dict.template)) {
     continue
   }
 
-  // 构造正则：固定段按字面匹配，插值段用捕获组。先用「点号链 + 可选调用」的严格形态，
-  // 整体命不中再退化为惰性捕获。惰性捕获不能含反引号——否则会跨越其它模板字面量
-  // 吞进大段无关代码（捕获校验会拦下，但会漏掉真身）。
-  // 末段是半截模板时，尾巴用「`${` + 到反引号/右花括号为止」的宽松捕获：
-  // 半截表达式没有常规的「点号链 + 调用」形态，也不能带右花括号。
+  // 构造正则：固定段按字面匹配，插值段用捕获组（三种形态从严到宽，第一个能在 bundle 里
+  // 命中的胜出——细节见 literal_skeleton.js 的 templateRegex 注释）。
   // `${` / `}` 必须包进捕获组：捕获值会直接回填成新 key/译文的插值文本。少了外壳，
   // 重建出的 key 会丢插值槽（下面的「插值槽数」自证能拦下，但那只是事后兜底）；
   // 更要紧的是，外壳同时把边界钉死——否则相邻插值（`${a}${b}`）会被惰性捕获切错，
   // 切出来的片段括号不平衡，整条词条只能降级 AMBIGUOUS 交人工（0.0.131 适配时实测）。
-  const TAIL_CAP = '[^`}]{1,200}'
-  const mk = (cap) =>
-    new RegExp(
-      '`' +
-        keyParts
-          .map((p) => {
-            if (p.t === 'lit') return escRe(p.v)
-            if (p.partial) return '(\\$\\{' + TAIL_CAP + ')'
-            return '(\\$\\{' + cap + '\\})'
-          })
-          .join('') +
-        '`',
-      'g',
-    )
-  // 三种候选形态，从严到宽，第一个能在 bundle 里命中的胜出：
-  //   strict   点号链 + 可选调用——形态最确定，不会跨插值乱切；
-  //   balanced 一层花括号平衡（三元分支、对象字面量参数）——相邻插值靠它切开；
-  //   lazy     老行为兜底（不跨反引号的惰性捕获），形态更花哨的表达式只能靠它。
-  const STRICT_CAP =
-    '[A-Za-z_$][\\w$]*(?:\\.[A-Za-z_$][\\w$]*)*(?:\\([^`]{0,200}?\\))?'
-  const BALANCED_CAP = '(?:[^{}`]|\\{[^{}`]*\\})*'
-  const LAZY_CAP = '[^`]{0,400}?'
   let re = null
   for (const cap of [STRICT_CAP, BALANCED_CAP, LAZY_CAP]) {
-    const cand = mk(cap)
-    if (cand.test(src)) {
+    const cand = templateRegex(key, cap)
+    if (cand && cand.test(src)) {
       re = cand
       break
     }
   }
   // 三种都没命中也要按懒捕获再走一遍：交给下面 matches.length === 0 → MISSING，
   // 而不是在这里静默跳过（否则「命不中」和「没检查」就分不出来了）。
-  if (!re) re = mk(LAZY_CAP)
+  if (!re) re = templateRegex(key, LAZY_CAP)
   re.lastIndex = 0
 
   const matches = []

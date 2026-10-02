@@ -2,6 +2,8 @@
 # 一键版本迁移：应用自动更新到新版本后跑一次，把能自动的都自动掉。
 #
 #   1/7 模板变量重映射：tools/remap.js 把 template 词典条目的 ${...} 变量名迁移到新 bundle
+#   1b/7 旧词条重新定位：remap 只迁「固定段逐字节还在」的；被改写 / 命中多处的用 tools/resituate.js
+#        在新版原版里找回现形态——能确定的（RELOCATE）自动写回，其余列 CONFIRM / GONE 交人工
 #   2/7 补丁体检：UI 行为补丁该保留 / 该重维护 / 该退场？（tools/ui_patch_status.js，退场时附删除
 #       清单）；主进程补丁的锚点与分诊（tools/patch_preflight.js：行号漂移 vs 上游改写）
 #   3/7 可复现构建：bash build.sh（内含语法校验 + 构建产物自检）+ 构建后行为取证
@@ -91,6 +93,50 @@ if [ -n "${UI_BUNDLE}" ]; then
   AMBIGUOUS="${AMBIGUOUS:-0}"
 else
   echo "(无 ui 目录，跳过)"
+fi
+
+# --- 1b/7 旧词条重新定位 --------------------------------------------------------------
+# remap 只处理「固定段逐字节还在」的 template 条目；一旦锚文本被改写、或同一锚命中多处，它就交回人工。
+# resituate 接住这一批：在新版英文原版里找回旧词条的现形态——模板 / 代码片段 / 字面量三路定位，
+# 能确定的（RELOCATE：新键必须在本版 bundle 里逐字节命中、译文插值随变量名同步）自动写回，
+# 不能确定的列 CONFIRM（多候选 / 散文改写）与 GONE（上游疑似下线）交人工。
+# 与 remap 一样只自动迁移，**绝不 --prune-gone**：删死词条是人工判断（可能是改写成了别的句子，
+# 或其实只在主进程——那种该写进 patches/ 而不是删）。
+echo
+echo "== 1b/7 旧词条重新定位（remap 够不着的那些）=="
+RESITUATE_RC=skip
+RESITUATE_RELOCATE=0
+RESITUATE_CONFIRM=0
+RESITUATE_GONE=0
+RESITUATE_MAIN=0
+{
+  echo
+  echo "## 旧词条重新定位（resituate：remap 之后仍够不着本版 bundle 的条目）"
+} >> "${REPORT}"
+if [ -n "${UI_BUNDLE}" ] && [ -f "${UI_BUNDLE}" ]; then
+  TARGET_VER="$(node -e 'const m = require(process.argv[1]); console.log(m.targetVersion || m.packVersion)' "${HERE}/manifest.json")"
+  RESITUATE_JSON="${HERE}/work/resituate-${STAMP}.json"
+  RESITUATE_ARGS=(--ui "${UI_BUNDLE}" --write --dict "${HERE}/dict.json" --json "${RESITUATE_JSON}")
+  # 上一版英文原版：给 resituate 标注「连上一版也没有」的更早遗留死词条（从快照仓库取，可跨机器）
+  PREV_VER="$(node -e 'const p = require(process.argv[2]); const vs = p.listVersions(); const cur = process.argv[1]; const i = vs.indexOf(cur); process.stdout.write(i >= 0 ? (vs[i + 1] || "") : (vs[0] || ""))' "${TARGET_VER}" "${HERE}/tools/pristine.js" 2>/dev/null || true)"
+  if [ -n "${PREV_VER}" ]; then
+    PREV_ROOT="$(node "${HERE}/tools/pristine.js" path "${PREV_VER}" 2>/dev/null || true)"
+    [ -n "${PREV_ROOT}" ] && [ -d "${PREV_ROOT}/ui" ] && RESITUATE_ARGS+=(--prev-ui "${PREV_ROOT}/ui")
+  fi
+  # 本版主进程树：只有快照里真有本版 electron/ 时才给（拿上一版的树会把 MAIN 误判成 GONE）
+  CUR_ROOT="$(node "${HERE}/tools/pristine.js" path "${TARGET_VER}" --require-electron 2>/dev/null || true)"
+  [ -n "${CUR_ROOT}" ] && [ -d "${CUR_ROOT}/electron" ] && RESITUATE_ARGS+=(--electron "${CUR_ROOT}/electron")
+  set +e
+  RESITUATE_OUT="$(node "${HERE}/tools/resituate.js" "${RESITUATE_ARGS[@]}" 2>&1)"
+  RESITUATE_RC=$?
+  set -e
+  printf '%s\n' "${RESITUATE_OUT}" | tee -a "${REPORT}"
+  if [ -f "${RESITUATE_JSON}" ]; then
+    RESITUATE_STATS="$(node -e 'const r = require(process.argv[1]); const c = (v) => r.filter((x) => x.verdict === v).length; console.log([c("RELOCATE"), c("CONFIRM"), c("GONE"), c("MAIN")].join(" "))' "${RESITUATE_JSON}" 2>/dev/null || echo "0 0 0 0")"
+    read -r RESITUATE_RELOCATE RESITUATE_CONFIRM RESITUATE_GONE RESITUATE_MAIN <<< "${RESITUATE_STATS}"
+  fi
+else
+  echo "  (无 ui 目录，跳过)" | tee -a "${REPORT}"
 fi
 
 # --- 2/7 UI 行为补丁体检（原版）-----------------------------------------------------
@@ -356,6 +402,14 @@ if [ "${AMBIGUOUS:-0}" -gt 0 ]; then
 else
   echo "  · remap 歧义条目：0 条 ✓"
 fi
+case "${RESITUATE_RC}" in
+  0)  echo "  · 旧词条重新定位：全部够得着（自动迁移 ${RESITUATE_RELOCATE} 条）✓" ;;
+  1)  echo "  · 旧词条重新定位：自动迁移 ${RESITUATE_RELOCATE} 条，仍有 ${RESITUATE_CONFIRM} 条待确认 / ${RESITUATE_GONE} 条疑似下线 ⚠（清单见报告）"
+      if [ "${RESITUATE_MAIN:-0}" -gt 0 ]; then
+        echo "      其中 ${RESITUATE_MAIN} 条只在主进程——写进 patches/electron-*.patch，不要当死词条删"
+      fi ;;
+  *)  echo "  · 旧词条重新定位：跳过（无 ui 目录或输入不足）" ;;
+esac
 case "${UDIFF_RC}" in
   0)  echo "  · 上游新增文案：词典已全覆盖 ✓" ;;
   1)  echo "  · 上游新增文案：⚠ 有待补翻（清单见报告「上游新增文案」一节）" ;;
@@ -425,6 +479,13 @@ cat <<TIP
        npx -y @electron/asar extract <原版 app.asar> /tmp/ms-pristine
        npx -y @electron/asar extract output/app.asar /tmp/ms-built
        node tools/mainscan.js /tmp/ms-pristine /tmp/ms-built
+
+报告里「旧词条重新定位」带 ⚠ 时（remap 之后仍够不着本版 bundle 的旧词条）：
+  RELOCATE 已自动写回（与 remap 同级自证：新键在本版 bundle 里逐字节命中、译文插值随变量名同步），
+  提交前抽查一下 git diff dict.json；CONFIRM 是「多候选 / 散文改写」，按报告里的候选核对后手工改
+  dict.json；GONE 是「上游疑似下线」，**先确认不是改写成了别的句子**，确实没了再手工删（本步骤不会替你删）；
+  MAIN 是「只在主进程出现」，该写进 patches/electron-*.patch 并从 dict.json 删掉。单独重跑：
+    node tools/resituate.js --ui "<本版英文原版 bundle>" [--prev-ui <上一版原版>] [--electron <electron 目录>]
 
 报告里「界面位置英文差集」带 ⚠ 时（单词级文案，upstreamdiff 与 regress 都看不见）：
   那些位置的词数少于 2 个，所以三条通道全漏。能翻的补进 dict.json；品牌名 / 模型名 /

@@ -4,6 +4,85 @@
 > 逐条账目（对差统计、词典条数与替换次数、各扫描的残留条数、发布包哈希）与工具口径不收在这里——
 > 需要时看 `git log`：每次适配与发布的提交里都写着完整过程。
 
+## [0.0.156] · 2026-10-02（已发布 `pack-v0.0.156`）
+
+上游这一版把**广告位整块翻新并加了预览实验室**：新增 `Ad lab`（`All desktop formats | local mocks`），
+可切换 `In the chat` 的格式（`Chat block` / `Chat banner` / `New-chat display banner` / `Showcase` /
+`Spotlight` / `Intermission` / `Agentic invitation`），自定义素材（`Ad title` / `Destination` /
+`Image fit` → `Fill the placement` / `Show the full image`、`Choose image` / `Replace image`）、
+选择起始面板（`Start with` → `Panel closed` / `Panel open`）与最短展示时长（`Minimum time`），
+并给出 `Click an ad to test its action.` / `Simulation only | no navigation or sponsored work started.`；
+三张赞助卡各自成套文案——**Greptile**（`Greptile kills bugs` / `AI code review` / `Catch bugs.` /
+`Before you merge.` / `from your whole codebase.` / `Bug caught` / `Suggested fix ` / `Handles missing users`）、
+**Runable**（`Create with Runable` / `Create websites,` / `videos and slides` / `with AI.` /
+`Describe it. Runable creates it.` / `Creative direction` / `Room to` / `imagine.`）、
+**Freebuff 自家**（`The free coding agent` / `Big ideas.` / `Meet your builder.` / `Build your next idea` /
+`Weekly momentum ` / `Active projects` / `Tasks completed` / `Last 7 days` / `All checks passed` /
+` Built in 1m 12s` / `Your idea, ready to explore.`）。BYOK 侧补了「**添加模型**」流程
+（`Add another model` / `Add model` / `The saved credential is reused. Each model’s key and limits are
+managed separately.`），广告位新增**可关闭**提示（`Sidebar ad can now be dismissed.` /
+`Panel ad can now be dismissed. Other panel tabs are available.`）。上架素材侧下线了
+GLM 5.3 Flash 的限时促销（`Deal ends Sep 30` 一族）与侧栏余额兜底句。
+
+- **文案**：上游新增 84 条片段 / 153 条字面量（片段级没报到的 68 条），下线 3 条，疑似改写 1 组。
+  词典 1867 → 2029 条（`exact` 1617 / `template` 287 / `code` 35 / `pattern` 90），
+  替换总数 2255 → 2429、全命中；纯字面量词条覆盖 1567/1567（100.0%）。
+- **词典迁移**：`remap.js` 自动迁移 158 条模板变量名；另 13 条 AMBIGUOUS 与 11 条 MISSING
+  逐条在新 bundle 里核对后手工改键（多数是压缩变量又换了一轮名，如 `${se.label}` → `${ae.label}`、
+  `${Qe}` → `${Ne}`，两条断言模板按新形态各拆成两条），译文随新键同步。
+- **单词级补漏**：`uipos_gap` 初检报出 40 处本版新界面文案——广告实验室的控件标签、赞助卡的
+  展示文案、BYOK 表单、周几标签、`Sidebar 4:3` 等，能翻的全部补进词典；
+  `Image` 因在 bundle 里同时是 markdown AST 的枚举成员（`e[e.Image=28]="Image"`）与比较值，
+  `exact` 会被语义守卫拦下，改走 `pattern` 只翻界面属性位置。
+- **约定保留**新增 13 条：8 条 fragments（DOM 选择器 `.explorer, .explorer-header`、
+  三张赞助卡与自定义素材的 CSS 类名组合、BYOK 的 `/api/byok/connections/…/models`、
+  两张卡的 `/placement-previews/…webp` 素材路径）与 5 条 uiStrings（广告卡里模拟代码截图的
+  `'Guest'` / `getUser()` / `user =` / `user?.name ??` 与模拟地址栏 `localhost:3000`——
+  属于演示内容，与 `git init` / `Initial commit` 同类）；品牌名 `Acme Deploys` / `Greptile` / `Runable` 一并登记。
+- **主进程**：`electron/` 41 个文件里 13 个补丁全部一次干净套用，无需重锚定或 `regen`；
+  主进程英文扫描 0 条疑似漏翻。
+- **UI 行为补丁**：两组仍判 `KEEP`——上游没碰流式序号与令牌缓存，锚点全部唯一命中，
+  产物侧行为取证通过。
+- **四道发布闸门全绿**：主进程英文扫描 0 条；回归闸门（对比 `pack-v0.0.155`）0 处未登记英文；
+  单词级界面文案差集 0 处（初检 40 处已全部补翻或登记）；字面量占用无冲突。
+- **影响面**：`targetVersion` / `packVersion` 同时升到 0.0.156，已装 0.0.155 的机器按常规比较会自动拉到这一版。
+
+### 记一笔：`uipos_gap` 把新增项按形态分三桶（发布后补）
+
+本版适配时那 40 条单词级新增是人工逐条挑拣的（哪条是文案、哪条是 CSS 类名或路径），
+下一次不必再这样。`tools/uipos_gap.js` 现在对每条未登记新增跑一遍 `classifyItem`
+（纯形态判据），报告按三桶分组：
+
+| 桶 | 形态 | 本版的例子 |
+| --- | --- | --- |
+| 能翻（补 `dict.json`） | 多词短语、首字母大写的单词标签 | `A different pace.` / `Accepted` / `Mon` |
+| 该登记（形态上多半不是文案） | 路径与资源名、CSS 类名与选择器、命令行、代码与标识符 | `/api/byok/connections/…` / `fpc fpc-- fpc--asset` / `git init` / `user?.name ??` |
+| 存疑（人工定夺） | 含 `${…}` 的模板串、带数字的标题式词、全大写缩写 | `Dismiss ${…} ad` / `Solar Mini 4` / `API` |
+
+- 分类**只是建议，不参与退出码判定**——闸门的判据仍是「词典 + 登记表有没有覆盖」，
+  分错只是白看一眼，不会让闸门变绿或变红；
+- `--flat` 回到分桶前的平铺清单（跨版 diff 两版报告时更顺手）；`--limit` 改为**逐桶**生效；
+- 自测补了 18 条分类用例（每条都取自本仓库登记表或本版实测）与 6 条分桶报告的端到端断言，
+  含「`--flat` 不分桶但仍列出全部新增项」与「带括号注的文案 `Arguments (JSON array)`
+  不能当代码」两条防回归（分类器初版就在这里判错过一次）。
+
+### 记一笔：`resituate` 把「remap 够不着的旧词条」变成一条命令（发布后补）
+
+本版适配时 `remap` 报了 13 条 AMBIGUOUS + 11 条 MISSING（加上 `missed_diagnose` 的「只在上一版
+UI 出现」清单共 35 条），全靠人工在新 bundle 里逐条搜现形态。`tools/resituate.js` 把这一步自动化：
+拿**本版英文原版**当语料，按分区形态分别定位——`template` 用固定段当锚、插值当捕获组（三种捕获
+形态 + 固定段序列扫描兜底）；`code` 片段把标识符抹成通配做骨架子串搜索；`exact` / `pattern` 在完整
+字面量集合里按词级相似度找改写句。唯一且可自证的直接给「新键 + 同步好的译文」（`RELOCATE`），
+其余列 `CONFIRM`（多候选 / 散文改写）与 `GONE`（上游疑似下线）交人工；`--write` 只写回 `RELOCATE`，
+绝不自动删（`--prune-gone` 才删，且不进自动流程）。
+
+- 与 `remap` 共用一份模板底层 `tools/literal_skeleton.js`（解析 / 骨架 / 标识符改名 / 三种捕获形态），
+  两处口径不再各写一份——这是过去 AMBIGUOUS 归因漂移的根源；`test_literal_skeleton.js` 钉住底层、
+  `test_resituate.js` 钉住端到端（三路定位 + 写回自证 + 退出码），两者都进了 CI；
+- `update.sh` 新增 **1b 步**：`remap` 之后自动跑一遍 `resituate --write`（`--prev-ui` / `--electron`
+  从 `work/pristine/` 快照取，用来把「连上一版也没有」与「其实只在主进程」的条目分开），
+  能自动的写回、其余进报告与小结；删死词条仍留人工。
+
 ## [0.0.155] · 2026-10-01（已发布 `pack-v0.0.155`）
 
 上游这一版加了**跨项目搜索**：顶部搜索能搜会话、文件与文件内容（`Search chats and files` /

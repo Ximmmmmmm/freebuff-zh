@@ -7,6 +7,8 @@
 //      （--ctx）和小节之前的统计行都不能进集合，否则两侧差集会假报；
 //   2. 差集 = 本版 − 上一版 − 登记表；上一版就有的（品牌名/模型名/代码）不算新增；
 //   3. 有未登记新增 → rc 1（构建流程要拦）；全登记 → rc 0；参数/输入不对 → rc 2；
+//   3b. 报告把新增项按形态分三桶（能翻 / 该登记 / 存疑）——分类只是**建议**，
+//      不参与退出码；`--flat` 回到老的分桶前平铺清单（跨版 diff 两版报告时用）；
 //   4. 登记表里**整串已不在产物里**的条目要提醒清理，但不失败；只为 upstreamdiff 的
 //      字面量通道登记的（模型名 `displayName:"Solar Mini 4"` 这种 uipos 不扫的位置）不算
 //      死条目——旧口径拿 uipos 的集合判定，把这 5 条从 0.0.140 一直报到 0.0.147。
@@ -14,7 +16,7 @@
 const fs = require('fs')
 const path = require('path')
 const { execFileSync } = require('child_process')
-const { parseUipos } = require(path.join(__dirname, 'uipos_gap.js'))
+const { parseUipos, classifyItem } = require(path.join(__dirname, 'uipos_gap.js'))
 
 const REPO = path.join(__dirname, '..')
 const WORK = path.join(REPO, 'work', 'test-uipos-gap')
@@ -43,6 +45,17 @@ const curDir = pack(
 )
 const emptyDir = path.join(WORK, 'no-bundle')
 fs.mkdirSync(emptyDir, { recursive: true })
+
+// 分类夹具：同一版本对（上一版只有 Settings），本版多出三条——各归一类，
+// 用来钉「哪条进哪个桶」与 `--flat` 的老形态
+const prevClassify = pack('prev-classify', 'var a={label:"Settings"}\n')
+const curClassify = pack(
+  'cur-classify',
+  'var a={label:"Settings"},' +
+    'b={"aria-label":"fpc fpc-- fpc--asset"},' +
+    'c={children:"A different pace."},' +
+    'd={"aria-label":`Dismiss ${x} ad`}\n',
+)
 
 // 只登记上一版就有的那条（Settings）；Theme 是「本版新增、词典还没覆盖」的样子
 const allowSettings = write('allow-settings.json', JSON.stringify({ uiStrings: [{ text: 'Settings', why: '测试：上一版就有' }] }, null, 2))
@@ -147,6 +160,50 @@ chk(
   '整串已不在产物里的条目照旧提醒清理（含 ${…} 形态）',
 )
 chk(!/· Solar Mini 4/.test(rLiteralGone.out) && !/· Settings/.test(rLiteralGone.out), '还在产物里的条目仍不进清理清单')
+
+// --- 单元：形态分类（判据全部来自本仓库登记表与 0.0.156 实测） ---------------------
+const cls = (s) => classifyItem(s).verdict
+chk(cls('/api/byok/connections/ /models') === 'register', '分类：API 路径 → 该登记')
+chk(cls('/placement-previews/runable- .webp') === 'register', '分类：素材路径 → 该登记')
+chk(cls('fpc fpc-- fpc--asset') === 'register', '分类：BEM 类名组合 → 该登记')
+chk(cls('.explorer, .explorer-header') === 'register', '分类：DOM 选择器 → 该登记')
+chk(cls('app desktop-shell') === 'register', '分类：kebab 两词类名 → 该登记')
+chk(cls('git init') === 'register' && cls('bun install') === 'register', '分类：命令行 → 该登记')
+chk(cls('getUser()') === 'register', '分类：代码片段（整串无空格）→ 该登记')
+chk(cls('{') === 'register', '分类：单个括号（JSON 示例片段）→ 该登记')
+chk(
+  cls('Arguments (JSON array)') === 'translate' && cls('Cancel (Esc)') === 'translate',
+  '分类：带括号注的文案（有空格的括号）不能当代码',
+)
+chk(cls('user =') === 'register', '分类：赋值片段（尾部无值也算）→ 该登记')
+chk(cls("'Guest'") === 'register', '分类：引号字面量 → 该登记')
+chk(cls('mcpServers') === 'register', '分类：camelCase 标识符 → 该登记')
+chk(cls('Accepted') === 'translate' && cls('Mon') === 'translate', '分类：单词标签 → 能翻')
+chk(cls('A different pace.') === 'translate', '分类：多词短语 → 能翻')
+chk(
+  cls('Images stay in this browser session. PNG, JPEG, WebP or AVIF, up to 10 MB.') === 'translate',
+  '分类：带缩写的整句 → 能翻（含空格就不当路径）',
+)
+chk(cls('Dismiss ${…} ad') === 'unsure', '分类：模板串 → 存疑（补 template 或登记）')
+chk(cls('Solar Mini 4') === 'unsure', '分类：标题式含数字 → 存疑（疑似模型名）')
+chk(cls('API') === 'unsure', '分类：全大写缩写 → 存疑（术语还是标签分不出来）')
+
+// --- 端到端：分桶报告 -------------------------------------------------------------
+const rClassify = run(['--bundle', curClassify, '--prev', prevClassify, '--allow', allowSettings])
+chk(rClassify.code === 1, `分桶报告仍按未登记新增拦下（rc ${rClassify.code}）`)
+chk(
+  /形态分类：能翻（补 dict.json） 1 · 该登记（形态上多半不是文案） 1 · 存疑（人工定夺） 1/.test(rClassify.out),
+  '小结行给出三桶计数',
+)
+chk(/### 能翻（补 dict.json）（1）/.test(rClassify.out), '能翻单独成节')
+chk(/· A different pace\.\s+← 多词短语/.test(rClassify.out), '能翻桶带上判断依据')
+chk(/· fpc fpc-- fpc--asset\s+← CSS 类名 \/ 选择器/.test(rClassify.out), '该登记桶：CSS 类名')
+chk(/· Dismiss \$\{…\} ad\s+← 模板串/.test(rClassify.out), '存疑桶：模板串')
+
+const rFlat = run(['--bundle', curClassify, '--prev', prevClassify, '--allow', allowSettings, '--flat'])
+chk(rFlat.code === 1, '--flat 不改变退出码')
+chk(!/形态分类：/.test(rFlat.out) && !/^### /m.test(rFlat.out), '--flat 回到不分桶的平铺清单')
+chk(/· A different pace\./.test(rFlat.out) && /· fpc fpc-- fpc--asset/.test(rFlat.out), '--flat 仍列出全部新增项')
 
 const rRegistered = run(['--bundle', curDir, '--prev', prevDir, '--allow', allowSettings, '--quiet'])
 chk(!/本版界面位置英文/.test(rRegistered.out) && rRegistered.code === 1, '--quiet 只留清单，去掉统计行')
