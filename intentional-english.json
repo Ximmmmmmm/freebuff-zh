@@ -102,6 +102,2946 @@
     {
       "text": "app desktop-shell",
       "why": "CSS 类名（主窗口外壳 className:`app desktop-shell${…}`（0.0.154 起按 shell 状态拼接）与线程独立窗口 className:\"app desktop-shell thread-window-shell\" 的根类名，是给样式表定位的，翻掉整页样式就失去锚点——与已登记的 `streak-day on` / `agent-option-ask-action primary` 同类）"
+    },
+    {
+      "text": "Async schemas not supported in object keys currently",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断文案：schema 构建 / 注册表 / JSON Schema 转换的断言与报错，不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻了也不会有接收方，还会与库的英文文档对不上）。"
+    },
+    {
+      "text": "BigInt literals cannot be represented in JSON Schema",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断文案：schema 构建 / 注册表 / JSON Schema 转换的断言与报错，不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻了也不会有接收方，还会与库的英文文档对不上）。"
+    },
+    {
+      "text": "Cannot create literal schema with no valid values",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断文案：schema 构建 / 注册表 / JSON Schema 转换的断言与报错，不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻了也不会有接收方，还会与库的英文文档对不上）。"
+    },
+    {
+      "text": "Cannot mix number and bigint in multiple_of check.",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断文案：schema 构建 / 注册表 / JSON Schema 转换的断言与报错，不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻了也不会有接收方，还会与库的英文文档对不上）。"
+    },
+    {
+      "text": "Circular reference not resolved:",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断文案：schema 构建 / 注册表 / JSON Schema 转换的断言与报错，不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻了也不会有接收方，还会与库的英文文档对不上）。"
+    },
+    {
+      "text": "Conditional schemas (if/then/else) are not supported",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断文案：schema 构建 / 注册表 / JSON Schema 转换的断言与报错，不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻了也不会有接收方，还会与库的英文文档对不上）。"
+    },
+    {
+      "text": "Custom types cannot be represented in JSON Schema",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断文案：schema 构建 / 注册表 / JSON Schema 转换的断言与报错，不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻了也不会有接收方，还会与库的英文文档对不上）。"
+    },
+    {
+      "text": "Dynamic catch values are not supported in JSON Schema",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断文案：schema 构建 / 注册表 / JSON Schema 转换的断言与报错，不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻了也不会有接收方，还会与库的英文文档对不上）。"
+    },
+    {
+      "text": "Error converting schema to JSON.",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断文案：schema 构建 / 注册表 / JSON Schema 转换的断言与报错，不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻了也不会有接收方，还会与库的英文文档对不上）。"
+    },
+    {
+      "text": "External $ref is not supported, only local refs (#/...) are allowed",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断文案：schema 构建 / 注册表 / JSON Schema 转换的断言与报错，不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻了也不会有接收方，还会与库的英文文档对不上）。"
+    },
+    {
+      "text": "Function types cannot be represented in JSON Schema",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断文案：schema 构建 / 注册表 / JSON Schema 转换的断言与报错，不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻了也不会有接收方，还会与库的英文文档对不上）。"
+    },
+    {
+      "text": "ID already exists in the registry",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断文案：schema 构建 / 注册表 / JSON Schema 转换的断言与报错，不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻了也不会有接收方，还会与库的英文文档对不上）。"
+    },
+    {
+      "text": "Input not instance of",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断文案：schema 构建 / 注册表 / JSON Schema 转换的断言与报错，不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻了也不会有接收方，还会与库的英文文档对不上）。"
+    },
+    {
+      "text": "Integers must be within the safe integer range.",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断文案：schema 构建 / 注册表 / JSON Schema 转换的断言与报错，不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻了也不会有接收方，还会与库的英文文档对不上）。"
+    },
+    {
+      "text": "Invalid input to extend: expected a plain object",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断文案：schema 构建 / 注册表 / JSON Schema 转换的断言与报错，不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻了也不会有接收方，还会与库的英文文档对不上）。"
+    },
+    {
+      "text": "Invalid input to safeExtend: expected a plain object",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断文案：schema 构建 / 注册表 / JSON Schema 转换的断言与报错，不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻了也不会有接收方，还会与库的英文文档对不上）。"
+    },
+    {
+      "text": "Invalid key in",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断文案：schema 构建 / 注册表 / JSON Schema 转换的断言与报错，不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻了也不会有接收方，还会与库的英文文档对不上）。"
+    },
+    {
+      "text": "Invalid number: must be a multiple of",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断文案：schema 构建 / 注册表 / JSON Schema 转换的断言与报错，不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻了也不会有接收方，还会与库的英文文档对不上）。"
+    },
+    {
+      "text": "Invalid option: expected one of",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断文案：schema 构建 / 注册表 / JSON Schema 转换的断言与报错，不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻了也不会有接收方，还会与库的英文文档对不上）。"
+    },
+    {
+      "text": "Invalid string: must end with \" \"",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断文案：schema 构建 / 注册表 / JSON Schema 转换的断言与报错，不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻了也不会有接收方，还会与库的英文文档对不上）。"
+    },
+    {
+      "text": "Invalid string: must start with \" \"",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断文案：schema 构建 / 注册表 / JSON Schema 转换的断言与报错，不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻了也不会有接收方，还会与库的英文文档对不上）。"
+    },
+    {
+      "text": "Invalid value in",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断文案：schema 构建 / 注册表 / JSON Schema 转换的断言与报错，不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻了也不会有接收方，还会与库的英文文档对不上）。"
+    },
+    {
+      "text": "Key not found in enum",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断文案：schema 构建 / 注册表 / JSON Schema 转换的断言与报错，不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻了也不会有接收方，还会与库的英文文档对不上）。"
+    },
+    {
+      "text": "Pattern not found in template literal",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断文案：schema 构建 / 注册表 / JSON Schema 转换的断言与报错，不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻了也不会有接收方，还会与库的英文文档对不上）。"
+    },
+    {
+      "text": "Reference not found:",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断文案：schema 构建 / 注册表 / JSON Schema 转换的断言与报错，不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻了也不会有接收方，还会与库的英文文档对不上）。"
+    },
+    {
+      "text": "Too big: expected to be",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断文案：schema 构建 / 注册表 / JSON Schema 转换的断言与报错，不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻了也不会有接收方，还会与库的英文文档对不上）。"
+    },
+    {
+      "text": "Too big: expected to have",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断文案：schema 构建 / 注册表 / JSON Schema 转换的断言与报错，不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻了也不会有接收方，还会与库的英文文档对不上）。"
+    },
+    {
+      "text": "Too small: expected to be",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断文案：schema 构建 / 注册表 / JSON Schema 转换的断言与报错，不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻了也不会有接收方，还会与库的英文文档对不上）。"
+    },
+    {
+      "text": "Too small: expected to have",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断文案：schema 构建 / 注册表 / JSON Schema 转换的断言与报错，不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻了也不会有接收方，还会与库的英文文档对不上）。"
+    },
+    {
+      "text": "Unexpected value in exhaustive check",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断文案：schema 构建 / 注册表 / JSON Schema 转换的断言与报错，不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻了也不会有接收方，还会与库的英文文档对不上）。"
+    },
+    {
+      "text": "dependentSchemas and dependentRequired are not supported",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断文案：schema 构建 / 注册表 / JSON Schema 转换的断言与报错，不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻了也不会有接收方，还会与库的英文文档对不上）。"
+    },
+    {
+      "text": "unevaluatedItems is not supported",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断文案：schema 构建 / 注册表 / JSON Schema 转换的断言与报错，不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻了也不会有接收方，还会与库的英文文档对不上）。"
+    },
+    {
+      "text": "unevaluatedProperties is not supported",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断文案：schema 构建 / 注册表 / JSON Schema 转换的断言与报错，不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻了也不会有接收方，还会与库的英文文档对不上）。"
+    },
+    {
+      "text": "Chiave non valida in",
+      "why": "Zod v4 多语言错误表（意大利语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "For lille: forventede",
+      "why": "Zod v4 多语言错误表（丹麦语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "For lille: forventede havde",
+      "why": "Zod v4 多语言错误表（丹麦语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "For stor: forventede",
+      "why": "Zod v4 多语言错误表（丹麦语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "For stor: forventede havde",
+      "why": "Zod v4 多语言错误表（丹麦语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "ISO datum in čas",
+      "why": "Zod v4 多语言错误表（斯洛文尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Nevalida enigo: atendiĝis",
+      "why": "Zod v4 多语言错误表（世界语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Nevalida enigo: atendiĝis , riceviĝis",
+      "why": "Zod v4 多语言错误表（世界语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Nevalida opcio: atendiĝis unu el",
+      "why": "Zod v4 多语言错误表（世界语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Of lítið: gert er ráð fyrir að hafi",
+      "why": "Zod v4 多语言错误表（冰岛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Of lítið: gert er ráð fyrir að sé",
+      "why": "Zod v4 多语言错误表（冰岛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Of stórt: gert er ráð fyrir að hafi",
+      "why": "Zod v4 多语言错误表（冰岛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Of stórt: gert er ráð fyrir að sé",
+      "why": "Zod v4 多语言错误表（冰岛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ongeldige key in",
+      "why": "Zod v4 多语言错误表（荷兰语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ongeldige waarde in",
+      "why": "Zod v4 多语言错误表（荷兰语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Te groot: verwacht dat is",
+      "why": "Zod v4 多语言错误表（荷兰语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Te klein: verwacht dat is",
+      "why": "Zod v4 多语言错误表（荷兰语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Tro granda: atendiĝis ke havu",
+      "why": "Zod v4 多语言错误表（世界语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Tro malgranda: atendiĝis ke estu",
+      "why": "Zod v4 多语言错误表（世界语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Tro malgranda: atendiĝis ke havu",
+      "why": "Zod v4 多语言错误表（世界语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "URL codificata in base64",
+      "why": "Zod v4 多语言错误表（意大利语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ungültiger Schlüssel in",
+      "why": "Zod v4 多语言错误表（德语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Valore non valido in",
+      "why": "Zod v4 多语言错误表（意大利语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "el. pašto adresas",
+      "why": "Zod v4 多语言错误表（立陶宛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "stringa codificata in base64",
+      "why": "Zod v4 多语言错误表（意大利语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "A reference to a tracked click URL in a prior gravity_index search result. The runtime substitutes the exact stored URL.",
+      "why": "gravity_index 工具链的 schema 描述（送给模型的工具说明 payload）：与已登记的 `Regions: Style changes to implement:` 同类——属于模型输入，不是给人读的界面文案，翻译只会让模型侧上下文中英混杂。"
+    },
+    {
+      "text": "Attribution metadata for after verified setup: search_id \" \", integrated_slug \" \".",
+      "why": "gravity_index 工具链的 schema 描述（送给模型的工具说明 payload）：与已登记的 `Regions: Style changes to implement:` 同类——属于模型输入，不是给人读的界面文案，翻译只会让模型侧上下文中英混杂。"
+    },
+    {
+      "text": "Button links must use http:// or https://",
+      "why": "gravity_index 工具链的 schema 描述（送给模型的工具说明 payload）：与已登记的 `Regions: Style changes to implement:` 同类——属于模型输入，不是给人读的界面文案，翻译只会让模型侧上下文中英混杂。"
+    },
+    {
+      "text": "Render a small interactive UI widget for the user.",
+      "why": "gravity_index 工具链的 schema 描述（送给模型的工具说明 payload）：与已登记的 `Regions: Style changes to implement:` 同类——属于模型输入，不是给人读的界面文案，翻译只会让模型侧上下文中英混杂。"
+    },
+    {
+      "text": "Short button label shown to the user.",
+      "why": "gravity_index 工具链的 schema 描述（送给模型的工具说明 payload）：与已登记的 `Regions: Style changes to implement:` 同类——属于模型输入，不是给人读的界面文案，翻译只会让模型侧上下文中英混杂。"
+    },
+    {
+      "text": "The UI widget to render.",
+      "why": "gravity_index 工具链的 schema 描述（送给模型的工具说明 payload）：与已登记的 `Regions: Style changes to implement:` 同类——属于模型输入，不是给人读的界面文案，翻译只会让模型侧上下文中英混杂。"
+    },
+    {
+      "text": "The exact search_id returned by gravity_index.",
+      "why": "gravity_index 工具链的 schema 描述（送给模型的工具说明 payload）：与已登记的 `Regions: Style changes to implement:` 同类——属于模型输入，不是给人读的界面文案，翻译只会让模型侧上下文中英混杂。"
+    },
+    {
+      "text": "The exact slug of the recommendation or option selected from that search.",
+      "why": "gravity_index 工具链的 schema 描述（送给模型的工具说明 payload）：与已登记的 `Regions: Style changes to implement:` 同类——属于模型输入，不是给人读的界面文案，翻译只会让模型侧上下文中英混杂。"
+    },
+    {
+      "text": "The http:// or https:// URL to open when the user clicks the button.",
+      "why": "gravity_index 工具链的 schema 描述（送给模型的工具说明 payload）：与已登记的 `Regions: Style changes to implement:` 同类——属于模型输入，不是给人读的界面文案，翻译只会让模型侧上下文中英混杂。"
+    },
+    {
+      "text": "Theme-aware color treatment. Use primary for the main action and secondary for lower-emphasis actions.",
+      "why": "gravity_index 工具链的 schema 描述（送给模型的工具说明 payload）：与已登记的 `Regions: Style changes to implement:` 同类——属于模型输入，不是给人读的界面文案，翻译只会让模型侧上下文中英混杂。"
+    },
+    {
+      "text": "Widget type. Currently, the only supported widget is button.",
+      "why": "gravity_index 工具链的 schema 描述（送给模型的工具说明 payload）：与已登记的 `Regions: Style changes to implement:` 同类——属于模型输入，不是给人读的界面文案，翻译只会让模型侧上下文中英混杂。"
+    },
+    {
+      "text": "64-ume kodita karaktraro",
+      "why": "Zod v4 多语言错误表（世界语 / 斯洛文尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Angka tidak valid: harus kelipatan dari",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Cadena inválida: debe coincidir con el patrón",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Cadena inválida: debe comenzar con \" \"",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Cadena inválida: debe incluir \" \"",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Cadena inválida: debe terminar en \" \"",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Campo inválido",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Chave inválida em",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Chaîne invalide : doit commencer par \" \"",
+      "why": "Zod v4 多语言错误表（法语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Chaîne invalide : doit correspondre au modèle",
+      "why": "Zod v4 多语言错误表（法语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Chaîne invalide : doit correspondre au motif",
+      "why": "Zod v4 多语言错误表（法语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Chaîne invalide : doit inclure \" \"",
+      "why": "Zod v4 多语言错误表（法语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Chaîne invalide : doit se terminer par \" \"",
+      "why": "Zod v4 多语言错误表（法语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Chiav non riconosciut :",
+      "why": "Zod v4 多语言错误表（意大利语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Chuỗi không hợp lệ: phải bao gồm \" \"",
+      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Chuỗi không hợp lệ: phải bắt đầu bằng \" \"",
+      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Chuỗi không hợp lệ: phải khớp với mẫu",
+      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Chuỗi không hợp lệ: phải kết thúc bằng \" \"",
+      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Clau invàlida a",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Clau no reconeguda :",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Clé invalide dans",
+      "why": "Zod v4 多语言错误表（法语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Clé non reconnue :",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Demasiado grande: se esperaba que fuera",
+      "why": "Zod v4 多语言错误表（西班牙语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Demasiado grande: se esperaba que tuviera",
+      "why": "Zod v4 多语言错误表（西班牙语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Demasiado pequeño: se esperaba que fuera",
+      "why": "Zod v4 多语言错误表（西班牙语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Demasiado pequeño: se esperaba que tuviera",
+      "why": "Zod v4 多语言错误表（西班牙语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Duplicate discriminator value \" \"",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Eilutė privalo atitikti",
+      "why": "Zod v4 多语言错误表（立陶宛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Eilutė privalo pasibaigti \" \"",
+      "why": "Zod v4 多语言错误表（立陶宛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Eilutė privalo prasidėti \" \"",
+      "why": "Zod v4 多语言错误表（立陶宛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Eilutė privalo įtraukti \" \"",
+      "why": "Zod v4 多语言错误表（立陶宛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Element invàlid a",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Encountered unidirectional transform during encode:",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Entrada invàlida",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Entrada inválida",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Entrada inválida: esperado",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Entrada inválida: se esperaba",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Entrada inválida: se esperaba , recibido",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Entrée invalide : attendu",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Entrée invalide : attendu , reçu",
+      "why": "Zod v4 多语言错误表（法语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Entrée invalide : attendu, reçu",
+      "why": "Zod v4 多语言错误表（法语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Fazla büyük: , olmalıydı.",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Fazla büyük: , sahip olmalıydı.",
+      "why": "Zod v4 多语言错误表（印度尼西亚 / 马来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Fazla küçük: , olmalıydı.",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Fazla küçük: , sahip olmalıydı.",
+      "why": "Zod v4 多语言错误表（印度尼西亚 / 马来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Format invàlid per a",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Format invàlid: ha d'acabar amb \" \"",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Format invàlid: ha d'incloure \" \"",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Format invàlid: ha de coincidir amb el patró",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Format invàlid: ha de començar amb \" \"",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Fâsit giren: umulan",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Fâsit giren: umulan , alınan",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Fâsit metin: \" \" ihtivâ etmeli.",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Fâsit metin: \" \" ile başlamalı.",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Fâsit metin: \" \" ile bitmeli.",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Fâsit metin: nakşına uymalı.",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Fâsit sayı: katı olmalıydı.",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Fâsit tercih: mûteberler",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Gautas tipas , o tikėtasi -",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Geçersiz değer",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Geçersiz değer: beklenen",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Geçersiz değer: beklenen , alınan",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Geçersiz metin: \" \" ile başlamalı",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Geçersiz metin: \" \" ile bitmeli",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Geçersiz metin: \" \" içermeli",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Geçersiz metin: desenine uymalı",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Geçersiz sayı: ile tam bölünebilmeli",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Geçersiz seçenek: aşağıdakilerden biri olmalı:",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Giren tanınamadı.",
+      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Giá trị không hợp lệ trong",
+      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Hodnota je příliš malá: musí být",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Hodnota je příliš malá: musí mít",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Hodnota je příliš velká: musí být",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Hodnota je příliš velká: musí mít",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "IPv4 tartomány",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "IPv6 tartomány",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "ISO dagsetning og tími",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "ISO data ir laikas",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "ISO dato- og klokkeslett",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "ISO dato- og klokkeslæt",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "ISO datum en tijd",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "ISO időbélyeg",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "ISO időintervallum",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "ISO tarih ve saat",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "ISO-datum och tid",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Input non valido",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Input non valido: atteso",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Input non valido: atteso , ricevuto",
+      "why": "Zod v4 多语言错误表（意大利语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Input tidak sah",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Input tidak sah: dijangka",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Input tidak sah: dijangka , diterima",
+      "why": "Zod v4 多语言错误表（印度尼西亚 / 马来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Input tidak valid",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Input tidak valid: diharapkan",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Input tidak valid: diharapkan , diterima",
+      "why": "Zod v4 多语言错误表（印度尼西亚 / 马来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Integrate into my project",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Invalid discriminated union option at index \" \"",
+      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Invalid hex string length",
+      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Invalid input: expected",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Invalid input: expected , received",
+      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Invalid string: must include \" \"",
+      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Invalid string: must match pattern",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Invalid template literal part, no pattern found:",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Invalid template literal part:",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Khóa không hợp lệ trong",
+      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Khóa không được nhận dạng:",
+      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Kunci tidak dikenali :",
+      "why": "Zod v4 多语言错误表（印度尼西亚 / 马来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Kunci tidak dikenali:",
+      "why": "Zod v4 多语言错误表（印度尼西亚 / 马来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Kunci tidak sah dalam",
+      "why": "Zod v4 多语言错误表（印度尼西亚 / 马来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Kunci tidak valid di",
+      "why": "Zod v4 多语言错误表（印度尼西亚 / 马来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Kéré ju: a ní láti jẹ́",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Kéré ju: a ní láti jẹ́ pé",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Kıymet tanınamadı.",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Liian pieni: arvon täytyy olla",
+      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Liian pieni: täytyy olla",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Liian suuri: arvon täytyy olla",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Liian suuri: täytyy olla",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Llave inválida en",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Massa gran: s'esperava que contingués",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Massa gran: s'esperava que fos",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Massa petit: s'esperava que contingués",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Massa petit: s'esperava que fos",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Muito grande: esperado que fosse",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Muito grande: esperado que tivesse",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Muito pequeno: esperado que fosse",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Muito pequeno: esperado que tivesse",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Neatpažint rakt :",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Neplatná možnost: očekávána jedna z hodnot",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Neplatné číslo: musí být násobkem",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Neplatný vstup: očekáváno",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Neplatný vstup: očekáváno , obdrženo",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Neplatný řetězec: musí končit na \" \"",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Neplatný řetězec: musí obsahovat \" \"",
+      "why": "Zod v4 多语言错误表（印度尼西亚 / 马来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Neplatný řetězec: musí odpovídat vzoru",
+      "why": "Zod v4 多语言错误表（印度尼西亚 / 马来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Neplatný řetězec: musí začínat na \" \"",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Nevalida karaktraro: devas finiĝi per \" \"",
+      "why": "Zod v4 多语言错误表（世界语 / 斯洛文尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Nevalida karaktraro: devas inkluzivi \" \"",
+      "why": "Zod v4 多语言错误表（世界语 / 斯洛文尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Nevalida karaktraro: devas komenciĝi per \" \"",
+      "why": "Zod v4 多语言错误表（世界语 / 斯洛文尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Nevalida karaktraro: devas kongrui kun la modelo",
+      "why": "Zod v4 多语言错误表（世界语 / 斯洛文尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Nevalida nombro: devas esti oblo de",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Nevalida valoro en",
+      "why": "Zod v4 多语言错误表（世界语 / 斯洛文尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Nevalida ŝlosilo en",
+      "why": "Zod v4 多语言错误表（世界语 / 斯洛文尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Neveljaven niz: mora se končati z \" \"",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Neveljaven niz: mora se začeti z \" \"",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Neveljaven niz: mora ustrezati vzorcu",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Neveljaven niz: mora vsebovati \" \"",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Neveljaven vnos: pričakovano",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Neveljaven vnos: pričakovano , prejeto",
+      "why": "Zod v4 多语言错误表（世界语 / 斯洛文尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Neveljavna možnost: pričakovano eno izmed",
+      "why": "Zod v4 多语言错误表（世界语 / 斯洛文尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Neveljavno število: mora biti večkratnik",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Nieprawidłowa liczba: musi być wielokrotnością",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Nieprawidłowa opcja: oczekiwano jednej z wartości",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Nieprawidłowa wartość w",
+      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Nieprawidłowe dane wejściowe",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Nieprawidłowe dane wejściowe: oczekiwano",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Nieprawidłowe dane wejściowe: oczekiwano , otrzymano",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Nieprawidłowy ciąg znaków: musi kończyć się na \" \"",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Nieprawidłowy ciąg znaków: musi odpowiadać wzorcowi",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Nieprawidłowy ciąg znaków: musi zaczynać się od \" \"",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Nieprawidłowy ciąg znaków: musi zawierać \" \"",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Nieprawidłowy klucz w",
+      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Nilai tidak sah dalam",
+      "why": "Zod v4 多语言错误表（印度尼西亚 / 马来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Nilai tidak valid di",
+      "why": "Zod v4 多语言错误表（印度尼西亚 / 马来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "No matching discriminator",
+      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Nombor tidak sah: perlu gandaan",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Nombre invalide : doit être un multiple de",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Numero non valido: deve essere un multiplo di",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Número invàlid: ha de ser múltiple de",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Número inválido: debe ser múltiplo de",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Número inválido: deve ser múltiplo de",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Nọ́mbà aṣìṣe: gbọ́dọ̀ jẹ́ èyà pípín ti",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Ogiltig inmatning: förväntat",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Ogiltig inmatning: förväntat , fick",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ogiltig sträng: måste börja med \" \"",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ogiltig sträng: måste innehålla \" \"",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ogiltig sträng: måste matcha mönstret \" \"",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ogiltig sträng: måste sluta med \" \"",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ogiltigt tal: måste vara en multipel av",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Ogiltigt val: förväntade en av",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Okänd nyckel",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Okända nycklar",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ongeldig getal: moet een veelvoud van zijn",
+      "why": "Zod v4 多语言错误表（荷兰语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ongeldige invoer: verwacht",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Ongeldige invoer: verwacht , ontving",
+      "why": "Zod v4 多语言错误表（荷兰语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ongeldige optie: verwacht één van",
+      "why": "Zod v4 多语言错误表（荷兰语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ongeldige tekst: moet \" \" bevatten",
+      "why": "Zod v4 多语言错误表（荷兰语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ongeldige tekst: moet met \" \" beginnen",
+      "why": "Zod v4 多语言错误表（荷兰语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ongeldige tekst: moet op \" \" eindigen",
+      "why": "Zod v4 多语言错误表（荷兰语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ongeldige tekst: moet overeenkomen met patroon",
+      "why": "Zod v4 多语言错误表（荷兰语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Opció invàlida: s'esperava una de",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Opción inválida: se esperaba una de",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Option invalide : attendu l'une des valeurs suivantes",
+      "why": "Zod v4 多语言错误表（法语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Option invalide : une valeur parmi attendue",
+      "why": "Zod v4 多语言错误表（法语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Opzione non valida: atteso uno tra",
+      "why": "Zod v4 多语言错误表（意大利语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Opção inválida: esperada uma das",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Pilihan tidak sah: dijangka salah satu daripada",
+      "why": "Zod v4 多语言错误表（印度尼西亚 / 马来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Pilihan tidak valid: diharapkan salah satu dari",
+      "why": "Zod v4 多语言错误表（印度尼西亚 / 马来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Premajhno: pričakovano, da bo",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Premajhno: pričakovano, da bo imelo",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Preveliko: pričakovano, da bo",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Preveliko: pričakovano, da bo imelo",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Privalo būti vienas iš pasirinkimų",
+      "why": "Zod v4 多语言错误表（立陶宛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Quá nhỏ: mong đợi",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Rangt gildi: gert ráð fyrir",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Rangt gildi: Þú slóst inn þar sem á að vera",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Rastas klaidingas raktas",
+      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Röng tala: verður að vera margfeldi af",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Skaičius privalo būti kartotinis.",
+      "why": "Zod v4 多语言错误表（立陶宛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "String tidak sah: mesti berakhir dengan \" \"",
+      "why": "Zod v4 多语言错误表（印度尼西亚 / 马来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "String tidak sah: mesti bermula dengan \" \"",
+      "why": "Zod v4 多语言错误表（印度尼西亚 / 马来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "String tidak sah: mesti mengandungi \" \"",
+      "why": "Zod v4 多语言错误表（印度尼西亚 / 马来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "String tidak sah: mesti sepadan dengan corak",
+      "why": "Zod v4 多语言错误表（印度尼西亚 / 马来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "String tidak valid: harus berakhir dengan \" \"",
+      "why": "Zod v4 多语言错误表（印度尼西亚 / 马来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "String tidak valid: harus dimulai dengan \" \"",
+      "why": "Zod v4 多语言错误表（印度尼西亚 / 马来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "String tidak valid: harus menyertakan \" \"",
+      "why": "Zod v4 多语言错误表（印度尼西亚 / 马来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "String tidak valid: harus sesuai pola",
+      "why": "Zod v4 多语言错误表（印度尼西亚 / 马来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Stringa non valida: deve corrispondere al pattern",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Stringa non valida: deve includere \" \"",
+      "why": "Zod v4 多语言错误表（意大利语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Stringa non valida: deve iniziare con \" \"",
+      "why": "Zod v4 多语言错误表（意大利语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Stringa non valida: deve terminare con \" \"",
+      "why": "Zod v4 多语言错误表（意大利语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Số không hợp lệ: phải là bội số của",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Tanınmayan anahtar :",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Tanınmayan açar :",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Te groot: verwacht dat",
+      "why": "Zod v4 多语言错误表（荷兰语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Te klein: verwacht dat",
+      "why": "Zod v4 多语言错误表（荷兰语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Terlalu besar: diharapkan memiliki",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Terlalu besar: diharapkan menjadi",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Terlalu besar: dijangka",
+      "why": "Zod v4 多语言错误表（印度尼西亚 / 马来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Terlalu besar: dijangka adalah",
+      "why": "Zod v4 多语言错误表（印度尼西亚 / 马来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Terlalu kecil: diharapkan memiliki",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Terlalu kecil: diharapkan menjadi",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Terlalu kecil: dijangka",
+      "why": "Zod v4 多语言错误表（印度尼西亚 / 马来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Terlalu kecil: dijangka adalah",
+      "why": "Zod v4 多语言错误表（印度尼西亚 / 马来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Texto inválido: deve começar com \" \"",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Texto inválido: deve corresponder ao padrão",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Texto inválido: deve incluir \" \"",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Texto inválido: deve terminar com \" \"",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Tipo inválido: esperado , recebido",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Tipus invàlid: s'esperava , s'ha rebut",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Trop grand : attendu que ait",
+      "why": "Zod v4 多语言错误表（法语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Trop grand : attendu que soit",
+      "why": "Zod v4 多语言错误表（法语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Trop grand : doit",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Trop grand : doit être",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Trop petit : attendu que ait",
+      "why": "Zod v4 多语言错误表（法语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Trop petit : attendu que soit",
+      "why": "Zod v4 多语言错误表（法语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Trop petit : doit",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Trop petit : doit être",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Troppo grande: deve avere",
+      "why": "Zod v4 多语言错误表（意大利语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Troppo grande: deve essere",
+      "why": "Zod v4 多语言错误表（意大利语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Troppo piccolo: deve avere",
+      "why": "Zod v4 多语言错误表（意大利语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Troppo piccolo: deve essere",
+      "why": "Zod v4 多语言错误表（意大利语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Tùy chọn không hợp lệ: mong đợi một trong các giá trị",
+      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Túl kicsi: a bemeneti érték mérete túl kicsi",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Túl kicsi: a bemeneti érték túl kicsi",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Túl nagy: a bemeneti érték túl nagy:",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Túl nagy: mérete túl nagy",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "URL codificada em base64",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "URL codificada en base64",
+      "why": "Zod v4 多语言错误表（西班牙语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "URL-64-ume kodita karaktraro",
+      "why": "Zod v4 多语言错误表（世界语 / 斯洛文尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ugyldig input: forventet , fikk",
+      "why": "Zod v4 多语言错误表（丹麦 / 挪威语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ugyldig streng: må ende med \" \"",
+      "why": "Zod v4 多语言错误表（丹麦 / 挪威语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ugyldig streng: må inneholde \" \"",
+      "why": "Zod v4 多语言错误表（丹麦 / 挪威语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ugyldig streng: må matche mønsteret",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Ugyldig streng: må starte med \" \"",
+      "why": "Zod v4 多语言错误表（丹麦 / 挪威语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ugyldig streng: skal ende med \" \"",
+      "why": "Zod v4 多语言错误表（丹麦 / 挪威语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ugyldig streng: skal indeholde \" \"",
+      "why": "Zod v4 多语言错误表（丹麦 / 挪威语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ugyldig streng: skal matche mønsteret",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Ugyldig streng: skal starte med \" \"",
+      "why": "Zod v4 多语言错误表（丹麦 / 挪威语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ugyldig tall: må være et multiplum av",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Ugyldig valg: forventet en av",
+      "why": "Zod v4 多语言错误表（丹麦 / 挪威语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ugyldig verdi: forventet",
+      "why": "Zod v4 多语言错误表（丹麦 / 挪威语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ugyldig værdi: forventede",
+      "why": "Zod v4 多语言错误表（丹麦 / 挪威语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ugyldigt input: forventede , fik",
+      "why": "Zod v4 多语言错误表（丹麦 / 挪威语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ugyldigt input: matcher ingen af de tilladte typer",
+      "why": "Zod v4 多语言错误表（丹麦 / 挪威语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ugyldigt tal: skal være deleligt med",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Ugyldigt valg: forventede en af følgende",
+      "why": "Zod v4 多语言错误表（丹麦 / 挪威语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ungültige Eingabe: erwartet , erhalten",
+      "why": "Zod v4 多语言错误表（德语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ungültige Option: erwartet eine von",
+      "why": "Zod v4 多语言错误表（德语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ungültige Zahl: muss ein Vielfaches von sein",
+      "why": "Zod v4 多语言错误表（德语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ungültiger String: muss \" \" enthalten",
+      "why": "Zod v4 多语言错误表（德语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ungültiger String: muss mit \" \" beginnen",
+      "why": "Zod v4 多语言错误表（德语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ungültiger String: muss mit \" \" enden",
+      "why": "Zod v4 多语言错误表（德语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Unknown data type:",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Unrecognized hash format:",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Valeur invalide dans",
+      "why": "Zod v4 多语言错误表（法语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Valor invàlid: s'esperava",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Valor inválido em",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Valor inválido en",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Virheellinen arvo joukossa",
+      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Virheellinen avain tietueessa",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Virheellinen luku: täytyy olla luvun monikerta",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Virheellinen syöte",
+      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Virheellinen syöte: täytyy alkaa \" \"",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Virheellinen syöte: täytyy loppua \" \"",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Virheellinen syöte: täytyy olla",
+      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Virheellinen syöte: täytyy sisältää \" \"",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Virheellinen syöte: täytyy vastata säännöllistä lauseketta",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Virheellinen tyyppi: odotettiin , oli",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Virheellinen valinta: täytyy olla yksi seuraavista:",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Yanlış dəyər: gözlənilən",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Yanlış dəyər: gözlənilən , daxil olan",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Yanlış mətn: \" \" daxil olmalıdır",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Yanlış mətn: \" \" ilə başlamalıdır",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Yanlış mətn: \" \" ilə bitməlidir",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Yanlış mətn: şablonuna uyğun olmalıdır",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Yanlış seçim: aşağıdakılardan biri olmalıdır:",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Yanlış ədəd: ilə bölünə bilən olmalıdır",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Za duża wartość: oczekiwano, że będzie mieć",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Za mała wartość: oczekiwano, że będzie mieć",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Zu groß: erwartet, dass hat",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Zu groß: erwartet, dass ist",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Zu klein: erwartet, dass hat",
+      "why": "Zod v4 多语言错误表（荷兰语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Zu klein: erwartet, dass ist",
+      "why": "Zod v4 多语言错误表（荷兰语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "adres email",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "adresse courriel",
+      "why": "Zod v4 多语言错误表（法语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "adresse e-mail",
+      "why": "Zod v4 多语言错误表（法语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "adreça electrònica",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "alamat e-mel",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "alamat email",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "att innehålla",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "base64 URL-gecodeerde tekst",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "base64 ile şifrelenmiş metin",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "base64 kodiran niz",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "base64 užkoduota eilutė",
+      "why": "Zod v4 多语言错误表（立陶宛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "base64-encoded strengur",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "base64-encoded string",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "base64-encoded رشته",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "base64-encoded متن",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "base64-encoded சரம்",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "base64-enkodet streng",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "base64-gecodeerde tekst",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "base64-kodad sträng",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "base64-kodet streng",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "base64-koodattu merkkijono",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "base64-kódolt string",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "base64-şifreli metin",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "base64url ile şifrelenmiş metin",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "base64url kodiran niz",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "base64url užkoduota eilutė",
+      "why": "Zod v4 多语言错误表（立陶宛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "base64url 인코딩 문자열",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "base64url-encoded strengur",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "base64url-encoded string",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "base64url-encoded رشته",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "base64url-encoded متن",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "base64url-encoded சரம்",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "base64url-enkodet streng",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "base64url-kodad sträng",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "base64url-kodet streng",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "base64url-koodattu merkkijono",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "base64url-kódolt string",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "base64url-şifreli metin",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "base64url-енкодирана низа",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "base64url-кодиран низ",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "base64url-კოდირებული სტრინგი",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "cadena codificada en base64",
+      "why": "Zod v4 多语言错误表（西班牙语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "cadena codificada en base64url",
+      "why": "Zod v4 多语言错误表（西班牙语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "chaîne JSON",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "chaîne encodée en base64",
+      "why": "Zod v4 多语言错误表（法语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "chaîne encodée en base64url",
+      "why": "Zod v4 多语言错误表（法语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "chuỗi mã hóa base64",
+      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "chuỗi mã hóa base64url",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "ciąg znaków w formacie JSON",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "ciąg znaków zakodowany w formacie base64",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "ciąg znaków zakodowany w formacie base64url",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "com a màxim",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "com a mínim",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "connector-status ok",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "czas trwania ISO",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "data e hora ISO",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "data e ora ISO",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "data i godzina w formacie ISO",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "data i hora ISO",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "data w formacie ISO",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "date et heure ISO",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "date-heure ISO",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "datum a čas ve formátu ISO",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "datum ve formátu ISO",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "daxilində yanlış açar",
+      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "daxilində yanlış dəyər",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "didesnis kaip",
+      "why": "Zod v4 多语言错误表（立陶宛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "dirección de correo electrónico",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "doba trvání ISO",
+      "why": "Zod v4 多语言错误表（印度尼西亚 / 马来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "durasi format ISO",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "e-mailová adresa",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "e-posta adresi",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "e-poštni naslov",
+      "why": "Zod v4 多语言错误表（世界语 / 斯洛文尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "email address",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "endereço de e-mail",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "faixa de IPv4",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "faixa de IPv6",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "fecha y hora ISO",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "godzina w formacie ISO",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "indirizzo email",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "içinde geçersiz anahtar",
+      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "içinde geçersiz değer",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "jam format ISO",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "khoảng thời gian ISO",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "không hợp lệ",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "loginė reikšmė",
+      "why": "Zod v4 多语言错误表（立陶宛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "mažesnis kaip",
+      "why": "Zod v4 多语言错误表（立陶宛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "ne didesnis kaip",
+      "why": "Zod v4 多语言错误表（立陶宛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "ne mažesnis kaip",
+      "why": "Zod v4 多语言错误表（立陶宛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "neapibrėžta reikšmė",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "nežinomas objektas",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "ngày giờ ISO",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "nulinė reikšmė",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "numéro E.164",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "número grande",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "reguljärt uttryck",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "regulární výraz",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "rentang alamat IPv4",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "rentang alamat IPv6",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "string dengan enkode base64",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "string dengan enkode base64url",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "string dikodkan base64",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "string dikodkan base64url",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "suuren kokonaisluvun",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "sveikasis skaičius",
+      "why": "Zod v4 多语言错误表（立陶宛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "säännöllinen lauseke",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "tanggal dan waktu format ISO",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "tanggal format ISO",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "tarikh masa ISO",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "texto codificado em base64",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "tidak valid",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "turi būti didesnis kaip",
+      "why": "Zod v4 多语言错误表（立陶宛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "turi būti ilgesnė kaip",
+      "why": "Zod v4 多语言错误表（立陶宛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "turi būti mažesnis kaip",
+      "why": "Zod v4 多语言错误表（立陶宛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "turi būti ne didesnis kaip",
+      "why": "Zod v4 多语言错误表（立陶宛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "turi būti ne ilgesnė kaip",
+      "why": "Zod v4 多语言错误表（立陶宛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "turi būti ne mažesnis kaip",
+      "why": "Zod v4 多语言错误表（立陶宛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "turi būti ne trumpesnė kaip",
+      "why": "Zod v4 多语言错误表（立陶宛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "turi būti trumpesnė kaip",
+      "why": "Zod v4 多语言错误表（立陶宛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "turi klaidingą įvestį",
+      "why": "Zod v4 多语言错误表（立陶宛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "turi turėti daugiau kaip",
+      "why": "Zod v4 多语言错误表（立陶宛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "turi turėti mažiau kaip",
+      "why": "Zod v4 多语言错误表（立陶宛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "turi turėti ne daugiau kaip",
+      "why": "Zod v4 多语言错误表（立陶宛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "turi turėti ne mažiau kaip",
+      "why": "Zod v4 多语言错误表（立陶宛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Àṣàyàn aṣìṣe: yan ọ̀kan lára",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Çok büyük: beklenen",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Çok küçük: beklenen",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Çox böyük: gözlənilən",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Çox kiçik: gözlənilən",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Érvénytelen bemenet",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Érvénytelen bemenet: a várt érték",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Érvénytelen bemenet: a várt érték , a kapott érték",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Érvénytelen kulcs",
+      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Érvénytelen opció: valamelyik érték várt",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Érvénytelen string: \" \" értéket kell tartalmaznia",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Érvénytelen string: \" \" értékkel kell kezdődnie",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Érvénytelen string: \" \" értékkel kell végződnie",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Érvénytelen string: mintának kell megfelelnie",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Érvénytelen szám: többszörösének kell lennie",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Érvénytelen érték:",
+      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ìbáwọlé aṣìṣe: a ní láti fi",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Ìbáwọlé aṣìṣe: a ní láti fi , àmọ̀ a rí",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Ógildur strengur: verður að byrja á \" \"",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ógildur strengur: verður að enda á \" \"",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ógildur strengur: verður að fylgja mynstri",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Ógildur strengur: verður að innihalda \" \"",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ógilt val: má vera eitt af eftirfarandi",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "àgbègbè IPv4",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "àgbègbè IPv6",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "čas ve formátu ISO",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Đầu vào không hợp lệ",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Đầu vào không hợp lệ: mong đợi",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Đầu vào không hợp lệ: mong đợi , nhận được",
+      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "địa chỉ email",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "řetězec ve formátu JSON",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "řetězec zakódovaný ve formátu base64",
+      "why": "Zod v4 多语言错误表（印度尼西亚 / 马来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "řetězec zakódovaný ve formátu base64url",
+      "why": "Zod v4 多语言错误表（印度尼西亚 / 马来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Şablon dizesi",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "радок у фармаце base64url",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "рядок у кодуванні base64url",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "строка в формате base64url",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "نَص بترميز base64-encoded",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "نَص بترميز base64url-encoded",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "ខ្សែអក្សរអ៊ិកូដ base64url",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Ọ̀rọ̀ aṣìṣe: gbọ́dọ̀ bá àpẹẹrẹ mu",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Ọ̀rọ̀ aṣìṣe: gbọ́dọ̀ parí pẹ̀lú \" \"",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "ọ̀rọ̀ base64url",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Base64-URL-codierter String",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Base64-codierter String",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Chave desconhecida :",
+      "why": "Zod v4 多语言错误表（葡萄牙语 / 加泰罗尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Date cannot be represented in JSON Schema",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Entrée invalide",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Get your Resend API key",
+      "why": "gravity_index 工具文档里的示例代码片段（工具说明 payload 的一部分，文本形如按钮示例 `text:\"Get your Resend API key\"`）：属于送给模型看的示例，不是应用界面按钮，保留原文。"
+    },
+    {
+      "text": "IPv4 address",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "IPv4 adresa",
+      "why": "Zod v4 多语言错误表（印度尼西亚 / 马来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "IPv4 adresas",
+      "why": "Zod v4 多语言错误表（立陶宛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "IPv4 adresi",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "IPv4 aralığı",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "IPv4 menzili",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "IPv4 naslov",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "IPv4 nişânı",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "IPv4 range",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "IPv4 tinklo prefiksas (CIDR)",
+      "why": "Zod v4 多语言错误表（立陶宛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "IPv6 address",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "IPv6 adresa",
+      "why": "Zod v4 多语言错误表（印度尼西亚 / 马来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "IPv6 adresas",
+      "why": "Zod v4 多语言错误表（立陶宛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "IPv6 adresi",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "IPv6 aralığı",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "IPv6 menzili",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "IPv6 naslov",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "IPv6 nişânı",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "IPv6 range",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "IPv6 tinklo prefiksas (CIDR)",
+      "why": "Zod v4 多语言错误表（立陶宛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "ISO dagsetning",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "ISO data",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "ISO date",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "ISO datetime",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "ISO datum",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "ISO duration",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "ISO duur",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "ISO dátum",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "ISO hengâmı",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "ISO idő",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "ISO laikas",
+      "why": "Zod v4 多语言错误表（立陶宛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "ISO müddeti",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "ISO saat",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "ISO süre",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "ISO tarih",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "ISO tarihi",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "ISO tijd",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "ISO time",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "ISO trajanje",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "ISO trukmė",
+      "why": "Zod v4 多语言错误表（立陶宛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "ISO tímalengd",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "ISO tími",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "ISO zamanı",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "ISO čas",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "ISO-Datum und -Uhrzeit",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Invalid Date",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Invalid UUID version: \" \"",
+      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Invalid hostname",
+      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Invalid input",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Invalid protocol",
+      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ismeretlen kulcs :",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "JSON dizesi",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "JSON eilutė",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "JSON metin",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "JSON niz",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "JSON strengur",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "JSON string",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Klaidinga įvestis",
+      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Llave desconocida :",
+      "why": "Zod v4 多语言错误表（西班牙语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "MAC address",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Map cannot be represented in JSON Schema",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Nekonata ŝlosilo :",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Neplatná hodnota v",
+      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Neplatný formát",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Neplatný klíč v",
+      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Neplatný vstup",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Nevalida enigo",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Neveljaven ključ v",
+      "why": "Zod v4 多语言错误表（世界语 / 斯洛文尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Neveljaven vnos",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Neveljavna vrednost v",
+      "why": "Zod v4 多语言错误表（世界语 / 斯洛文尼亚语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Neznámé klíče:",
+      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Nierozpoznane klucze :",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Ogiltig input",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ogiltig nyckel i",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ogiltigt värde i",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Onbekende key :",
+      "why": "Zod v4 多语言错误表（荷兰语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ongeldige invoer",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Open preview",
+      "why": "gravity_index 工具文档里的示例代码片段（工具说明 payload 的一部分，文本形如按钮示例 `text:\"Get your Resend API key\"`）：属于送给模型看的示例，不是应用界面按钮，保留原文。"
+    },
+    {
+      "text": "Privalo būti",
+      "why": "Zod v4 多语言错误表（立陶宛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Quá lớn: mong đợi",
+      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Rangt gildi",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Rangt gildi í",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Rangur lykill í",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Set cannot be represented in JSON Schema",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Symbols cannot be represented in JSON Schema",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Transforms cannot be represented in JSON Schema",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Tuntematon avain",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Tuntemattomat avaimet",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ugyldig input",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Ugyldig nøgle i",
+      "why": "Zod v4 多语言错误表（丹麦 / 挪威语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ugyldig nøkkel i",
+      "why": "Zod v4 多语言错误表（丹麦 / 挪威语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ugyldig verdi i",
+      "why": "Zod v4 多语言错误表（丹麦 / 挪威语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ugyldig værdi i",
+      "why": "Zod v4 多语言错误表（丹麦 / 挪威语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ugyldigt input",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Ukendt nøgle",
+      "why": "Zod v4 多语言错误表（丹麦 / 挪威语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ukendte nøgler",
+      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ukjent nøkkel",
+      "why": "Zod v4 多语言错误表（丹麦 / 挪威语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ukjente nøkler",
+      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Unbekannte Schlüssel",
+      "why": "Zod v4 多语言错误表（德语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Unbekannter Schlüssel",
+      "why": "Zod v4 多语言错误表（德语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Undefined cannot be represented in JSON Schema",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Ungültige Eingabe",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Ungültige Eingabe: erwartet",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "Ungültiger String: muss dem Muster entsprechen",
+      "why": "Zod v4 多语言错误表（德语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Ungültiger Wert in",
+      "why": "Zod v4 多语言错误表（德语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Unmergable intersection. Error path:",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Unprocessed schema. This is a bug in Zod.",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Unrecognized key :",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Unrecognized key: \" \"",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Unsupported type:",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Virheellinen unioni",
+      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "Void cannot be represented in JSON Schema",
+      "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
+    },
+    {
+      "text": "to have",
+      "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
+    },
+    {
+      "text": "Ongeldig:",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "adres IPv4",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "adres IPv6",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "adresse IPv4",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "adresse IPv6",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "adreça IPv4",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "adreça IPv6",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "alamat IPv4",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "alamat IPv6",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "att ha",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "cadena JSON",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "chuỗi JSON",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "data ISO",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "date ISO",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "dirección IPv4",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "dirección IPv6",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "duración ISO",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "durada ISO",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "durata ISO",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "duração ISO",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "durée ISO",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "el valor",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "endereço IPv4",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "endereço IPv6",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "fecha ISO",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "giá trị",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "giờ ISO",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "heure ISO",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "hora ISO",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "indirizzo IPv4",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "indirizzo IPv6",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "intervallo IPv4",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "intervallo IPv6",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "ir lyklar",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "julat IPv4",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "julat IPv6",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "la valeur",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "masa ISO",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "menys de",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "ngày ISO",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "obseg IPv4",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "obseg IPv6",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "ora ISO",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "plage IPv4",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "plage IPv6",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "rang IPv4",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "rang IPv6",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "rango IPv4",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "rango IPv6",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "rozsah IPv4",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "rozsah IPv6",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "string JSON",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "stringa JSON",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "tarikh ISO",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "te hebben",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "tempoh ISO",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "texto JSON",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "tidak sah",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "turi būti",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "ur lykill",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "zakres IPv4",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "zakres IPv6",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "zu haben",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "địa chỉ IPv4",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "địa chỉ IPv6",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "ข้อความแบบ Base64 สำหรับ URL",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "ช่วง IP แบบ IPv4",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "ช่วง IP แบบ IPv6",
+      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
     }
   ],
   "uiStrings": [
@@ -216,6 +3156,82 @@
     {
       "text": "localhost:3000",
       "why": "广告卡里模拟浏览器地址栏的内容（Freebuff 自家广告的产品预览框），是演示用的地址串，不是文案；与假代码同类。"
+    },
+    {
+      "text": "Gravity Index",
+      "why": "服务目录名（Freebuff 内置的连接器/服务浏览器标题与卡片名 `Zu=\"Gravity Index\"`，与 Discord / Freebuff 同类，是产品名不译）。"
+    },
+    {
+      "text": "Promise",
+      "why": "Zod v4 多语言错误表（希伯来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。（类型名标签 `promise:{label:\"Promise\"}`）"
+    },
+    {
+      "text": "BigInt",
+      "why": "Zod v4 多语言错误表（类型名标签）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。——库内部把 BigInt/NaN 当类型标签与字面量用（`case\"BigInt\":`、`Number.isNaN(r)?\"NaN\"`），翻掉会静默改行为。"
+    },
+    {
+      "text": "NaN",
+      "why": "同上（Zod 类型名标签与数值格式化内部值，43 处里绝大多数是 `\"NaN\"` 比较/返回值形态，不可翻）。"
+    },
+    {
+      "text": "זמן ISO",
+      "why": "Zod v4 多语言错误表（希伯来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "טווח IPv4",
+      "why": "Zod v4 多语言错误表（希伯来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "טווח IPv6",
+      "why": "Zod v4 多语言错误表（希伯来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "כתובת IPv4",
+      "why": "Zod v4 多语言错误表（希伯来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "כתובת IPv6",
+      "why": "Zod v4 多语言错误表（希伯来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "מחרוזת JSON",
+      "why": "Zod v4 多语言错误表（希伯来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "מספר E.164",
+      "why": "Zod v4 多语言错误表（希伯来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "מפה (Map)",
+      "why": "Zod v4 多语言错误表（希伯来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "משך זמן ISO",
+      "why": "Zod v4 多语言错误表（希伯来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "סימבול (Symbol)",
+      "why": "Zod v4 多语言错误表（希伯来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "ערך לא מוגדר (undefined)",
+      "why": "Zod v4 多语言错误表（希伯来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "ערך ריק (null)",
+      "why": "Zod v4 多语言错误表（希伯来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "קבוצה (Set)",
+      "why": "Zod v4 多语言错误表（希伯来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "תאריך ISO",
+      "why": "Zod v4 多语言错误表（希伯来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "תאריך וזמן ISO",
+      "why": "Zod v4 多语言错误表（希伯来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
     }
   ]
 }

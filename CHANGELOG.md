@@ -4,6 +4,55 @@
 > 逐条账目（对差统计、词典条数与替换次数、各扫描的残留条数、发布包哈希）与工具口径不收在这里——
 > 需要时看 `git log`：每次适配与发布的提交里都写着完整过程。
 
+## [0.0.157] · 2026-10-03（未发布：装机版本已自动跟进到 0.0.158，本版只作为迁移基线留档）
+
+上游这一版把 **gravity_index 的开发者服务接进了产品**：新增服务浏览面板
+（`Browse services` / `Search 500+ services` / `Service categories` / `Grid view` / `List view` /
+`Name (A–Z)` / `Loading services…` / `No service matches`），每个服务卡上的 `Get … API key` /
+`Documentation` / `Website` / `Integrate` / `Setup`，以及一批解释这套机制怎么用的说明文案
+（`Finds and sets up developer services for your project: …` / `Always on. There is no switch.` /
+`The agent asks you before it creates an account on a service for you.` / `Integrate puts a request
+in your open thread’s message box for you to send.` / `Open a thread first, then press Integrate.`）。
+设置页那边把 `Updates` 与 `Version` 合并成了 `About`（`Your version of Freebuff and what’s new in
+it.`），侧栏搜索加了 `Showing X of Y` 的命中计数，消息队列多了 `Queued prompt` / `Find services`。
+
+- **文案**：上游新增 564 条片段 / 760 条字面量（其中 201 条片段级没报到的），下线 0 条、疑似改写 0 组。
+  词典 2029 → 2069 条（`exact` 1654 / `template` 289 / `code` 36 / `pattern` 90），
+  替换总数 2429 → 2481、全命中；纯字面量词条覆盖 1604/1604（100.0%）。
+- **词典迁移**：`remap` 289 条模板全部 `SAME`（这版 minifier 没动插值名），`resituate` 回查
+  2067 条旧词条全部命中、无 CONFIRM / GONE；新增的 95 条模板里大部分是把旧句子的插值改写成
+  新形态的改写版（`Regular price:`、`Your hour is up.` 一族）。
+- **约定保留**：本版新增 **736 条**，是历来最大的一笔——`gravity_index` 工具链连同 **Zod v4**
+  一起打进 bundle，带进来几百条库内部诊断文案（`Invalid option: expected one of`、
+  `Function types cannot be represented in JSON Schema` 等）与它自带的**几十种语言错误表**
+  （`Nevalida enigo: atendiĝis` / `Of lítið: gert er fyrir að hafi` …）。它们都不是界面文案，
+  翻了没有接收方、还会与库的英文文档对不上，与已登记的 react-window console.warn 同类，
+  逐条写明理由登记进 `fragments`；`gravity_index` 的工具 schema 描述（`Widget type. Currently,
+  the only supported widget is button.` 等）是**送给模型的 payload** 而不是给人读的文案，
+  与已登记的 `Regions: Style changes to implement:` 同类。
+- **主进程**：`electron/` 13 个补丁一次干净套用，锚点无漂移；主进程英文扫描 0 条疑似漏翻、
+  0 条短标签待过目，93 条约定保留分类计数不变。
+- **UI 行为补丁**：两组仍判 `KEEP`——上游没碰流式序号与令牌缓存，锚点全部唯一命中，产物侧行为取证通过。
+- **四道发布闸门全绿**：主进程 0 条；回归闸门（对比 `pack-v0.0.156`）69 处新增英文全部落在登记表里、
+  0 处未登记；单词级界面文案差集 0 处（本版界面位置英文 38 处 vs 上一版 20 处，扣除登记表后无独有项）；
+  字面量占用无冲突。
+- **顺带修掉的存量问题**（来自《汉化质量审查报告》）：
+  - **P0：两条模板占位符被截断**，界面会把 JS 代码残骸直接渲染给用户——
+    `…project folder is on t.currentBranch??"游离的 HEAD"`（丢了 `${e.` 与闭合 `}`）与
+    `…wallet 中使用 3r?" 并结束当前会话""`（丢了 `${a`）。已改正，产物里不再出现裸代码。
+  - **P0 的根因是闸门盲区**：`lint_dict` 的 E3 只拦「译文多出的插值」，且**数量少于原文属正常**
+    （中文吸收复数），于是「残骸里连 `${` 都没有」这类破损能全绿通过。新增 **E6 模板残骸**规则：
+    译文剔掉所有 `${…}` 后若仍匹配 `?"` / `":` / `??` / `===` / `!==` / `=>` / `||` / `.length`
+    即判硬错误，并在 `test_remap.js` 配了 2 条真阳性 + 复数省略的阴性夹具。
+  - **术语统一**：`thread` 全场 126 处译作「会话」，仍有 3 处作「线程」（`No outstanding changes
+    relative to this thread's source branch.` / `Reading the thread's worktree…` / `Could not fork
+    thread: …`）——中文里「线程」几乎专指 CPU thread，会误导成并发相关，已一并改回「会话」。
+  - **语义守卫表**跟着上游换页：`Updates` 与 `Version` 合并成 `About`，`CONSISTENT_LABELS` 里的
+    `更新` 换成 `关于`（这张表只在同表同值、进程内派生时才能整表替换，`About` 与其余成员同构）。
+- **影响面**：`targetVersion` / `packVersion` 升到 0.0.157，但**没有发 Release**——本机 Freebuff
+  在适配完成后自动更新到了 0.0.158，`pack-v0.0.157` 对装 0.0.158 的机器不适用；本版作为
+  0.0.158 迁移的基线留档，不单独发布。
+
 ## [0.0.156] · 2026-10-02（已发布 `pack-v0.0.156`）
 
 上游这一版把**广告位整块翻新并加了预览实验室**：新增 `Ad lab`（`All desktop formats | local mocks`），

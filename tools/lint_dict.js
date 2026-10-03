@@ -13,6 +13,9 @@
 //                 只允许在 template 分区、译文必须逐字节复现同一尾巴、形态要能被 remap 迁移，
 //                 且骨架必须登记在 TRUNCATED_TEMPLATE_ANCHORS 里——这类键是特例，
 //                 0.0.104 适配时正是靠人肉才发现的 4 条，登记后就不再靠人工盯。
+//   E6 模板残骸   译文剔掉所有 ${…} 后仍残留 JS 语法碎片（?"  ": ?? === !== => || .length）：
+//                 改写时丢了插值的前缀/闭合，替换后模板会把代码原样渲染给用户。
+//                 E3 只拦「译文多出的插值」，这类「缺失的插值」残骸里连 ${ 都没有，得单独拦。
 //
 // 用法：node tools/lint_dict.js [dict.json]      # 默认 <repo>/dict.json
 const fs = require('fs')
@@ -99,6 +102,9 @@ try {
 
 const PH = /\$\{(?:[^{}]|\{[^{}]*\})*\}/g
 const phOf = (s) => s.match(PH) || []
+// E6 的「JS 残骸」词法：这些片段在纯中文译文里不可能合法出现（中文用全角标点与弯引号），
+// 一旦命中就是丢了 ${…} 的前缀/闭合后留下的代码碎片
+const RESIDUE = /\?"|":|\?\?|===|!==|=>|\|\||\.length\b/
 // 表达式骨架：抹掉字符串字面量后比较——表达式内部的双引号 / 反引号模板文案是可翻译的
 // （如 ${r.title||"new thread"} → ${r.title||"新会话"}），结构一致即可
 const skeletonOf = (e) => e.replace(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`/g, '""')
@@ -133,6 +139,22 @@ for (const sec of SECTIONS) {
       }
       if (vp.length !== kp.length) {
         info.push(`  · ${n}: 占位符数不同（key ${kp.length} → 译 ${vp.length}，多为复数吸收）：${JSON.stringify(k.slice(0, 40))}`)
+      }
+    }
+
+    // E6 模板残骸：剔掉所有 ${…} 后仍残留 JS 语法碎片——改写时丢了插值的前缀或闭合
+    // （如 ${e.currentBranch??"a detached HEAD"} 被写成 t.currentBranch??"…"），
+    // 替换后模板会把整段代码原样渲染给用户。这类残骸里连 ${ 都没有，
+    // E3（只看多出的插值）与 W2（只看有无中文）都发现不了，得单独拦。
+    // 半截模板键（E5 那类，键以未闭合的 ${条件? 结尾）合法地留下 ${，故跳过。
+    if (sec !== 'code' && !/\$\{[^}]*$/.test(k)) {
+      const residue = v.replace(PH, '')
+      const hit = residue.match(RESIDUE)
+      if (hit) {
+        errors.push(
+          `E6 ${n}: 译文剔掉插值后残留 JS 片段 ${JSON.stringify(hit[0])}——多半丢了 \${…} 的前缀或闭合，` +
+            `替换后会把代码渲染给用户：${JSON.stringify(k.slice(0, 44))}`,
+        )
       }
     }
 

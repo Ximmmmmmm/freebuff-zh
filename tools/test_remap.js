@@ -12,7 +12,8 @@
 //      且译文尾巴与 key 逐字节一致；
 //   3. 未改名的 bundle：全部落 SAME（不允许误判 MISSING/AMBIGUOUS）；
 //   4. 迁移后的词典必须过 lint_dict；
-//   5. lint_dict 的 E5 负面用例：未登记的半截键 / 译文尾巴不一致 / 放进 exact 分区，均须 exit 1；
+//   5. lint_dict 的 E5 / E6 负面用例：未登记的半截键 / 译文尾巴不一致 / 放进 exact 分区 /
+//      译文剔掉插值后残留 JS 代码碎片（丢了 ${…} 的前缀或闭合），均须 exit 1；
 //   6. 同一锚文本在 bundle 里有**两份拷贝**：插值一致时照旧迁移，插值名不一致时必须拒绝
 //      写回、列进 AMBIGUOUS 明细（猜一份写下去＝另一份静默退回英文，而构建依旧全绿）；
 //   7. AMBIGUOUS 的**每一条**退出路径：能触发的都配夹具并断言「词典一个字节都没动」
@@ -83,21 +84,48 @@ if (plain.length === 0) {
 }
 
 // --- 合成「下一版 minifier 改了变量名」的 bundle ---------------------------------
+// 按真实 minifier 的口径改名：**同一标识符在一条模板里只有一个别名**（同名变量在同一作用域
+// 内不可能被拆成两个名字），且**字符串字面量内容一个字都不动**（minifier 不会改文案）。
+// 曾经的夹具对每次出现各发一个名字、连 `"a detached HEAD"` 里的词也一起改——那不是 minifier
+// 行为，会把「同一插值写了两遍」的样本一律推进 P5 的歧义路径（下面有手写 P5 夹具专门盯它），
+// 于是真实词条（`…on ${e.currentBranch??"a detached HEAD"}…` 这类重复 ${e.branch}）一进样本
+// 就把自测染红。
 function renameKey(k, tag) {
-  let idx = 0
+  const map = new Map()
+  const alias = (t) => {
+    if (!map.has(t)) map.set(t, `q${tag}_${map.size}_${t}`)
+    return map.get(t)
+  }
   return k.replace(EXPR, (m) => {
     const partial = !m.endsWith('}')
     const inner = partial ? m.slice(2) : m.slice(2, -1)
-    const map = new Map()
-    const renamed = inner.replace(/[A-Za-z_$][\w$]*/g, (t) => {
-      if (KEYWORDS.has(t)) return t
-      if (map.has(t)) return map.get(t)
-      const name = `q${tag}_${idx}_${t}`
-      map.set(t, name)
-      return name
-    })
-    idx++
-    return '${' + renamed + (partial ? '' : '}')
+    let out = ''
+    let i = 0
+    while (i < inner.length) {
+      const ch = inner[i]
+      if (ch === '"' || ch === "'" || ch === '`') {
+        // 跳过字符串字面量内容（含转义；样本前提已排除反引号，这里一并保险）
+        let j = i + 1
+        while (j < inner.length) {
+          if (inner[j] === '\\') { j += 2; continue }
+          if (inner[j] === ch) { j++; break }
+          j++
+        }
+        out += inner.slice(i, j)
+        i = j
+        continue
+      }
+      const mm = /^[A-Za-z_$][\w$]*/.exec(inner.slice(i))
+      if (mm) {
+        const t = mm[0]
+        out += KEYWORDS.has(t) ? t : alias(t)
+        i += t.length
+        continue
+      }
+      out += ch
+      i++
+    }
+    return '${' + out + (partial ? '' : '}')
   })
 }
 
@@ -410,9 +438,43 @@ const outSec = negative('半截键放进 exact 分区', (d) => {
 })
 chk(/只能出现在 template 分区/.test(outSec), '  报错指出分区限制')
 
+// --- 5) lint 的 E6 负面 / 阴性用例 ---------------------------------------------------
+// E6 抓的是「改写译文时丢了 ${…} 的前缀或闭合」——残骸里连 ${ 都没有，E3（只拦多出的
+// 插值）与 W2（只看有无中文）都发现不了，而替换后模板会把 JS 代码原样渲染给用户。
+// 两条真阳性直接取自 0.0.156 产物上真实发生过的两条译文（详见审查报告 P0-1 / P0-2）。
+const outResidue1 = negative('E6 译文丢了插值前缀（?? "…" 残骸）', (d) => {
+  d.template['This thread started from ${e.branch}, but your project folder is on ${e.currentBranch??"a detached HEAD"} — check out ${e.branch} there.'] =
+    '此会话创建于 ${e.branch} 分支，但你的项目文件夹当前在 t.currentBranch??"游离的 HEAD（detached HEAD）" — 请在那里检出 ${e.branch}。'
+})
+chk(/E6/.test(outResidue1) && /\?\?/.test(outResidue1), '  报错点名 E6 与残留片段（??）')
+
+const outResidue2 = negative('E6 译文丢了插值闭合（r?"…":"" 残骸）', (d) => {
+  d.template["Today's ${r} are spent. This uses ${e.walletSpend} from your wallet${a?'  and ends your current session':''}."] =
+    '今日 ${r} 已用完。将从你的钱包中使用 ${e.walletSpend}r?" 并结束当前会话":""。'
+})
+chk(/E6/.test(outResidue2), '  报错点名 E6')
+
+// 阴性：中文吸收复数后缀（`${c===1?"":"s"}` 整段省略）是合法省略，原文剔掉插值后
+// 不含任何 JS 碎片，不能被 E6 误拦——否则版本适配时每一版都要人工放行一批。
+const positive = (label, mutate) => {
+  const d = JSON.parse(dictText)
+  mutate(d)
+  const p = path.join(WORK, `dict-ok-${positive.n++}.json`)
+  fs.writeFileSync(p, JSON.stringify(d, null, 2) + '\n')
+  const r = lint(p)
+  chk(r.code === 0, `${label} → exit 0（实际 ${r.code}）`)
+  return r.out
+}
+positive.n = 0
+
+const outPlural = positive('E6 阴性：合法省略复数占位符不被误拦', (d) => {
+  d.template['${c} hour${c===1?"":"s"} left'] = '还剩 ${c} 小时'
+})
+chk(!/E6/.test(outPlural), '  输出里没有 E6 报告')
+
 console.log(
   fail
     ? `\n${fail} 项失败`
-    : `\n全部通过（${samples.length} 条样本 + 重复拷贝 2 例 + 退出路径/边界 ${remapCase.n} 例 + 3 条负面用例）`,
+    : `\n全部通过（${samples.length} 条样本 + 重复拷贝 2 例 + 退出路径/边界 ${remapCase.n} 例 + ${negative.n} 条 lint 负例 + ${positive.n} 条 lint 阴性）`,
 )
 process.exit(fail ? 1 : 0)
