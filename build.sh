@@ -107,7 +107,13 @@ if [ -n "${PRISTINE_UI}" ]; then
     echo "  只在主进程出现 → 写成 patches/electron-*.patch，并从 dict.json 删掉（词典够不着主进程文件）" >&2
     echo "  只在上一版 UI 出现 → 上游改写了这句或整段下线：按新原文改写词条，确认下线就直接删" >&2
     echo "  两边都没有 → 历史死词条，删掉即可" >&2
-    exit 1
+    # 缺口发布模式（ALLOW_MISSED=1）：第 4 步那个 MISSED 检查认这个开关，本关以前不认，
+    # 等于把「缺口发布」这条路堵死在解包之前 —— 开关形同虚设。这里让它同样认。
+    if [ "${ALLOW_MISSED:-0}" = "1" ]; then
+      echo "WARN: ALLOW_MISSED=1 缺口发布模式——够不着的词条不做迁移，对应文案保持英文；其余校验（补丁 / 语法 / 自检 / 行为取证）照常执行。" >&2
+    else
+      exit 1
+    fi
   fi
 else
   echo "  ! 未给 ui 目录，跳过（体检需要本版 UI bundle）" >&2
@@ -151,25 +157,34 @@ for f in "${WORK}/main/electron/"*.cjs; do
 done
 
 echo "== 4/4 重打包 asar 并处理 ui =="
-mkdir -p "${HERE}/output"
-npx -y @electron/asar pack "${WORK}/main" "${HERE}/output/app.asar"
+# 产物先落在临时目录，自检通过之后才整份换位进 output/。
+# 为什么必须这样：控制器只认「output/ 目录存在 + 版本戳」就安装，不读构建日志——
+# 以前 app.asar 在自检之前就落地 output/，于是「自检已判不可靠」的产物照样被装进装机。
+# （2026-10-05 事故：自检打印「产物不可靠，请勿安装」后退出，可 app.asar 早已落盘，
+#   控制器把它打进了装机，Freebuff 直接打不开。）
+# 改成 staging 之后，任何一步失败都不碰 output/，失败构建再也留不下可被安装的产物。
+STAGE="${WORK}/out"
+rm -rf "${STAGE}"
+mkdir -p "${STAGE}"
+npx -y @electron/asar pack "${WORK}/main" "${STAGE}/app.asar"
 
 if [ -n "${PRISTINE_UI}" ]; then
-  rm -rf "${HERE}/output/ui"
-  mkdir -p "${HERE}/output/ui/assets"
-  cp "${PRISTINE_UI}/index.html" "${HERE}/output/ui/index.html"
+  rm -rf "${STAGE}/ui"
+  mkdir -p "${STAGE}/ui"
+  # 整份镜像原版 ui（含 fonts/ logos/ 与全部 assets/），再单独覆盖要汉化的那两个文件。
+  # 只拷 index.html + assets/ 会把 fonts/ 与 logos/ 丢掉：应用后界面缺字体、服务图标全空。
+  cp -r "${PRISTINE_UI}/." "${STAGE}/ui/"
   # Apply UI translations directly (git apply has CRLF issues on Windows with .gitattributes)
-  node "${HERE}/tools/apply_ui_patch.js" "${HERE}/output/ui/index.html"
-  # 汉化包版本戳：控制器用 instaled/output 产物里的这个 meta 比对是否需要更新
+  node "${HERE}/tools/apply_ui_patch.js" "${STAGE}/ui/index.html"
+  # 汉化包版本戳：控制器用 installed/output 产物里的这个 meta 比对是否需要更新
   PACK_VERSION="$(node -e 'const m = require(process.argv[1]); console.log(m.packVersion || m.targetVersion)' "${HERE}/manifest.json")"
-  PACK_VERSION="${PACK_VERSION}" node -e 'const fs = require("fs"); const f = process.argv[1]; let s = fs.readFileSync(f, "utf8"); if (!s.includes("hanhua-pack")) { s = s.replace(/<head>/i, "<head>\n<meta name=\"hanhua-pack\" content=\"" + process.env.PACK_VERSION + "\">"); fs.writeFileSync(f, s); }' "${HERE}/output/ui/index.html"
-  cp -r "${PRISTINE_UI}/assets/." "${HERE}/output/ui/assets/"
+  PACK_VERSION="${PACK_VERSION}" node -e 'const fs = require("fs"); const f = process.argv[1]; let s = fs.readFileSync(f, "utf8"); if (!s.includes("hanhua-pack")) { s = s.replace(/<head>/i, "<head>\n<meta name=\"hanhua-pack\" content=\"" + process.env.PACK_VERSION + "\">"); fs.writeFileSync(f, s); }' "${STAGE}/ui/index.html"
   # apply the dictionary ONLY to the main bundle (the one index.html loads):
   # other assets are syntax-highlighting grammars whose keys ("Command", "move", …)
   # are internal identifiers and must stay English.
-  MAIN_BUNDLE="$(sed -n 's/.*src="\.\/\(assets\/[^"]*\.js\)".*/\1/p' "${HERE}/output/ui/index.html" | head -1)"
-  if [ -n "${MAIN_BUNDLE}" ] && [ -f "${HERE}/output/ui/${MAIN_BUNDLE}" ]; then
-    APPLY_LOG="$(node "${HERE}/tools/apply.js" "${HERE}/output/ui/${MAIN_BUNDLE}" --write)"
+  MAIN_BUNDLE="$(sed -n 's/.*src="\.\/\(assets\/[^"]*\.js\)".*/\1/p' "${STAGE}/ui/index.html" | head -1)"
+  if [ -n "${MAIN_BUNDLE}" ] && [ -f "${STAGE}/ui/${MAIN_BUNDLE}" ]; then
+    APPLY_LOG="$(node "${HERE}/tools/apply.js" "${STAGE}/ui/${MAIN_BUNDLE}" --write)"
     printf '%s\n' "${APPLY_LOG}"
     REPLACED="$(printf '%s' "${APPLY_LOG}" | sed -n 's/^replaced \([0-9][0-9]*\) occurrences.*/\1/p')"
     if [ -z "${REPLACED}" ] || [ "${REPLACED}" -eq 0 ]; then
@@ -192,7 +207,7 @@ if [ -n "${PRISTINE_UI}" ]; then
     # 命中 0 处或 2 处以上都中止构建，逼出「上游改写了这段代码」的时刻。
     # 必须在词典之后跑：锚点已经过校验的是词典替换后的文本（见 tools/apply_ui_code_patch.js）。
     echo "== 套用 UI 行为补丁 (tools/apply_ui_code_patch.js) =="
-    node "${HERE}/tools/apply_ui_code_patch.js" "${HERE}/output/ui/${MAIN_BUNDLE}" --write
+    node "${HERE}/tools/apply_ui_code_patch.js" "${STAGE}/ui/${MAIN_BUNDLE}" --write
   else
     echo "  ! 未在 index.html 中找到主 bundle，跳过词典应用" >&2
   fi
@@ -201,10 +216,16 @@ else
 fi
 
 echo
-node "${HERE}/tools/postbuild.js" "${HERE}/output" --main-src "${WORK}/main" || {
+# 自检读的是 staging，不是 output/——自检没过，output/ 一个字节都不会变。
+node "${HERE}/tools/postbuild.js" "${STAGE}" --main-src "${WORK}/main" || {
   echo "ERROR: 构建产物自检未通过，output/ 不可靠。请勿安装。" >&2
+  echo "       （本次产物只在临时目录 ${STAGE}，未落地到 output/，控制器装不到它）" >&2
   exit 1
 }
+
+# 自检通过，才整份换位进 output/。先删旧份，避免新旧文件混在同一份产物里。
+rm -rf "${HERE}/output"
+mv "${STAGE}" "${HERE}/output"
 
 echo
 echo "完成：output/app.asar 与 output/ui/ 已生成。"

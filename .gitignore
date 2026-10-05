@@ -18,3 +18,12 @@ dist/
 # editor / os cruft
 .vs/
 *.user
+
+# dictapply --write 的落盘备份（默认成功后删；--keep-backup 时才留下）
+dict.json.before-dictapply
+
+# 事故现场快照（修复期间留下的坏产物，不入库）
+_a.asar
+
+# 构建事故快照目录（不入库）
+output.broken-*/

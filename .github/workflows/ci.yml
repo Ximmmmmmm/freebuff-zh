@@ -40,6 +40,12 @@ jobs:
         run: node tools/test_upstreamdiff.js
       - name: pristine 自测（原版快照：采集 / 校验 / 导出导入往返 / 损坏与冲突 / 退出码）
         run: node tools/test_pristine.js
+      - name: dictapply 自测（变更清单：四类定位 / 整体拒绝 / rename 保序 / lint 闸门还原 / emit 解析）
+        run: node tools/test_dictapply.js
+      - name: fastloop 自测（快验循环：复合键拆解 / 四种转义形态 / lint 归因优先 / 缺原版必须拒）
+        run: node tools/test_fastloop.js
+      - name: auto_translate 自测（智能清单预填：术语对齐 / G1代码保护 / 占位符不变式）
+        run: node tools/test_auto_translate.js
       - name: UI 行为补丁自测（改名抗性 / 唯一命中 / 幂等）
         run: node tools/test_ui_code_patch.js
       - name: 语义守卫自测（正则字面量不假阳性 / 真语义位置仍拦下）

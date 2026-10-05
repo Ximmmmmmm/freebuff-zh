@@ -1,6 +1,6 @@
 --- a/electron/main.cjs
 +++ b/electron/main.cjs
-@@ -177,11 +177,72 @@
+@@ -185,11 +185,72 @@ let appOrigin = null
  /** @type {string | null} */
  let appUrl = null
  
@@ -75,7 +75,7 @@
      // the renderer's --surface-2 / --brand-dim: the splash bar and the one the app holds after it
      // are the same bar, and a colour change between them would show as a flicker
      splashTrack: '#282a29',
-@@ -189,8 +250,8 @@
+@@ -197,8 +258,8 @@ const SHELL_THEMES = {
    },
    light: {
      background: '#e3e7e4',
@@ -86,7 +86,7 @@
      splashTrack: '#e9ede8',
      splashBar: '#5e774e',
    },
-@@ -535,14 +596,14 @@
+@@ -543,14 +604,14 @@ async function showOrchestratorFailure(failure, parent = mainWindow) {
    const buttons = []
    const actions = []
    if (compatibilityBuildUrl) {
@@ -104,7 +104,7 @@
    actions.push(() => {})
  
    const options = {
-@@ -567,10 +628,10 @@
+@@ -575,10 +636,10 @@ function startOrchestrator(requestedPort = 0) {
    return new Promise((resolve, reject) => {
      const { bun, args, cwd, uiDir, wasmDir, packaged } = resolveOrchestrator()
      const capture = createStderrCapture(bun, args)
@@ -119,7 +119,7 @@
      apiLaunchToken = launchId
      let exited = false
      let ready = false
-@@ -612,7 +673,7 @@
+@@ -620,7 +681,7 @@ function startOrchestrator(requestedPort = 0) {
      }
  
      if (!shellLifetime) {
@@ -128,7 +128,7 @@
        return
      }
      // No secret goes in `env`. Another process of the same user reads a child's STARTING environment
-@@ -682,10 +743,10 @@
+@@ -690,10 +751,10 @@ function startOrchestrator(requestedPort = 0) {
        rejectStartup(
          failure('spawn', {
            errorMessage:
@@ -142,7 +142,7 @@
          }),
        )
      })
-@@ -793,7 +854,7 @@
+@@ -801,7 +862,7 @@ function startOrchestrator(requestedPort = 0) {
          closed
            ? failure('timeout')
            : failure('cleanup', {
@@ -151,7 +151,7 @@
              }),
        )
      }
-@@ -977,7 +1038,7 @@
+@@ -985,7 +1046,7 @@ function buildWindow(sizeOpts = {}) {
            titleBarOverlay: {
              color: colors.overlay,
              symbolColor: colors.overlaySymbol,
@@ -160,7 +160,7 @@
            },
          }
        : {}),
-@@ -1151,15 +1212,15 @@
+@@ -1159,15 +1220,15 @@ function confirmQuit(parent) {
    try {
      const response = askSync(parent, {
        type: 'question',
@@ -182,7 +182,7 @@
        // a stray Return keeps the agents alive
        defaultId: 0,
        cancelId: 0,
-@@ -1244,8 +1305,8 @@
+@@ -1253,8 +1314,8 @@ ipcMain.handle('dialog:pickAttachments', async (event, kind) => {
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return []
    const res = await dialog.showOpenDialog(win, {
@@ -193,7 +193,7 @@
      properties: attachmentDialogProperties(kind),
    })
    if (res.canceled) return []
-@@ -1274,13 +1335,13 @@
+@@ -1283,13 +1344,13 @@ ipcMain.handle('dialog:pickImages', async (event) => {
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return []
    const res = await dialog.showOpenDialog(win, {
@@ -211,7 +211,7 @@
          extensions: [...VIEWABLE_IMAGE_EXTENSIONS, ...OTHER_IMAGE_EXTENSIONS],
        },
      ],
-@@ -1298,8 +1359,8 @@
+@@ -1307,8 +1368,8 @@ ipcMain.handle('dialog:pickDirectory', async (event) => {
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return null
    const res = await dialog.showOpenDialog(win, {
@@ -222,7 +222,7 @@
      properties: ['openDirectory', 'createDirectory'],
    })
    return res.canceled || res.filePaths.length === 0 ? null : res.filePaths[0]
-@@ -1309,10 +1370,10 @@
+@@ -1318,10 +1379,10 @@ ipcMain.handle('dialog:saveMarkdown', async (event, { filename, content }) => {
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return false
    if (typeof filename !== 'string' || typeof content !== 'string') {
@@ -235,8 +235,8 @@
      defaultPath: path.basename(filename),
      filters: [{ name: 'Markdown', extensions: ['md'] }],
      properties: ['createDirectory', 'showOverwriteConfirmation'],
-@@ -1405,17 +1466,17 @@
- ipcMain.handle('shell:openIn', async (_event, request) => {
+@@ -1417,17 +1478,17 @@ ipcMain.handle('shell:openIn', async (event, request) => {
+   if (!isTrustedAppSender(event, isAppUrl)) return { ok: false, error: 'Untrusted sender' }
    try {
      if (!request || typeof request !== 'object' || Array.isArray(request)) {
 -      return { ok: false, error: 'Invalid open request' }
@@ -258,7 +258,7 @@
  
      if (target.id === 'copy-path') {
        clipboard.writeText(resolved.requested)
-@@ -1428,7 +1489,7 @@
+@@ -1440,7 +1501,7 @@ ipcMain.handle('shell:openIn', async (event, request) => {
        }
      } else {
        const args = launchArgs(target, resolved, line)
@@ -267,7 +267,7 @@
        await new Promise((resolve, reject) => {
          const child = spawn(target.executable, args, {
            cwd: launchCwd(target, resolved),
-@@ -1445,7 +1506,7 @@
+@@ -1457,7 +1518,7 @@ ipcMain.handle('shell:openIn', async (event, request) => {
      }
      return { ok: true, path: resolved.requested, openedPath: resolved.opened, fallback: resolved.fallback }
    } catch (error) {
@@ -276,7 +276,7 @@
    }
  })
  
-@@ -1519,7 +1580,7 @@
+@@ -1592,7 +1653,7 @@ function paintWindows() {
    for (const win of BrowserWindow.getAllWindows()) {
      win.setBackgroundColor(colors.background)
      if (process.platform === 'win32') {
@@ -285,7 +285,7 @@
      }
    }
  }
-@@ -1587,10 +1648,10 @@
+@@ -1660,10 +1721,10 @@ ipcMain.handle('menu:tabContext', (event) => {
        resolve(action)
      }
      const menu = Menu.buildFromTemplate([
@@ -300,7 +300,7 @@
      ])
      menu.popup({
        window: BrowserWindow.fromWebContents(event.sender) ?? undefined,
-@@ -1613,9 +1674,9 @@
+@@ -1686,9 +1747,9 @@ function buildMenu(reloadApp) {
              label: app.name,
              submenu: [
                { role: 'about' },
@@ -312,7 +312,7 @@
                { type: 'separator' },
                { role: 'services' },
                { type: 'separator' },
-@@ -1625,7 +1686,7 @@
+@@ -1698,7 +1759,7 @@ function buildMenu(reloadApp) {
                { type: 'separator' },
                {
                  // not `role: 'quit'`: that reaches app.quit() directly, with no chance to ask
@@ -321,7 +321,7 @@
                  accelerator: 'Command+Q',
                  click: () => requestQuit(),
                },
-@@ -1634,16 +1695,16 @@
+@@ -1707,16 +1768,16 @@ function buildMenu(reloadApp) {
          ]
        : []),
      {
@@ -342,7 +342,7 @@
            accelerator: 'CmdOrCtrl+Shift+T',
            click: () => sendMenuCommand('reopen-tab'),
          },
-@@ -1652,24 +1713,24 @@
+@@ -1725,24 +1786,24 @@ function buildMenu(reloadApp) {
          // other, and on a fresh install its menu lists only the project already open — so ⌘O is
          // where someone who has never heard the word "space" is going to look.
          {
@@ -374,7 +374,7 @@
          { role: 'toggleDevTools' },
          { type: 'separator' },
          ...zoomMenuItems(process.platform, (action) => interfaceZoom.command(action)),
-@@ -1677,15 +1738,15 @@
+@@ -1750,15 +1811,15 @@ function buildMenu(reloadApp) {
          { role: 'togglefullscreen' },
        ],
      },
@@ -393,7 +393,7 @@
              ],
            },
          ]),
-@@ -1850,7 +1911,7 @@
+@@ -1923,7 +1984,7 @@ async function boot() {
      if (err?.orchestratorFailure) {
        await showOrchestratorFailure(err.orchestratorFailure, win)
      } else {
@@ -402,7 +402,7 @@
      }
      app.quit()
      return
-@@ -1969,9 +2030,9 @@
+@@ -2052,9 +2113,9 @@ else if (!app.requestSingleInstanceLock()) {
        canRelaunch: !!relaunchExecPath,
      })
      const buttons = canRetryWithoutSandbox
@@ -415,7 +415,7 @@
      // A launch failure this early can land before `ready`, where the dialog
      // module throws — and an exception here would replace the message we came to
      // show with a silent crash, which is the exact failure being fixed.
-@@ -1979,7 +2040,7 @@
+@@ -2062,7 +2123,7 @@ else if (!app.requestSingleInstanceLock()) {
      // buttons, so the pre-ready path explains and quits rather than offering the
      // retry. Nothing is running yet, so there is nothing to tear down.
      if (!app.isReady()) {
@@ -424,7 +424,7 @@
        app.exit(1)
        return
      }
-@@ -1987,7 +2048,7 @@
+@@ -2070,7 +2131,7 @@ else if (!app.requestSingleInstanceLock()) {
      try {
        response = dialog.showMessageBoxSync({
          type: 'error',

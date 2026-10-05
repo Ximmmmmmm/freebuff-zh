@@ -8,6 +8,7 @@
 const fs = require('fs')
 const path = require('path')
 const { contextReason, CONSISTENT_LABELS } = require('./semantic_guard')
+const { commentChecker } = require('./comment_scan')
 
 const file = process.argv[2]
 const write = process.argv.includes('--write')
@@ -34,6 +35,7 @@ const ATTR_ANCHORS = [
   'children:',
   'label:',
   'title:',
+  'tagline:',
   'placeholder:',
   'confirmLabel:',
   'actionLabel:',
@@ -58,35 +60,47 @@ let totalReplaced = 0
 const missed = []
 const semanticBlocked = []
 
+// 注释判定交给 tools/comment_scan.js（词法细节与自测都在那边；这里只把它包成
+// 「整份文件共用一张区间表」的查询函数）。
+const isInsideComment = commentChecker()
+
 const applyExact = (source, dictSection) => {
+  // 0.0.159 改法：先把本节所有替换点收集齐，最后一次性倒序回写。理由——注释区间是按
+  // 「某一份具体文本」算出来的，逐条替换会让偏移持续位移，于是每换一条就得整份重新分词；
+  // 而对着一份快照收集，则整节只分词一次（3MB bundle 约几十毫秒，旧实现是 1655 次行内重扫）。
+  const edits = []
   // 本次真替换过的译文（zh → 处数）。未命中的词条要等整节跑完再判，理由见下面的
   // 幂等判断：同译文的兄弟词条不允许互相顶包。
   const replacedZh = new Map()
   const unmatched = []
   for (const [en, zh] of Object.entries(dictSection || {})) {
     const re = new RegExp('"' + esc(en) + '"', 'g')
-    const n = countOf(source, re)
-    if (n === 0) {
-      unmatched.push([en, zh])
-      continue
-    }
     // 白名单标签（semantic_guard.CONSISTENT_LABELS）是「同表同值、进程内派生」的界面标签：
     // 它的比较位置与显示位置必须用同一个值，只翻一处反而会错，所以这里放行；其余中文落在
     // 比较 / switch / 协议参数位置仍会拦下。
     const consistentLabel = CONSISTENT_LABELS.has(zh)
-    source = source.replace(re, (match, offset, whole) => {
-      const reason = !consistentLabel && contextReason(whole, offset, offset + match.length)
+    let n = 0
+    let m
+    while ((m = re.exec(source)) !== null) {
+      n++
+      const start = m.index
+      const end = start + m[0].length
+      if (isInsideComment(source, start)) continue
+      const reason = !consistentLabel && contextReason(source, start, end)
       if (reason) {
         semanticBlocked.push({ en, reason })
-        return match
+        continue
       }
-      totalReplaced++
+      edits.push({ start, end, text: '"' + zh + '"' })
       replacedZh.set(zh, (replacedZh.get(zh) || 0) + 1)
-      // 使用 replace callback，zh 中的 $&、$1、反斜杠都按普通文本写入，
-      // 不会被 String.replace 的 replacement 语法再次解释。
-      return '"' + zh + '"'
-    })
+    }
+    // 命中判定沿用旧口径：注释里的命中**也算命中**（那些是真正的注释，本来就该跳过，
+    // 不该因此报 MISSED）；只有整份文件里一个字面量都找不到才算未命中。
+    if (n === 0) unmatched.push([en, zh])
   }
+  edits.sort((a, b) => b.start - a.start)
+  for (const e of edits) source = source.slice(0, e.start) + e.text + source.slice(e.end)
+  totalReplaced += edits.length
   // 未命中的词条在这里统一判定：幂等检查限定在完整的双引号字面量（不能用“译文在文件任意
   // 位置出现”掩盖一个真漏翻的 key），而且**不能**被「同译文的兄弟词条」顶包——0.0.131
   // 实测：dict 里同时有 "Resume queue"/"Resume the queue" 与 "Queue paused."/
@@ -132,6 +146,40 @@ function valueEnd(start) {
     i++
   }
   return i
+}
+
+// `children:[…]` 的对齐括弧位置。0.0.159 实测：JSX 文本节点是数组元素
+// （children:["Showing ",j.files.length," of ",…]），而 collectUiLiterals 把 `[` 当层级 +1，
+// 于是数组里的文案永远停在 depth=1，一条都采不到——闸三报「能翻」，apply 却零命中。
+function matchBracket(openIdx, end) {
+  let depth = 0
+  let i = openIdx
+  while (i < end) {
+    const c = src[i]
+    if (c === '"' || c === "'") { i = skipString(i, end); continue }
+    if (c === '`') { i = scanTemplate(i, end, [], 99); continue }
+    if (c === '\\') { i += 2; continue }
+    if (c === '[' || c === '(' || c === '{') depth++
+    else if (c === ']' || c === ')' || c === '}') {
+      depth--
+      if (depth === 0) return i
+    }
+    i++
+  }
+  return end
+}
+
+// 锚点后面的取值：值是数组字面量时按「元素层」收集（数组元素就是 JSX 的文本节点），
+// 否则按第 0 层收集。
+function collectValueLiterals(start, end, out) {
+  let i = start
+  while (i < end && /\s/.test(src[i])) i++
+  if (src[i] === '[') {
+    const close = matchBracket(i, end)
+    collectUiLiterals(i + 1, close, out, 0)
+    return
+  }
+  collectUiLiterals(start, end, out, 0)
 }
 
 function skipString(start, end) {
@@ -233,7 +281,7 @@ const patternLiterals = []
   let m
   while ((m = anchorRe.exec(src)) !== null) {
     const vs = m.index + m[0].length
-    collectUiLiterals(vs, valueEnd(vs), patternLiterals, 0)
+    collectValueLiterals(vs, valueEnd(vs), patternLiterals)
   }
 }
 

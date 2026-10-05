@@ -38,6 +38,25 @@ for (const [from, to] of replacements) {
   }
 }
 
+const CJK_STYLE = `    <style id="hanhua-cjk-fallback">
+      /* 汉化包 CJK 字体回退：中西文混排时平滑回退到高清中文字体 */
+      @font-face {
+        font-family: 'Freebuff Outfit';
+        unicode-range: U+4E00-9FFF, U+3400-4DBF, U+3000-303F, U+FF00-FFEF;
+        src: local('Microsoft YaHei'), local('PingFang SC'), local('Noto Sans SC');
+      }
+      @font-face {
+        font-family: 'Google Sans';
+        unicode-range: U+4E00-9FFF, U+3400-4DBF, U+3000-303F, U+FF00-FFEF;
+        src: local('Microsoft YaHei'), local('PingFang SC'), local('Noto Sans SC');
+      }
+    </style>
+  `
+if (!s.includes('id="hanhua-cjk-fallback"') && s.includes('</head>')) {
+  s = s.replace('</head>', CJK_STYLE + '</head>')
+  applied++
+}
+
 if (missed.length) {
   console.log(`MISSED (${missed.length} replacements, no match —— 原文可能随版本改写，需人工核对):`)
   for (const m of missed) console.log('  - ' + JSON.stringify(m))

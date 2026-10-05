@@ -233,10 +233,16 @@ keep('启动诊断（内部错误串，经 errorMessage 才有样式）', [
   // （用户可见的只有 activityFor 里那几句，已由 patches/electron-discord-presence.cjs.patch 翻译）。
   'handshake timed out',
   'closed before ready',
+  // 0.0.159：加载等待器（app-load.cjs）在窗口被关掉时 reject 的内部错误串。
+  // UI 主 bundle 里 0 次出现——没有调用方读它、也没有地方展示，只进日志。
+  'window closed while loading ',
 ])
 keep('界面缩放的 IPC 校验 / 安全错误（0.0.155 新增；渲染端 catch 后显示自己的文案，见 dict.json 的「无法保存界面大小」）', [
   'Invalid interface size',
   'Untrusted interface size request',
+  // 0.0.159：main.cjs 里 stedAppSender / IPC 守卫的拒绝值（{ ok: false, error: 'Untrusted sender' }）。
+  // 与上面两条同类——UI 主 bundle 里 0 次出现，渲染端不按这个串判定也不展示。
+  'Untrusted sender',
 ])
 keep('内存版 safeStorage 的错误串（0.0.155 新增文件；仅 dev / 测试注入，打包版永不加载，见文件头注释）', [
   'Encryption is not available.',

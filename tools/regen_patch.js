@@ -116,15 +116,37 @@ function applyMap(targetLines, map) {
   return { lines, replaced, missing, conflicts }
 }
 
+function findDiffCmd() {
+  if (process.platform !== 'win32') return 'diff'
+  const candidates = [
+    'diff',
+    'C:\\Program Files\\Git\\usr\\bin\\diff.exe',
+    'C:\\Program Files (x86)\\Git\\usr\\bin\\diff.exe',
+  ]
+  try {
+    const gitLoc = execFileSync('where.exe', ['git'], { encoding: 'utf8' }).trim().split(/\r?\n/)[0]
+    if (gitLoc) {
+      const usrBinDiff = path.resolve(path.dirname(gitLoc), '..', 'usr', 'bin', 'diff.exe')
+      if (fs.existsSync(usrBinDiff)) candidates.splice(1, 0, usrBinDiff)
+    }
+  } catch (_) {}
+
+  for (const cmd of candidates) {
+    if (path.isAbsolute(cmd) && fs.existsSync(cmd)) return cmd
+  }
+  return 'diff'
+}
+
 // 用 diff -u 生成补丁正文：`diff -u` 的退出码 1 = 有差异（正常），>1 才是真错
 function buildDiff(aText, bText, target, dir) {
   const aFile = path.join(dir, 'a.txt')
   const bFile = path.join(dir, 'b.txt')
   fs.writeFileSync(aFile, aText)
   fs.writeFileSync(bFile, bText)
+  const diffCmd = findDiffCmd()
   let out = ''
   try {
-    out = execFileSync('diff', ['-u', '--label', `a/${target}`, '--label', `b/${target}`, aFile, bFile], {
+    out = execFileSync(diffCmd, ['-u', '--label', `a/${target}`, '--label', `b/${target}`, aFile, bFile], {
       encoding: 'utf8',
       maxBuffer: 64 * 1024 * 1024,
     })
