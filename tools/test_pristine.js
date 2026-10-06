@@ -236,7 +236,13 @@ chk(l1.code === 1, `7) 缺文件时 list 退出码为 1（实际 ${l1.code}）`)
 chk(/缺文件 .*electron\/main\.cjs/.test(l1.out), '7) 并点名缺了哪个文件')
 chk(run(['path', '0.0.114', '--require-electron']).code === 1, '7) 损坏的快照不会被 shell 脚本当成可用基线')
 chk(/校验不过/.test(run(['import', exported]).err), '7) 损坏的快照不会被静默当成「一样」（要 --force 才能替换）')
-chk(run(['import', exported, '--force']).code === 0 && run(['list']).code === 0, '7) --force 用导入的重新填好后恢复健康')
+// 两条分开查、都带上诊断：这里合并成一条时，一旦在别的机器上偶发失败（Windows 上目录被索引 /
+// 杀软占住的顽疾），日志里只留下一个光秃囊囊的 FAIL——是 import 没收下、还是 list 仍判损坏，看
+// 不出来。（实测本地全量复跑时这样失败过一次，事后无法定位。）
+const r7i = run(['import', exported, '--force'])
+chk(r7i.code === 0, `7) --force 重新导入（rc=${r7i.code}）`, diag(r7i))
+const r7l = run(['list'])
+chk(r7l.code === 0, '7) --force 用导入的重新填好后恢复健康', diag(r7l))
 
 // --- 8) capture --exe：从安装包解（生产靠 7-Zip，这里用假 7z 钉住编排与参数）----------
 // NSIS 包里的 app.asar 套在 $PLUGINSDIR/app-64.7z 里，所以要跑两次 7z。假 7z 把这两步
