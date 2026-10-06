@@ -71,6 +71,19 @@ G5 判据只看「键是否以 `${` 开头」，而词典里本就有大量合�
 > 自测 `test_dictapply.js` 的 T10（三条阴性对照）与 T14（真词典全量过一遍）钉住。实证：本版那份
 > `work/changelist-161-new.json` 在旧判据下 rc 2（G5 点名附件超限提示那条），新判据下 rc 0。
 
+> **后续（工具链，不随版本）之二**：发布这一版之后把工具链又加固了一轮，逐条口径在 README 与
+> `docs/更新维护.md`——① CI 的两个 job 都改成 `ubuntu-latest` + `windows-latest` 矩阵（`fail-fast: false`，
+> 含 bash 语法的步骤显式 `shell: bash`，另加一道只在 Windows 上跑的行尾守卫），新增**接线守卫**
+> （`tools/ci_wiring.js`：`tools/test_*.js` 与 workflow 里真跑到的自测必须一一对应，专治「新加了自测
+> 忘记接线」这种本地绿、CI 也绿的静默失败）与**构建复用**（`tools/build_key.js`：输入指纹 + 产物哈希
+> 双重核对，构建 18s → 0.63s，`--rebuild` 强制重建）；② `build.sh` 里 46 次词典套用与 44 次语法
+> 校验并发化（词典 4.53s → 1.13s、语法校验 3.23s → 1.06s，产物逐字节不变），`update.sh` 的分步计时
+> 修掉「标错一格」，`release.sh` 的上一版基线优先用本地 `dist/`（省 13.8s 下载）；③ `release.sh`
+> 发布前先查「包与 tag 是不是同一份内容」——工作区有未提交改动、或本地 HEAD 没推上去就拒绝
+> （这次 tag 触发的 CI 报的「回归」正是这么来的：包是脏工作区打的、tag 落在旧提交上），应急加
+> `--allow-dirty`。发布后另修掉一个只在 Windows runner 上暴露的夹具缺陷（「缺 7-Zip」的用例原本
+> 清 PATH 了事，而 runner 镜像自带 `C:\Program Files\7-Zip\7z.exe`，夹具静默失效）。
+
 ## [0.0.158] · 2026-10-03（已发布 `pack-v0.0.158`）
 
 上游这一版几乎只动逻辑：上一版刚合并的 `Updates` + `Version` 两个设置页**又撤回**成

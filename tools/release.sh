@@ -8,6 +8,7 @@
 #   bash tools/release.sh --force       # 覆盖同 packVersion 发布（默认拒绝不升版本的发布）
 #   bash tools/release.sh --allow-english # 两道英文闸门只报告不拦截（确认新英文是有意保留时）
 #   bash tools/release.sh --prev-online  # 闸门二 / 三的上一版基线强制重新下载（默认优先用本地 dist/）
+#   bash tools/release.sh --allow-dirty  # 跳过「工作区必须干净且已推送」的检查（应急，见下）
 #
 # 发布前的四道闸门（都要过）：
 #   1. 主进程扫描（tools/mainscan.js）：原版 `electron/*.cjs` vs 本次产物——词典只替双引号
@@ -38,13 +39,15 @@ UPLOAD=1
 FORCE=0
 ALLOW_ENGLISH=0
 PREV_ONLINE=0
+ALLOW_DIRTY=0
 for a in "$@"; do
   case "$a" in
     --no-upload)     UPLOAD=0 ;;
     --force)         FORCE=1 ;;
     --allow-english) ALLOW_ENGLISH=1 ;;
     --prev-online)   PREV_ONLINE=1 ;;
-    *) echo "未知参数：$a（支持 --no-upload / --force / --allow-english / --prev-online）" >&2; exit 1 ;;
+    --allow-dirty)   ALLOW_DIRTY=1 ;;
+    *) echo "未知参数：$a（支持 --no-upload / --force / --allow-english / --prev-online / --allow-dirty）" >&2; exit 1 ;;
   esac
 done
 
@@ -56,6 +59,32 @@ grep -q 'hanhua-pack' "${HERE}/output/ui/index.html" || {
   echo "ERROR: output/ui/index.html 缺少 hanhua-pack 版本戳——请用最新 build.sh 重新构建" >&2
   exit 1
 }
+
+# --- 包与 tag 必须是同一份内容 -------------------------------------------------------
+# `gh release create` 把 tag 落在**远端默认分支的 HEAD** 上，而这个包是从**本地工作区**打出来的。
+# 工作区有未提交改动、或本地 HEAD 还没推上去，tag 指的就是另一份内容——tag 触发的 CI（发布后的
+# 自动复跑）会拿那份内容重建镜像、再与本次发布的包对差，于是报出一堆与本次发布无关的「回归」。
+# 实测：2026-10-06 发 pack-v0.0.161 时包是带 0.0.161 适配的脏工作区打的，tag 落在 0.0.159.1 那个
+# 提交上，CI 的 snapshot-gates 就这么红了一次（看着像漏翻回归，其实是拿两份内容在比）。
+# 这种红最骗人，所以默认拦住；确要跳过去加 --allow-dirty。
+if [ "${ALLOW_DIRTY}" -eq 0 ]; then
+  DIRTY_LIST="$(git -C "${HERE}" status --porcelain --untracked-files=no 2>/dev/null || true)"
+  if [ -n "${DIRTY_LIST}" ]; then
+    echo "ERROR: 工作区有未提交改动——发布出来的包与 tag 指向的提交不是同一份内容：" >&2
+    printf '%s\n' "${DIRTY_LIST}" | sed 's/^/    /' >&2
+    echo "  先提交再发布（git add -A && git commit）；确要带脏工作区发布请追加 --allow-dirty。" >&2
+    exit 1
+  fi
+  HEAD_SHA="$(git -C "${HERE}" rev-parse HEAD 2>/dev/null || true)"
+  REMOTE_HEAD="$(git -C "${HERE}" ls-remote origin refs/heads/main 2>/dev/null | awk '{print $1}' || true)"
+  if [ -z "${REMOTE_HEAD}" ]; then
+    echo "  ! 读不到 origin/main（网络不通？）——「tag 与包是否同一份内容」这道检查未能执行" >&2
+  elif [ -n "${HEAD_SHA}" ] && [ "${HEAD_SHA}" != "${REMOTE_HEAD}" ]; then
+    echo "ERROR: 本地 HEAD（${HEAD_SHA:0:7}）不是 origin/main（${REMOTE_HEAD:0:7}）——tag 会落在远端那份上，" >&2
+    echo "  与你正在发布的包不是同一份内容。先 git push；确要跳过请加 --allow-dirty。" >&2
+    exit 1
+  fi
+fi
 
 VER="$(node -e 'const m = require(process.argv[1]); console.log(m.packVersion || m.targetVersion)' "${HERE}/manifest.json")"
 TARGET="$(node -e 'const m = require(process.argv[1]); console.log(m.targetVersion)' "${HERE}/manifest.json")"
