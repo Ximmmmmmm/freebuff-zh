@@ -82,10 +82,10 @@ Freebuff 自动更新冲掉汉化后它会自动换回中文（装机版本变�
 | `intentional-english.json` | 「有意保留英文」登记表，逐条写理由：`fragments` 758 条 + `uiStrings` 48 条 |
 | `manifest.json` | `targetVersion`（适配的 Freebuff 版本）与 `packVersion`（本包版本） |
 | `patches/electron-*.patch` | 13 个主进程人工补丁（词典够不着的那一层） |
-| `tools/` | 68 个脚本（65 `.js` + 3 `.sh`，其中 29 个 `test_*`），构建 / 迁移 / 找漏翻 / 自测；其中 `compaction_tweak.js` 是**本机实验**（改装机里的上下文压缩阈值，**不在汉化包范围内**，见 `docs/更新维护.md`） |
+| `tools/` | 66 个脚本（63 `.js` + 3 `.sh`，其中 28 个 `test_*`），构建 / 迁移 / 找漏翻 / 自测 |
 | `build.sh` `apply.sh` `restore.sh` | 构建（输入没变自动复用）、装机、还原 |
 | `docs/更新维护.md` | 出事怎么查：每种「静默失败」的取证方法 |
-| `.github/workflows/ci.yml` | CI：词典门禁 + **29 个自测一个不落**（另有接线守卫盯「新加自测忘了接」）+ 一个 job 专跑发布闸门；两个 job 都在 ubuntu 与 windows 上各跑一遍 |
+| `.github/workflows/ci.yml` | CI：词典门禁 + **28 个自测一个不落**（另有接线守卫盯「新加自测忘了接」）+ 一个 job 专跑发布闸门；两个 job 都在 ubuntu 与 windows 上各跑一遍 |
 | `CHANGELOG.md` | 逐版本：上游改了什么、汉化跟着做了什么、对装机什么影响 |
 
 不入库（`.gitignore`）：`output/`、`work/`、`dist/`、`downloads/`、`node_modules/`、`.translator.json`。
