@@ -71,6 +71,10 @@ const UPSTREAM_REPO = 'CodebuffAI/codebuff-community'
 const ASAR_CMD = process.env.HANHUA_ASAR_CMD || 'npx -y @electron/asar'
 // 7-Zip 的命令（测试注入假 7z 用）。设了它就跳过「本机找 7z」那一步。
 const SEVEN_ZIP_CMD = process.env.HANHUA_7Z_CMD || null
+// 自测注入口：把「本机在哪儿找 7z」的候选清单整个换掉（按 path.delimiter 分隔；空串 = 一个都没有）。
+// 为什么需要它：候选里有硬编码的 `C:\Program Files\7-Zip\7z.exe`，而 CI 的 windows-latest 镜像恰好
+// 自带 7-Zip——只清 PATH、只清 ProgramFiles 都挡不住那条，「缺 7z」的夹具在那边必然假通过。
+const SEVEN_ZIP_PROBE = process.env.HANHUA_7Z_PROBE
 
 // 用法/依赖类问题：调用方按 rc 2 处理（配置或环境不对，不是数据坏了）
 class UsageError extends Error {}
@@ -376,6 +380,12 @@ const sevenZip = (spec) => SEVEN_ZIP_CMD || q(spec)
 function find7z(explicit) {
   if (SEVEN_ZIP_CMD) return SEVEN_ZIP_CMD
   const cands = []
+  if (SEVEN_ZIP_PROBE !== undefined) {
+    // 注入的候选：存在性判断照旧，只是不去猜本机装在哪
+    if (explicit) cands.push(explicit)
+    cands.push(...String(SEVEN_ZIP_PROBE).split(path.delimiter).filter(Boolean))
+    return cands.find((p) => fs.existsSync(p)) || null
+  }
   if (explicit) cands.push(explicit)
   for (const n of ['7z', '7za', '7zz']) {
     const p = which(n)

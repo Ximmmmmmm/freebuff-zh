@@ -291,13 +291,36 @@ const c8c = run(['capture', '--exe', fakeExe], { HANHUA_7Z_CMD: `node "${fake7z}
 chk(c8c.code === 0 && /WARN: 安装包文件名说 v0\.0\.112，包内 app\.asar 说 v0\.0\.111/.test(c8c.err), '8) 文件名与包内版本不一致 → 响亮提示', diag(c8c))
 chk(fs.existsSync(path.join(snapDir('0.0.111'), 'snapshot.json')), '8) 按包内 app.asar 的版本登记')
 
-// 没有 7z 时必须 rc 2 且把三条替代办法说清楚（本机真装了 7-Zip 就只验证不会静默成功）
-const c8b = run(['capture', '--exe', fakeExe], { HANHUA_7Z_CMD: '', PATH: path.join(WORK, 'empty-path') })
-if (c8b.code === 2) {
-  chk(/7-Zip/.test(c8b.err) && /pristine\.js capture/.test(c8b.err) && /--from-release/.test(c8b.err), '8) 缺 7-Zip 时把三条替代办法列出来（rc 2）', diag(c8b))
+// 没有 7z 时必须 rc 2 且把三条替代办法说清楚。
+// 判据不能取决于宿主装没装 7-Zip：CI 的 windows-latest 镜像自带 `C:\Program Files\7-Zip\7z.exe`，
+// 清 PATH 也挡不住（pristine.js 里还有一条硬编码的知名安装路径候选），第一版夹具因此在
+// windows-latest 上静默走到「有 7z」的分支、断言不成立。这里用 HANHUA_7Z_PROBE 把候选清单
+// 换成一份不存在的路径：验的仍是「候选都不存在 → 当真没有 → rc 2 + 三条替代办法」。
+const c8b = run(['capture', '--exe', fakeExe], {
+  HANHUA_7Z_CMD: '',
+  HANHUA_7Z_PROBE: [path.join(WORK, 'no-such-dir'), path.join(WORK, 'no-such-7z.exe')].join(path.delimiter),
+})
+chk(c8b.code === 2, `8) 缺 7-Zip 时 rc=2（实际 ${c8b.code}）`, diag(c8b))
+chk(/7-Zip/.test(c8b.err) && /pristine\.js capture/.test(c8b.err) && /--from-release/.test(c8b.err), '8) 缺 7-Zip 时把三条替代办法列出来', diag(c8b))
+
+// 反面：候选里真有一个「7z」时要被用上（注入的是路径清单，不是「一定没有」的开关）。
+// 把假 7z 包成宿主上真能执行的一层壳，走的才是「找到 7z → 跑它」这条真路径。
+const fake7zBin = path.join(WORK, process.platform === 'win32' ? 'fake-7z.cmd' : 'fake-7z-bin')
+if (process.platform === 'win32') {
+  fs.writeFileSync(fake7zBin, `@echo off\r\n"${process.execPath}" "%~dp0fake-7z.js" %*\r\n`)
 } else {
-  chk(c8b.code !== 0 || true, `8) 本机装了 7-Zip（rc=${c8b.code}），跳过「缺 7z」断言`)
+  const shq = (s) => `'${String(s).replace(/'/g, `'\\''`)}'`
+  fs.writeFileSync(fake7zBin, `#!/bin/sh\nexec ${shq(process.execPath)} ${shq(path.join(WORK, 'fake-7z.js'))} "$@"\n`)
+  fs.chmodSync(fake7zBin, 0o755)
 }
+fs.writeFileSync(Z7_LOG, '')
+const c8d = run(['capture', '--exe', fakeExe], {
+  HANHUA_7Z_CMD: '',
+  HANHUA_7Z_PROBE: fake7zBin,
+  HANHUA_FAKE_ASAR_VERSION: NSIS_VER,
+})
+const zcallsD = fs.readFileSync(Z7_LOG, 'utf8').split('\n').filter(Boolean)
+chk(c8d.code === 0 && zcallsD.length === 2, `8) 候选里的 7z 被找到并用上（rc=${c8d.code}，调用 ${zcallsD.length} 次）`, diag(c8d))
 
 // --- 9) 参数引号按平台：POSIX 的单引号分支在 Windows 上跑不到，单独钉住 ----------------
 // 这条是 CI 先发现的真 bug：NSIS 解出来的目录名就叫 `$PLUGINSDIR`，用双引号包它会被 POSIX sh
