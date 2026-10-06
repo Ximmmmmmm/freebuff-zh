@@ -184,7 +184,7 @@ t(
   })(),
 )
 
-// --- T10 真仓库布局也能算（tools/ 66 个脚本 + patches/ 13 个补丁）--------------------
+// --- T10 真仓库布局也能算（tools/ 68 个脚本 + patches/ 13 个补丁）--------------------
 {
   const r = run(['key', '--root', REPO, '--asar', ASAR, '--ui', UI])
   const k = r.out.trim()

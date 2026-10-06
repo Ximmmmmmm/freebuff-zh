@@ -92,6 +92,8 @@ jobs:
         run: node tools/test_ci_wiring.js
       - name: 构建复用自测（输入变更 / 产物篡改 / 缺构建记录 / 退出码 / 真仓库布局）
         run: node tools/test_build_key.js
+      - name: 压缩阈值本机实验自测（锚点断言 / 幂等 / 还原 / 上游改写 / 记录失效）
+        run: node tools/test_compaction_tweak.js
       - name: 行尾守卫（Windows 上 checkout 不得把脚本 / 补丁 / 词典 / 文档换成 CRLF）
         if: runner.os == 'Windows'
         shell: bash
