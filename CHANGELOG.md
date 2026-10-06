@@ -4,6 +4,67 @@
 > 逐条账目（对差统计、词典条数与替换次数、各扫描的残留条数、发布包哈希）与工具口径不收在这里——
 > 需要时看 `git log`：每次适配与发布的提交里都写着完整过程。
 
+## [0.0.161] · 2026-10-06（已发布 `pack-v0.0.161`）
+
+上游这两版把**附件图片预览**做成了正经功能：主进程多了一个 `electron/attachment-preview.cjs`，
+界面侧失败的附件图片不再只是沉默的缩略图，而是给出原因（`… exceeds the N MiB preview limit.
+The image is still attached. You can send it without a preview.`）与「预览上限：N MiB」。输入框补了
+**提示词优化**（`Enhance prompt` / `Enhancing prompt` 与两条失败报错），侧栏退款条补了 tooltip
+（`Returned to …`，目标是 `your original daily pool`），模型选择器给两个价格档加了降价理由
+（`when Freebuff is quiet` / `when DeepSeek’s API costs double`）。**DeepSeek V4.1 Flash Fast 的
+`taglineTooltip` 被整句改写**（旧：`Fast mode: Buffy gathers context with parallel subagents on
+DeepSeek’s own API, makes the change, then verifies it. Priced on DeepSeek’s peak and off-peak
+hours.`），模型选择器价格 tooltip 那两句也换了形态（旧的 `… , and all weekend (…)` /
+`Back to … Freebucks/hour at …` 整段下线），以及上游把「无限量消息与工具调用」那条分支改成了空串。
+
+> 本机装机是从 0.0.159 **直接跳到 0.0.161**（没见过 0.0.160），所以本版的对差基线是
+> `work/pristine/0.0.159`：上游文案新增 6 片段 / 11 字面量（7 条片段级没报到的）、下线 3、疑似改写 1 组。
+
+- **词典**：2077 → 2086 条（`exact` 1662 / `template` 289 / `code` 37 / `pattern` 98），
+  替换总数 2483 → 2507、全命中（2086/2086）；纯字面量词条覆盖 1610/1610（100.0%）。
+- **词典迁移**：`remap` 把 287 条模板分出 `SAME` 221 / `RENAMED` 57 / `AMBIGUOUS` 8 / `MISSING` 1
+  ——压缩变量又整体换了一轮（`ml`→`_l`、`qs`→`Ws`、`Ar`→`Lr`、`sr`→`ar`、`fG`→`HG`、`td`→`ad`、
+  `rt`/`Qe`→`Je`/`Ae` 一族）。8 条 `AMBIGUOUS` 与 2 条下线条目按 bundle 里的**位置**逐条核对定位
+  （`Close ${ae.label}`→`${le.label}`（panel-tab-close）、`Project: ${sr(e)}`→`${ar(e)}`（新建会话的
+  项目选择器）、`Remove ${Ee.configKey}`→`${de.configKey}`（连接器卡片）、`Sponsored: ${fG(t/e)}`→
+  `${HG(t/e)}`（侧栏卡 / 面板创意卡）、`Details for ${td}`→`${ad}`（连接器卡片）、两条
+  `Regular price:` 按「有无同名 title 兄弟节点」分开指到 `${Je}` / `${Ae}`）；
+  `resituate` 另自动写回 2 条（`.length` 复数句与一条 `code` 片段）。删掉 2 条上游下线的死词条：
+  `Unlimited messages and tool calls.`（该分支被改成空串）与 `Smart & fast`（本版只剩 `Smart & Fast`，
+  后者词典里本来就有独立条目）。被改写的 `Fast mode: Buffy gathers context…`（Fast 模型的
+  `taglineTooltip`）**上一版就不在词典里**、产物里一直是英文；新句 `Gathers context with parallel
+  subagents. Runs on DeepSeek’s own API.` 本版按新增文案补了一条 `exact`。
+- **新增文案**：11 条待补翻 + 1 条已覆盖，全部走 `dictapply.js` 清单落盘——`template` 2 条
+  （附件超限提示、`Returned to ${t}.`）、`exact` 9 条（两条价格档 reason、`your original daily pool`、
+  两条提示词优化报错、两个按钮 label、`Preview limit: `、Fast 模型的新 taglineTooltip）；
+  `MiB` 作为存储单位登进 `intentional-english.json` 的 `uiStrings`（登记表 805 → 806 条）。
+- **主进程**：`electron/` 43 → 44 个文件（新增 `attachment-preview.cjs`），13 个补丁一次干净套用、
+  锚点无漂移；主进程英文扫描 0 条疑似漏翻、0 条短标签待过目，约定保留 94 → 97 条。
+- **UI 行为补丁**：两组仍判 `KEEP`——上游没碰流式序号与令牌缓存，共 5 条哨兵全部唯一命中，
+  产物侧行为取证（stream-epoch / token-epoch）通过。
+- **四道发布闸门全绿**：主进程 0 条；回归闸门（对比 `pack-v0.0.159.1`）英文片段 299 → 296 处、
+  新增 0 处未登记；单词级界面文案差集 0 处（本版界面位置英文 39 处 vs 上一版 38 处，扣除登记表后无独有项）；
+  字面量占用无冲突。
+- **影响面**：`targetVersion` / `packVersion` 升到 0.0.161，已装 `pack-v0.0.159.1` 的机器会自动拉到这一版。
+
+### 记一笔：模型选择器的价格 tooltip 仍是英文骨架（短标签告警）
+
+`fet()` 拼出来的 `Off-peak: 10 Freebucks/hr weekdays, 10 PM–6 AM, <reason>. 15 otherwise.`
+是一个**含嵌套模板字面量**的代码合成句（`${y?`${y}, `:""}`），词典的 `template` 分区按
+「反引号之间逐字节相等」匹配，整句要进词典就得写一条**键里带反引号**的条目——本仓库至今没有
+这种先例，`code` 分区又被 G1（`value` 必须与 `key` 逐字节相同）挡着。本版只把上游新加的两条
+`reason`（`when Freebuff is quiet` / `when DeepSeek’s API costs double`）翻成中文，句子骨架
+（`: Freebucks/hr`、`otherwise.`）与 `Intl` 出的 `weekdays` / 时段仍是英文——与 0.0.158 / 0.0.159
+对该 tooltip 的既有处理一致，`upstreamdiff` 的「短标签」一节会一直报 `: Freebucks/hr`（不拦退出码）。
+
+### 记一笔：`dictapply --check` 的 G5 对「以 `${` 开头的完整模板键」会误报
+
+本次那条附件超限提示的键是 `${e.name} exceeds the ${y} MiB preview limit. …`，`--check` 的 G5
+（`/^\$\{/` 判「截断的模板键」）报了红。该键是 bundle 里**逐字节完整**的模板字面量：
+按 `apply.js` 同一套匹配（`` ` `` + esc(key) + `` ` ``）实测唯一命中 1 处，构建后该英文片段在产物里为 0 处。
+G5 判据只看「键是否以 `${` 开头」，而词典里本就有大量合法的 `${…}` 开头的模板锚，所以这条是误报；
+`--write` 走的结构校验不含 G5，本次按「有证据的误报」放行并在提交信息里留档。
+
 ## [0.0.158] · 2026-10-03（已发布 `pack-v0.0.158`）
 
 上游这一版几乎只动逻辑：上一版刚合并的 `Updates` + `Version` 两个设置页**又撤回**成
