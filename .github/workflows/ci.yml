@@ -5,6 +5,14 @@
 # 版本刚 bump、本版原版还没发布时它退到「近似模式」：拿上一版快照当替身，闸一 / 闸二 / 闸三
 # 只列差异清单（不作判定），闸四与镜像重建仍硬拦；本版新增的英文文案在这里看不到，由发布前的
 # release.sh 四道闸门（真实产物）把关——细节见 tools/ci_gates.sh 的文件头。
+#
+# 两个 job 都在 ubuntu-latest + windows-latest 上各跑一遍（矩阵）：
+#   · 仓库对行尾敏感（脚本与词典强制 LF、补丁 -text 原样、ci.yml 自身是 CRLF），工具又大量读写
+#     路径与临时目录——只在 Linux 上验证，等于把 Windows 上的 shell 差异、路径分隔符、checkout
+#     行尾转换这些事留到「有人本地跑」那一刻才暴露；
+#   · Windows 上默认 shell 是 pwsh，凡是含 bash 语法的步骤都显式写了 shell: bash；
+#   · 另有只在 Windows 上跑的一道行尾守卫：checkout 若把脚本 / 补丁 / 词典换成 CRLF 直接报错。
+# 两个 job 都用 fail-fast: false：一个 OS 红了，也能看到另一个的结论。
 name: lint
 
 on:
@@ -16,7 +24,11 @@ on:
 
 jobs:
   dict-lint:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -50,7 +62,10 @@ jobs:
         run: node tools/test_ui_code_patch.js
       - name: 语义守卫自测（正则字面量不假阳性 / 真语义位置仍拦下）
         run: node tools/test_semantic_guard.js
+      - name: 注释分词器自测（正则 / 模板 / 字符串里的 // 不产生假注释；真注释区不翻、假注释区仍翻）
+        run: node tools/test_comment_scan.js
       - name: 行为取证探针自测（拿不到证据必须 rc 2，不冒充判决）
+        shell: bash
         run: |
           node tools/test_probe_stream_epoch.js
           node tools/test_probe_token_epoch.js
@@ -73,22 +88,50 @@ jobs:
         run: node tools/test_regen_patch.js
       - name: CI 闸门自测（假绿灯防线 / 跳过路径 / 退出码）
         run: node tools/test_ci_gates.js
+      - name: 接线守卫自测（漏接线 / 悬空引用 / 注释不算接线 / 重复与 if 门 / 退出码）
+        run: node tools/test_ci_wiring.js
+      - name: 构建复用自测（输入变更 / 产物篡改 / 缺构建记录 / 退出码 / 真仓库布局）
+        run: node tools/test_build_key.js
+      - name: 行尾守卫（Windows 上 checkout 不得把脚本 / 补丁 / 词典 / 文档换成 CRLF）
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          # 补丁是 -text（字节敏感）、脚本与词典是 eol=lf：这几类在 Windows 上必须是 LF，
+          # 否则本地对、CI 上对不上（典型症状是补丁上下文行带 CR 后 git apply 拒绝）。
+          bad="$(git ls-files --eol -- '*.js' '*.sh' '*.patch' '*.json' '*.md' | awk '$2 == "w/crlf" { print $NF }')"
+          if [ -n "$bad" ]; then
+            echo "::error::以下文件被 checkout 成了 CRLF，而仓库要求 LF："
+            printf '%s\n' "$bad"
+            exit 1
+          fi
+          echo "行尾守卫：脚本 / 补丁 / 词典 / 文档全部为 LF ✓"
       - name: 工具脚本语法冒烟
+        shell: bash
         run: |
           for f in tools/*.js; do
             node --check "$f"
           done
       - name: Shell 脚本语法冒烟
+        shell: bash
         run: |
           for f in *.sh tools/*.sh; do
             bash -n "$f"
           done
+      - name: 接线守卫（tools/test_*.js 与 workflow 里真的跑到的那批必须一一对应）
+        run: node tools/ci_wiring.js
 
   # 四道发布闸门单独一个 job：它们要一份「本版英文原版快照」（Release 资产 pristine-<版本>.json.gz）
   # 与一份「上一版已发布包」，而上面那批自测全用合成夹具、不碰网络——分开跑，网络抖动就不会
   # 把纯自测带红。
   snapshot-gates:
-    runs-on: ubuntu-latest
+    # 同样两个 OS 都跑：这四道闸门是 bash + node + git apply 拼起来的，正是最容易踩平台差异的地方
+    # （补丁上下文行尾、临时目录、cp -R 语义）。代价是每个 Release 资产被下载两遍，值这个价。
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -101,4 +144,5 @@ jobs:
         env:
           # 只为不吃共享出口 IP 的匿名 API 限额；仓库公开，没它也基本能用。
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
         run: bash tools/ci_gates.sh
