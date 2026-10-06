@@ -40,7 +40,9 @@
 //   G2 非 code 分区译文要含中文，除非 value 以 [EN] 前缀标成有意保留英文
 //   G3 译文不能等于原文（AI 最常见的偷懒：原样抄回来）
 //   G4 骨架里未填的空 value 单独计数，只提醒不报错（--check 允许半成品）
-//   G5 key 以 ${ 或未闭合三元残骸开头/结尾——抄键时截断了，贴回 bundle 也命中不了
+//   G5 key 末尾留着**没闭合的 ${…**——抄键抄到插值中间就断了，贴回 bundle 也命中不了
+//      （`.${<条件>?` 结尾的「半截模板锚」是词典里的合法特例，形态与登记由 lint_dict 的 E5 管，
+//        G5 不重复判；「以 ${ 开头」与「以 ? 结尾」都不算截断——那是旧判据的稳定误报，见下面的注释）
 //
 // 推荐节奏：--emit（可加 --guidance 把译文规则一起吐出来，整段丢给 AI）→ AI 填 value
 //   → --check 体检（只读）→ dry-run 看改动 → --write 落盘。
@@ -245,6 +247,8 @@ function describe (r, item) {
 // --- --check：AI（或人）填完的清单体检，纯只读 ---------------------------------
 if (CHECK) {
     const CJK = /[㐀-䶿一-鿿぀-ヿ가-힯]/
+  // 「半截模板锚」的尾巴：`${` + 非空条件 + `?` 结尾（同 lint_dict E5 对尾巴的形态要求）
+  const HALF_ANCHOR_TAIL = /\$\{[^`}]{1,200}\?$/
   const issues = []
   let empty = 0, okCount = 0
   const everyValue = []
@@ -264,9 +268,20 @@ if (CHECK) {
     if (v === key) issues.push(['G3', `${op} ${short(key)}`, '译文与原文逐字节相同，等于没翻'])
     else if (!CJK.test(v)) issues.push(['G2', `${op} ${short(key)}`, `译文里没有中文字符：${short(v)}（有意保留英文请写 "[EN] …"）`])
     else okCount++
-    // 键形态：截断的模板/三元残骸贴回 bundle 一定命中不了
-    if (/^\$\{/.test(key) || /\$\{[^}]*$/.test(key) || /[?]\s*$/.test(key)) {
-      issues.push(['G5', `${op} ${short(key)}`, '键像被截断的模板/三元片段，需补成完整字面量或改用 template 分区的合法锚'])
+    // 键形态：末尾是没闭合的 ${… = 抄键时截断了，贴回 bundle 一定命中不了。
+    // 旧判据是「/^\$\{/ 或 /\$\{[^}]*$/ 或 /[?]\s*$/」，在真词典的 2086 条键上会点名 75 条，
+    // 全是误报：54 条是以 ${ 开头的**完整**模板锚（`${e.name} exceeds the ${y} MiB preview limit. …`
+    // 就是这样在 0.0.161 适配时被拦下的），23 条是以 ? 结尾的正常问句（`Why this?`、
+    // `Discard unsaved settings?`）——一个键能不能命中，与它的首字符、末字符无关，
+    // 于是判据只留「末尾未闭合插值」这一条真截断形态。
+    // 例外：`.${<条件>?` 结尾的半截模板锚——lint_dict 的 E5 管它的形态与登记，G5 不重复判，
+    // 否则下次适配又要人手放行同一种合法形态。
+    if (/\$\{[^}]*$/.test(key) && !HALF_ANCHOR_TAIL.test(key)) {
+      issues.push([
+        'G5',
+        `${op} ${short(key)}`,
+        '键末尾是没闭合的 ${…（抄键时截断了）：补成完整字面量，或写成 `${<条件>? 形态的半截模板锚（需登记，见 lint_dict.js 的 E5）',
+      ])
     }
   }
   process.stdout.write(`清单体检 ${path.basename(listPath)}：${everyValue.length} 条带 value 的操作\n`)

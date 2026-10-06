@@ -77,6 +77,10 @@ if [ -n "${PRISTINE_UI}" ] && [ -f "${PRISTINE_UI}/index.html" ]; then
 fi
 
 # --- 分步计时（迁移的墙钟时间到底花在哪一步，之前只能靠感觉）--------------------
+# 约定：lap 打印的是「自上一次 lap 以来」的耗时，所以每处 lap 都写在**下一步的标题处**、
+# 标注**刚刚跑完那一步**的名字。旧写法把当前步的名字传进去，结果每行的数字都错位一格
+# （“1重映射 0s”其实是准备时间、“3构建 4s”其实是上一小步、真正 24s 的构建被归到了
+# “4UI残留扫描”头上）——优化性能时会被它带偏，所以口径写死在这里。
 STEP_T0=$(date +%s); STEP_PREV=$STEP_T0
 lap () {
   local now=$(date +%s)
@@ -88,7 +92,7 @@ lap () {
 # --- 1/7 重映射 -----------------------------------------------------------------
 echo
 echo "== 1/7 模板变量重映射 =="
-lap "1重映射"
+lap "0准备（解析原版 / 建报告）"
 REMAPPED=0
 if [ -n "${UI_BUNDLE}" ]; then
   # remap.js --write only needs to inspect the pristine bundle. The installed
@@ -114,7 +118,7 @@ fi
 # 或其实只在主进程——那种该写进 patches/ 而不是删）。
 echo
 echo "== 1b/7 旧词条重新定位（remap 够不着的那些）=="
-lap "1b词条重定位"
+lap "1重映射（模板变量迁移）"
 RESITUATE_RC=skip
 RESITUATE_RELOCATE=0
 RESITUATE_CONFIRM=0
@@ -157,7 +161,7 @@ fi
 # 出缺陷），逐组给出 KEEP / REWRITE / RETIRE / UNKNOWN，退场时附上删除清单。
 echo
 echo "== 2/7 补丁体检（UI 行为：该保留还是退场）=="
-lap "2UI补丁体检"
+lap "1b词条重定位"
 PATCH_STATUS=skipped
 if [ -n "${UI_BUNDLE}" ] && [ -f "${UI_BUNDLE}" ]; then
   set +e
@@ -194,7 +198,7 @@ fi
 # 而且当时还把 consent-window.html 的「空上下文行」误判成改写。顺便把补丁体检统一在本步骤。
 echo
 echo "== 2b/7 主进程补丁锚点预检（该重锚定还是人工重维护）=="
-lap "2b主进程补丁预检"
+lap "2UI补丁体检"
 PATCH_ANCHOR=skipped
 {
   echo
@@ -214,7 +218,7 @@ esac
 # --- 3/7 构建 --------------------------------------------------------------------
 echo
 echo "== 3/7 构建（含防呆自检）=="
-lap "3构建"
+lap "2b主进程补丁预检"
 if ! bash "${HERE}/build.sh" "${PRISTINE_ASAR}" "${PRISTINE_UI}" 2>&1 | tee -a "${REPORT}"; then
   echo "ERROR: build.sh 失败（详情见上方日志），中止。" >&2
   exit 1
@@ -228,7 +232,7 @@ FINAL_BUNDLE="${HERE}/output/ui/assets/$(basename "${UI_BUNDLE:-__none__}")"
 # --- 4/7 UI 残留扫描 ---------------------------------------------------------------
 echo
 echo "== 4/7 UI 残留扫描 =="
-lap "4UI残留扫描"
+lap "3构建（bash build.sh）"
 {
   echo
   echo "## 残留扫描（output 主 bundle）"
@@ -272,7 +276,7 @@ fi
 # 就是漏翻。与 blindscan 一样**只报告不拦脚本**（迁移途中本来就该先发现再补），但结论进小结。
 echo
 echo "== 5/7 主进程英文扫描（electron/*.cjs）=="
-lap "5主进程英文扫描"
+lap "4UI残留扫描"
 {
   echo
   echo "## 主进程英文扫描（mainscan：原版 electron/*.cjs vs 构建产物）"
@@ -317,7 +321,7 @@ fi
 #      两条词条可能被指到同一处互相覆盖，剩下那处就变回英文而 build.sh 依旧全绿。
 echo
 echo "== 6/7 上游新增文案 + 回归闸门 =="
-lap "6上游对差+回归闸门"
+lap "5主进程英文扫描"
 {
   echo
   echo "## 上游新增文案（upstreamdiff：上一版英文原版 vs 本版英文原版）"
@@ -384,7 +388,7 @@ fi
 #      把这条规则固化下来（路径参数 / 比较位置 / IPC 通道名三种形态直接失败）。
 echo
 echo "== 6b/7 单词级界面文案差集 + 字面量占用 =="
-lap "6b单词差集+占用"
+lap "6上游对差+回归闸门"
 {
   echo
   echo "## 界面位置英文差集（uipos_gap：本版产物 ← 上一版产物，减登记表）"
@@ -428,7 +432,7 @@ fi
 # --- 7/7 汇总 ----------------------------------------------------------------------
 echo
 echo "== 7/7 本次更新小结 =="
-lap "7小结"
+lap "6b单词差集+占用"
 echo "  · 模板变量自动迁移：${REMAPPED} 条$( [ "${REMAPPED}" -gt 0 ] && echo '  → 建议人工抽查 git diff dict.json 后提交' )"
 if [ "${AMBIGUOUS:-0}" -gt 0 ]; then
   echo "  · remap 歧义条目：${AMBIGUOUS} 条 ⚠ 未自动迁移（清单见报告）——不改就会在下个版本变回英文"
@@ -539,3 +543,6 @@ cat <<TIP
   · 产物侧行为取证未达标（构建日志里的「主 bundle 行为取证」）→ 别装机，先核对补丁是否真的生效。
 随时可以单独问一次：node tools/ui_patch_status.js   （不带参数就自动找本机英文原版）
 TIP
+
+# 计时收尾：最后一个 lap 同样写在「下一步的标题处」——这里没有下一步了，就写在脚本末尾。
+lap "7小结"

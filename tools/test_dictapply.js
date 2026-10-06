@@ -180,16 +180,27 @@ L = writeList({
     { section: 'code', key: 'run_file_change_hooks:"Hooks"', value: 'run_file_change_hooks:"钩子"' }, // G1
     { section: 'exact', key: 'GLM 5.3 Flash', value: '[EN] GLM 5.3 Flash' },             // [EN] 放行
     { section: 'exact', key: 'Still empty', value: '' },                                 // 未填
-    { section: 'template', key: '${o.active ? "Enable"', value: '启用' }                 // G5 截断键
+    { section: 'template', key: '${o.active ? "Enable"', value: '启用' },                // G5 真截断：末尾留着没闭合的 ${…
+    // 下面三条是 G5 的**阴性对照**：旧判据（/^\$\{/ 或 以 ? 结尾）会把它们全报成截断，而它们是词典里
+    // 正常的键形态——真词典 2086 条键上旧判据点名 75 条、全是误报（0.0.161 那条附件超限提示就是这么被拦的）
+    { section: 'template', key: '${e.name} exceeds the ${y} MiB preview limit.', value: '“${e.name}”超过 ${y} MiB 的预览上限。' }, // 完整模板锚，以 ${ 开头
+    { section: 'exact', key: 'Discard unsaved settings?', value: '放弃未保存的设置？' },  // 正常问句，以 ? 结尾
+    { section: 'template', key: "in your wallet. Used after today's pool.${fe?", value: "花的是你钱包里的，今日额度用完才动它。${fe?" } // 合法半截模板锚（E5 那一类）
   ]
 })
 r = run([L, '--dict', DICT, '--check'])
 t('T10 --check 抓出 G1（code 被翻）', r.code === 2 && /G1/.test(r.out), r.out)
 t('T10 --check 抓出 G3（译文==原文）', /G3/.test(r.out), r.out)
-t('T10 --check 抓出 G5（键被截断的模板片段）', /G5/.test(r.out), r.out)
+const g5 = r.out.split('\n').filter((l) => /^ {2}G5 /.test(l))
+t('T10 --check 抓出 G5（键末尾是没闭合的 ${…）', g5.length === 1 && /Enable/.test(g5[0]), r.out)
+t(
+  'T10 G5 阴性对照：以 ${ 开头的完整模板锚 / 以 ? 结尾的正常问句 / 合法半截模板锚都不报',
+  !/exceeds the/.test(r.out) && !/Discard unsaved settings/.test(r.out) && !/Used after today's pool/.test(r.out),
+  r.out,
+)
 t('T10 [EN] 前缀放行、未填只计数不算硬错', !/\[EN\] GLM/.test(r.out) && /未填\(value 为空\) 1/.test(r.out), r.out)
-// 合格 = 正常那条 + [EN] 那条 + code 里 value==key 的情况（此处没有）= 3
-t('T10 合格条目计数正确（含 [EN] 放行共 3 条）', /合格 3 · 未填\(value 为空\) 1 · 问题 4/.test(r.out), r.out)
+// 合格 = 正常那条 + [EN] 那条 + G5 那条（有中文、≠原文）+ 三条阴性对照 = 6
+t('T10 合格条目计数正确（含 [EN] 放行与三条阴性对照共 6 条）', /合格 6 · 未填\(value 为空\) 1 · 问题 4/.test(r.out), r.out)
 fs.rmSync(DICT + '.before-dictapply', { force: true }) // 清掉 T7 留下的备份，才能证明 --check 不写文件
 r = run([L, '--dict', DICT, '--check'])
 t('T10 --check 全程只读（词典没动、也不生成备份）', fs.readFileSync(DICT, 'utf8') === before && !fs.existsSync(DICT + '.before-dictapply'), r.out)
@@ -236,6 +247,24 @@ const dictWith = (name) => mkLocal(name + '.dict.json', JSON.stringify({
   r = runHere(REN('t13c', 'Undone. ${a} and ${b} files.', { value: '已撤销 ${a} 和 ${b} 个文件。' }), dictWith('t13c-d'), ['--write'])
   t('T13c 给了 value 就照做（数量不等也可显式改名）', r.code === 0 && /译文按给定值改写/.test(r.out), r.out)
   for (const p of locals) fs.rmSync(p, { force: true })
+}
+
+// T14 G5 判据的真语料防线：拿仓库真词典的每一条键过一遍 --check
+// 旧判据在这份词典上点名 75 条（54 条以 ${ 开头的完整模板锚 ∪ 23 条以 ? 结尾的正常问句），
+// 全是误报；新判据只认「末尾未闭合插值」，因此只应剩下夹具里那条真截断。
+{
+  const realDict = JSON.parse(fs.readFileSync(path.join(REPO, 'dict.json'), 'utf8'))
+  const items = []
+  for (const section of Object.keys(realDict)) {
+    // code 分区 value 必须与 key 逐字节相同（G1），其余分区给个含中文的值免得吃 G2/G3——
+    // 这一组只看 G5，别的门报什么不关心
+    for (const key of Object.keys(realDict[section])) items.push({ section, key, value: section === 'code' ? key : key + '（中）' })
+  }
+  const n = items.length
+  items.push({ section: 'template', key: '${o.active ? "Enable"', value: '启用' })
+  r = run([writeList({ add: items }), '--dict', DICT, '--check'])
+  const g5real = r.out.split('\n').filter((l) => /^ {2}G5 /.test(l))
+  t(`T14 真词典 ${n} 条键 + 1 条真截断：只有那条真截断吃 G5`, g5real.length === 1 && /Enable/.test(g5real[0]), r.out.slice(0, 400))
 }
 
 console.log(`\n结果：${pass} 通过 / ${fail} 失败`)

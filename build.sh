@@ -18,7 +18,27 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# --- 并发度：给「一堆互相独立的小文件各起一次 node」的步骤用 -------------------------
+# 那两步的墙钟时间几乎全是**进程冷启动**（实测：46 次 apply.js = 4.5s、44 次 node --check = 3.2s，
+# 而两者各自的实际工作量都在 1s 量级），串行是纯浪费。并发度按核数给，封顶 8
+# （再多只是让杀毒 / IO 互相抢），需要时可 HANHUA_JOBS=1 退回串行复现旧行为。
+JOBS="${HANHUA_JOBS:-$(nproc 2>/dev/null || echo 4)}"
+case "${JOBS}" in '' | *[!0-9]*) JOBS=4 ;; esac
+if [ "${JOBS}" -gt 8 ]; then JOBS=8; fi
+if [ "${JOBS}" -lt 1 ]; then JOBS=1; fi
 INSTALL="${LOCALAPPDATA:-}/Programs/@codebufffreebuff-desktop"
+
+# --- 参数：--rebuild 可出现在任意位置，其余按位置取（<app.asar> [ui-dir]）-------------------
+REBUILD=0
+ARGS=()
+for a in "$@"; do
+  case "$a" in
+    --rebuild) REBUILD=1 ;;
+    *) ARGS+=("$a") ;;
+  esac
+done
+set -- ${ARGS[@]+"${ARGS[@]}"}
 
 # --- resolve pristine sources ------------------------------------------------
 # Priority: explicit args > newest hanhua-backup-* > installed English files.
@@ -58,6 +78,26 @@ if [ -n "${PRISTINE_UI}" ] && [ ! -d "${PRISTINE_UI}" ]; then
 fi
 echo "Pristine app.asar: ${PRISTINE_ASAR}"
 [ -n "${PRISTINE_UI}" ] && echo "Pristine ui dir:   ${PRISTINE_UI}"
+
+# --- 构建复用：输入没变 + 产物哈希仍对得上 → 直接跳过整次重建 -------------------------
+# 为什么：这次构建的墙钟里约 18s 是固定开销（解包 / 打包 asar、46 + 44 次 node 冷启动、
+# postbuild 的行为取证），而适配期间来回调词条、或只想再看一遍报告时，输入往往一个字节没变。
+# 判据不是「猜」，是两条可验证的等式（细节见 tools/build_key.js 的文件头）：
+#   输入指纹 = build.sh / dict / 登记表 / manifest / patches / tools/ + 原版 asar 与 ui 的逐字节哈希
+#   产物哈希 = 上次成功构建记下的 output/ 每个文件的 sha256
+# 于是「手改了 output/」或「改了 apply.js」都不会被当成可复用。要重建：bash build.sh --rebuild。
+if [ -n "${PRISTINE_UI}" ]; then
+  BUILD_KEY="$(node "${HERE}/tools/build_key.js" key --asar "${PRISTINE_ASAR}" --ui "${PRISTINE_UI}")"
+  if [ "${REBUILD}" -eq 1 ]; then
+    echo "构建复用：--rebuild 指定，本次强制重建"
+  elif node "${HERE}/tools/build_key.js" verify --key "${BUILD_KEY}" --asar "${PRISTINE_ASAR}" --ui "${PRISTINE_UI}"; then
+    echo
+    echo "== 复用上次构建 =="
+    echo "   输入（词典 / 补丁 / tools / 原版）一个字节没变，output/ 的产物哈希也对得上——不重新生成。"
+    echo "   需要重建：bash build.sh --rebuild"
+    exit 0
+  fi
+fi
 
 # --- 登记本版英文原版快照（供下次适配对差 / 跨机器搬运）----------------------------
 # 自动更新会把装机目录的英文原版覆盖掉（0.0.114 那次连 hanhua-backup-* 一起清了），而
@@ -127,9 +167,11 @@ echo "== 1/4 解包主进程 asar =="
 npx -y @electron/asar extract "${PRISTINE_ASAR}" "${WORK}/main"
 
 echo "== 2/4 套用翻译词典 (dict.json) =="
-for f in "${WORK}/main/electron/"*.cjs "${WORK}/main/electron/"*.html "${WORK}/main/package.json"; do
-  node "${HERE}/tools/apply.js" "$f" --write --quiet
-done
+# 每个文件仍是**一次独立的 apply.js**（口径一字不改，只是并发跑）：它们彼此独立、各写各的文件，
+# 换句话说就是「把 46 次进程冷启动叠起来」，实测 4.5s → 1.1s。--quiet 下每个文件只一行输出，
+# 行内不会交错；任何一个失败 xargs 返回 123，配合 set -e / pipefail 照样中止构建。
+printf '%s\n' "${WORK}/main/electron/"*.cjs "${WORK}/main/electron/"*.html "${WORK}/main/package.json" \
+  | xargs -d '\n' -P "${JOBS}" -I{} node "${HERE}/tools/apply.js" {} --write --quiet
 
 echo "== 3/4 套用人工补丁 (patches/) =="
 # 原版 asar 内文本是 CRLF 行尾，而补丁文件是 LF。Windows 的 git apply 会自动
@@ -149,12 +191,12 @@ find "${WORK}/main" -type f \( -name '*.cjs' -o -name '*.html' -o -name '*.js' -
 done)
 
 echo "== 语法校验补丁后的主进程文件 =="
-for f in "${WORK}/main/electron/"*.cjs; do
-  if ! node --check "$f"; then
-    echo "ERROR: 主进程文件存在语法错误：$(basename "$f") —— 补丁悬空模板等会引发 v0.0.72 式启动崩溃，已中止构建" >&2
-    exit 1
-  fi
-done
+# 判据与之前完全一致（就是 node --check），只是把 44 次冷启动叠起来：3.2s → 1.1s。
+# 失败时 node 自己会点名文件与行号（比原先那句 basename 更具体），下面再给处置建议。
+if ! printf '%s\n' "${WORK}/main/electron/"*.cjs | xargs -d '\n' -P "${JOBS}" -I{} node --check {}; then
+  echo "ERROR: 主进程文件存在语法错误（详情见上，node --check 会点名文件与行号）—— 补丁悬空模板等会引发 v0.0.72 式启动崩溃，已中止构建" >&2
+  exit 1
+fi
 
 echo "== 4/4 重打包 asar 并处理 ui =="
 # 产物先落在临时目录，自检通过之后才整份换位进 output/。
@@ -228,6 +270,11 @@ rm -rf "${HERE}/output"
 mv "${STAGE}" "${HERE}/output"
 
 echo
+# 构建成功才记缓存（postbuild 不过就中止在前面，不会留下「可疑但可复用」的记录）
+if [ -n "${BUILD_KEY:-}" ]; then
+  node "${HERE}/tools/build_key.js" record --key "${BUILD_KEY}" || echo "  ! 构建缓存写入失败（不影响本次产物，只是下次要重建）" >&2
+fi
+
 echo "完成：output/app.asar 与 output/ui/ 已生成。"
 echo "安装：bash apply.sh"
 echo "注意：asar 内容与 Release 产物一致；容器头部可能因 @electron/asar 版本不同有细微差异，不影响运行。"

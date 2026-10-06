@@ -7,6 +7,7 @@
 #   bash tools/release.sh --no-upload   # 只打包到 dist/，打印手工上传步骤
 #   bash tools/release.sh --force       # 覆盖同 packVersion 发布（默认拒绝不升版本的发布）
 #   bash tools/release.sh --allow-english # 两道英文闸门只报告不拦截（确认新英文是有意保留时）
+#   bash tools/release.sh --prev-online  # 闸门二 / 三的上一版基线强制重新下载（默认优先用本地 dist/）
 #
 # 发布前的四道闸门（都要过）：
 #   1. 主进程扫描（tools/mainscan.js）：原版 `electron/*.cjs` vs 本次产物——词典只替双引号
@@ -36,12 +37,14 @@ REPO="Ximmmmmmm/freebuff-zh"
 UPLOAD=1
 FORCE=0
 ALLOW_ENGLISH=0
+PREV_ONLINE=0
 for a in "$@"; do
   case "$a" in
     --no-upload)     UPLOAD=0 ;;
     --force)         FORCE=1 ;;
     --allow-english) ALLOW_ENGLISH=1 ;;
-    *) echo "未知参数：$a（支持 --no-upload / --force / --allow-english）" >&2; exit 1 ;;
+    --prev-online)   PREV_ONLINE=1 ;;
+    *) echo "未知参数：$a（支持 --no-upload / --force / --allow-english / --prev-online）" >&2; exit 1 ;;
   esac
 done
 
@@ -180,18 +183,31 @@ if [ -z "${PREV_TAG}" ]; then
   echo "  ! 未找到上一版 Release（首次发布或 gh 不可用），跳过"
 else
   GATE_TMP="$(mktemp -d)"
-  # 上一版包的下载同样走 gh（理由见上面 gh_asset 那段注释）。gh release download 会
-  # 自己落到文件名上，失败时目录里就没有东西——比 curl 的「空文件」更难误判成「闸门通过」。
-  # 退路仍留 curl：gh 不可用 / 被限流时它在能直连的机器上照样管用。
-  gh release download "${PREV_TAG}" -R "${REPO}" -p 'hanhua-pack-*.zip' --clobber -D "${GATE_TMP}" >/dev/null 2>&1 || true
-  if [ ! -s "$(ls -1 "${GATE_TMP}"/hanhua-pack-*.zip 2>/dev/null | head -1)" ]; then
-    PREV_URL="$(gh release view "${PREV_TAG}" -R "${REPO}" --json assets \
-      --jq '.assets[] | select(.name | startswith("hanhua-pack-")) | .url' 2>/dev/null || true)"
-    if [ -n "${PREV_URL}" ]; then
-      curl -sL -H 'Accept: application/octet-stream' "${PREV_URL}" -o "${GATE_TMP}/hanhua-pack-${PREV_TAG#pack-v}.zip" || true
+  # 本地 dist/ 里已经躺着一份上一版包就直接用（--prev-online 强制走网络）。
+  # 为什么可以：闸门读的是压缩包**里面的文本**（regress / uipos_gap 都只是解出 ui 主 bundle 与
+  # app.asar 来比），实测线上资产与本地 dist/ 那份的 app.asar / ui/index.html / UI 主 bundle
+  # 三个哈希完全一致，差别只在 zip 容器的时间戳；而这份 33MB 的下载实测要 13.8s，每次发布都付。
+  # 代价写在这里：基线于是来自「我们自己本地产物」。正常路径下它就是刚上传的那个包；但同号重发
+  # （--force / 手工 --clobber 覆盖资产）过的版本，dist/ 里那份可能是被覆盖过的另一份构建——
+  # 需要「基线必须来自线上」这个强保证时加 --prev-online。
+  PREV_LOCAL="${HERE}/dist/hanhua-pack-${PREV_TAG#pack-v}.zip"
+  if [ "${PREV_ONLINE}" -eq 0 ] && [ -s "${PREV_LOCAL}" ]; then
+    PREV_ZIP="${PREV_LOCAL}"
+    echo "  基线：本地 dist/${PREV_LOCAL##*/}（与线上资产同内容；要强制重新下载加 --prev-online）"
+  else
+    # 上一版包的下载同样走 gh（理由见上面 gh_asset 那段注释）。gh release download 会
+    # 自己落到文件名上，失败时目录里就没有东西——比 curl 的「空文件」更难误判成「闸门通过」。
+    # 退路仍留 curl：gh 不可用 / 被限流时它在能直连的机器上照样管用。
+    gh release download "${PREV_TAG}" -R "${REPO}" -p 'hanhua-pack-*.zip' --clobber -D "${GATE_TMP}" >/dev/null 2>&1 || true
+    if [ ! -s "$(ls -1 "${GATE_TMP}"/hanhua-pack-*.zip 2>/dev/null | head -1)" ]; then
+      PREV_URL="$(gh release view "${PREV_TAG}" -R "${REPO}" --json assets \
+        --jq '.assets[] | select(.name | startswith("hanhua-pack-")) | .url' 2>/dev/null || true)"
+      if [ -n "${PREV_URL}" ]; then
+        curl -sL -H 'Accept: application/octet-stream' "${PREV_URL}" -o "${GATE_TMP}/hanhua-pack-${PREV_TAG#pack-v}.zip" || true
+      fi
     fi
+    PREV_ZIP="$(ls -1 "${GATE_TMP}"/hanhua-pack-*.zip 2>/dev/null | head -1 || true)"
   fi
-  PREV_ZIP="$(ls -1 "${GATE_TMP}"/hanhua-pack-*.zip 2>/dev/null | head -1 || true)"
   if [ -n "${PREV_ZIP}" ] && [ -s "${PREV_ZIP}" ]; then
     set +e
     node "${HERE}/tools/regress.js" "${PREV_ZIP}" "${HERE}/output"
