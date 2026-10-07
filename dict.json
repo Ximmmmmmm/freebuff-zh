@@ -1678,6 +1678,7 @@
     "Continue in browser": "在浏览器中继续",
     "Continue to checkout": "继续前往结账",
     "Convert earned rewards into your wallet.": "将已获得的奖励兑换到你的钱包。",
+    "your wallet": "你的钱包",
     "Could not change execution location": "无法更改运行位置",
     "Could not check browser access. Try again.": "无法检查浏览器访问权限，请重试。",
     "Could not copy. Select the example and copy it manually.": "无法复制。请选中示例后手动复制。",
@@ -2167,7 +2168,20 @@
     "Project settings": "项目设置",
     "Browser": "浏览器",
     "Models & pricing": "模型与价格",
-    "Credits": "额度"
+    "Credits": "额度",
+    "Get your Resend API key": "获取你的 Resend API 密钥",
+    "Experimental models with unlimited usage": "不限量使用的实验性模型",
+    "Frontier models like GPT-6.1 Sol and more": "GPT-6.1 Sol 等更多前沿模型",
+    "Strongest price-to-performance models": "性价比最强的模型",
+    "Freebuff models only; spend is an estimate, not a bill.": "仅统计 Freebuff 模型；花费为估算值，并非账单。",
+    "Choose a provider in the model picker. A task that has used your key keeps it; start a new task to return to Freebuff models.": "请在模型选择器中选择服务商。已使用你自己密钥的任务会继续用它；新建任务即可回到 Freebuff 模型。",
+    "Could not load GitHub. Try again.": "无法加载 GitHub，请重试。",
+    "Choose a PNG, JPEG, WebP, or AVIF image.": "请选择 PNG、JPEG、WebP 或 AVIF 图片。",
+    "Choose a PNG, JPEG, or WebP image.": "请选择 PNG、JPEG 或 WebP 图片。",
+    "This image could not be opened. Try a PNG, JPEG, or WebP file.": "无法打开此图片，请改用 PNG、JPEG 或 WebP 文件。",
+    "Agents edit files, run commands and use the internet without asking, and stop only before a command that needs administrator access. Full access skips that step; your computer’s own password prompt still appears.": "智能体无需询问即可编辑文件、运行命令和使用互联网，仅在需要管理员权限的命令前暂停。完全访问会跳过该确认；但你的电脑自身的密码提示仍会出现。",
+    "No eligible GitHub account is linked to this referral. They may need to connect GitHub in settings; an account already used for another referral cannot qualify again.": "此推荐没有关联符合条件的 GitHub 账号。对方可能需要在设置中连接 GitHub；已用于其它推荐的账号无法再次获得资格。",
+    "They passed the GitHub age check and activated with full access. This referral earns one extra daily premium session; you can use it while you have full access.": "对方已通过 GitHub 账号年龄检查并激活完全访问。此推荐可为你额外获得每天一次的高级会话；在你的完全访问有效期内均可使用。"
   },
   "template": {
     "Undone. ${l.reverted} ${l.reverted===1?\"file\":\"files\"} restored.": "已撤销。已恢复 ${l.reverted} 个文件。",
@@ -2283,6 +2297,7 @@
     "Never show ${e}": "不再显示 ${e}",
     "Remove preview element ${e.selector}": "移除预览元素 ${e.selector}",
     "${r} · ${i}/${t.limit} tab${t.limit===1?\"\":\"s\"} in use": "${r} · 已使用 ${i}/${t.limit} 个标签页",
+    "${i}/${t.limit} tab${t.limit===1?\"\":\"s\"} in use": "${i}/${t.limit} 个标签页使用中",
     "Could not update this sponsored proposal: ${t||\"unknown error\"}": "无法更新此赞助提案：${t||\"unknown error\"}",
     "Invalid POSIX class \"${e}\"": "无效的 POSIX 类 \"${e}\"",
     "${e.name} is unavailable": "${e.name} 不可用",
@@ -2510,9 +2525,11 @@
     "Remove ${i.name}": "移除 ${i.name}",
     "Remove ${P.name||\"this skill\"}?": "移除 ${P.name||\"这个技能\"}？",
     "Last ${r.days} days": "最近 ${r.days} 天",
-    "${t.windowDays} days, ${t.timeZone.replaceAll(\"_\",\" \")} time.${t.streak.todayUsed?\"\":\" Send a message today to continue your streak.\"}": "${t.windowDays} 天，${t.timeZone.replaceAll(\"_\",\" \")} 时间。${t.streak.todayUsed?\"\":\" 今天发条消息以延续你的连续使用记录。\"}"
+    "${t.windowDays} days, ${t.timeZone.replaceAll(\"_\",\" \")} time.${t.streak.todayUsed?\"\":\" Send a message today to continue your streak.\"}": "${t.windowDays} 天，${t.timeZone.replaceAll(\"_\",\" \")} 时间。${t.streak.todayUsed?\"\":\" 今天发条消息以延续你的连续使用记录。\"}",
+    "Applied ${W.files} changed file${W.files===1?\"\":\"s\"} to your project folder (uncommitted)": "已应用 ${W.files} 个更改的文件到你的项目文件夹（未提交）"
   },
   "code": {
+    "Arguments must be a JSON array of strings, for example [\"-y\", \"my-server\"].": "参数必须是字符串组成的 JSON 数组，例如 [\"-y\", \"my-server\"]。",
     "run_file_change_hooks:\"Hooks\"": "run_file_change_hooks:\"文件变更钩子\"",
     "?\"Files\":null": "?\"文件\":null",
     "?\"Threads\":": "?\"会话\":",
@@ -2541,7 +2558,8 @@
     "\" code comment\",m.length===1?\"\":\"s\"": "\" 条代码注释\"",
     "\"Showing \",A.files.length,\" of \",A.matches,": "\"显示 \",A.files.length,\" / \",A.matches,",
     "w.length===1?\"service\":\"services\"": "\"项服务\"",
-    "c.jsx(Cm,{size:16,\"aria-hidden\":\"true\"}),\"Delete\"]": "c.jsx(Cm,{size:16,\"aria-hidden\":\"true\"}),\"删除\"]"
+    "c.jsx(Cm,{size:16,\"aria-hidden\":\"true\"}),\"Delete\"]": "c.jsx(Cm,{size:16,\"aria-hidden\":\"true\"}),\"删除\"]",
+    "<button data-done>Add to message</button><button data-cancel>Cancel</button>": "<button data-done>添加到消息</button><button data-cancel>取消</button>"
   },
   "pattern": {
     "Providers": "提供商",
