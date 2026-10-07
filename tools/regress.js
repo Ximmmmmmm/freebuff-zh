@@ -26,6 +26,21 @@ const os = require('os');
 const path = require('path');
 const { execFileSync } = require('child_process');
 
+// 临时解包目录：进程退出时统一清理。
+// 背景：extractZip 每跑一次闸门就解一份 pack（~60MB），此前没有任何清理逻辑——发布/体检跑
+// 一轮就泄漏一个，长期堆积（2026-10-07 实测 %TEMP% 里 61 个 / 3.5GB）。用 exit 钩子而不是
+// try/finally：main() 有多条 process.exit() 早退路径，finally 保证不了。
+const tempDirs = [];
+process.on('exit', () => {
+  for (const d of tempDirs) {
+    try {
+      fs.rmSync(d, { recursive: true, force: true, maxRetries: 3, retryDelay: 120 });
+    } catch {
+      /* 有句柄占着（杀软/索引）就留着，不打断退出 */
+    }
+  }
+});
+
 // --- 片段提取 -----------------------------------------------------------------
 
 // 把 ${...}（含嵌套花括号 / 嵌套模板）整体替换成空格，只留自然语言骨架
@@ -247,6 +262,7 @@ function mainBundleInDir(dir) {
 
 function extractZip(zip) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hanhua-regress-'));
+  tempDirs.push(dir);
   const sysRoot = process.env.SYSTEMROOT || process.env.SystemRoot || '';
   const bsdtar = sysRoot ? path.join(sysRoot, 'System32', 'tar.exe') : '';
   const attempts = [];
