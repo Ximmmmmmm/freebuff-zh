@@ -281,6 +281,15 @@ keep('浏览器配置的磁盘路径 / 文件名（用来在磁盘上定位，�
   'Library/Application Support',
   'Arc/User Data',
   'imput/Helium/User Data',
+  // 0.0.162：Windows 上逐浏览器探测 user-data 目录的那张表（第二列就是落盘路径）
+  'Google/Chrome/User Data',
+  'Chromium/User Data',
+  'BraveSoftware/Brave-Browser/User Data',
+  'Microsoft/Edge/User Data',
+  'Vivaldi/User Data',
+])
+keep('主进程内部接线断言（createCdpBridge 拿不到原生访客注册表时立刻 reject；属开发期错误，用户看不到）', [
+  'createCdpBridge needs the native browser guest registry',
 ])
 keep('附件 / 下载文件名（用户看到的是文件名本身）', ['Browser annotation.png'])
 keep('品牌名 / 应用名 / 字体名（产品名，且被用于探测与匹配）', [

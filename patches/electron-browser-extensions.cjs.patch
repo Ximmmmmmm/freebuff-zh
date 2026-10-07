@@ -1,0 +1,124 @@
+--- a/electron/browser-extensions.cjs
++++ b/electron/browser-extensions.cjs
+@@ -17,7 +17,7 @@
+     stat.size > 1024 * 1024 ||
+     !(await fs.realpath(file)).startsWith(root + path.sep)
+   )
+-    throw new Error('Invalid extension metadata.')
++    throw new Error('扩展元数据无效。')
+   return JSON.parse(await fs.readFile(file, 'utf8'))
+ }
+ 
+@@ -48,7 +48,7 @@
+     typeof manifest.version !== 'string' ||
+     !VERSION.test(manifest.version)
+   )
+-    throw new Error('Unsupported extension manifest.')
++    throw new Error('不支持该扩展的清单文件。')
+   let name = manifest.name
+   const localized = /^__MSG_(\w+)__$/.exec(name)
+   if (
+@@ -87,15 +87,15 @@
+   ].slice(0, 100)
+   const warnings = []
+   if (manifest.action || manifest.browser_action || manifest.page_action)
+-    warnings.push('Extension toolbar buttons and popups are not available yet.')
++    warnings.push('扩展的工具栏按钮与弹出窗口暂不可用。')
+   if (manifest.background?.service_worker)
+     warnings.push(
+-      'Extensions that need a background service worker may not work.',
++      '需要后台 Service Worker 的扩展可能无法正常工作。',
+     )
+   if (permissions.includes('nativeMessaging'))
+-    warnings.push('Connections to native apps are not supported.')
++    warnings.push('不支持与本机应用建立连接。')
+   if (permissions.includes('storage'))
+-    warnings.push('Chrome sync data and extension settings are not imported.')
++    warnings.push('不会导入 Chrome 同步数据与扩展设置。')
+   return {
+     id,
+     name: name.slice(0, 200),
+@@ -146,12 +146,12 @@
+   async function copy(from, to, depth) {
+     const stat = await fs.lstat(from)
+     if (stat.isSymbolicLink())
+-      throw new Error('Extension contains a symbolic link.')
++      throw new Error('扩展包含符号链接。')
+     const actual = await fs.realpath(from)
+     if (actual !== root && !actual.startsWith(root + path.sep))
+-      throw new Error('Extension file is outside its folder.')
++      throw new Error('扩展文件位于其文件夹之外。')
+     if (++files > MAX_FILES || depth > 32)
+-      throw new Error('Extension has too many files.')
++      throw new Error('扩展包含的文件过多。')
+     if (stat.isDirectory()) {
+       await fs.mkdir(to, { mode: 0o700 })
+       for (const entry of await fs.readdir(from)) {
+@@ -163,11 +163,11 @@
+     } else if (stat.isFile()) {
+       bytes += stat.size
+       if (bytes > MAX_BYTES)
+-        throw new Error('Extension exceeds the size limit.')
++        throw new Error('扩展超出大小上限。')
+       await fs.copyFile(from, to, require('node:fs').constants.COPYFILE_EXCL)
+       await fs.chmod(to, 0o600)
+     } else {
+-      throw new Error('Unsupported extension file.')
++      throw new Error('不支持该扩展文件。')
+     }
+   }
+   await copy(source, destination, 0)
+@@ -182,7 +182,7 @@
+ 
+   function folder(partition) {
+     if (!PARTITION.test(partition || ''))
+-      throw new Error('Extensions need a saved browser profile.')
++      throw new Error('扩展需要已保存的浏览器配置文件。')
+     const key = crypto.createHash('sha256').update(partition).digest('hex')
+     return path.join(storageRoot, key)
+   }
+@@ -237,7 +237,7 @@
+             loaded: false,
+             warnings: [
+               ...info.warnings,
+-              'Could not load this extension. Try importing it again.',
++              '无法加载该扩展，请重新导入。',
+             ],
+           })
+       }
+@@ -271,7 +271,7 @@
+         (id) => typeof id !== 'string' || !EXTENSION_ID.test(id),
+       )
+     )
+-      throw new Error('Choose extensions from the selected browser profile.')
++      throw new Error('请从所选的浏览器配置文件中挑选扩展。')
+     return serialize(partition, async () => {
+       await restoreInternal({ partition, browserSession })
+       const directory = folder(partition)
+@@ -284,7 +284,7 @@
+         if (!candidate) {
+           result.skipped++
+           result.warnings.push(
+-            'An extension is no longer available in the selected profile.',
++            '所选配置文件中已没有该扩展。',
+           )
+           continue
+         }
+@@ -335,7 +335,7 @@
+                 runtimeId: undefined,
+                 warnings: [
+                   ...(previous?.warnings || []),
+-                  'Could not reload this extension.',
++                  '无法重新加载该扩展。',
+                 ],
+               })
+             }
+@@ -355,7 +355,7 @@
+   }
+ 
+   async function remove({ partition, browserSession, id }) {
+-    if (!EXTENSION_ID.test(id || '')) throw new Error('Invalid extension.')
++    if (!EXTENSION_ID.test(id || '')) throw new Error('扩展无效。')
+     return serialize(partition, async () => {
+       await restoreInternal({ partition, browserSession })
+       const state = stateFor(browserSession)

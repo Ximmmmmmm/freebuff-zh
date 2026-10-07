@@ -1,8 +1,6 @@
-diff --git "a/C:\\Users\\XIM\\Desktop\\freebuff\\freebuff-zh\\work\\patch-src\\browser-import.cjs" "b/C:\\Users\\XIM\\Desktop\\freebuff\\freebuff-zh\\work\\patch-out\\browser-import.cjs"
-index a190c87..c83ee47 100644
 --- a/electron/browser-import.cjs
 +++ b/electron/browser-import.cjs
-@@ -136,10 +136,10 @@ function chromiumValue(row, version, key, platform = process.platform) {
+@@ -214,10 +214,10 @@
    if (encrypted.length === 0) return ''
    const prefix = encrypted.subarray(0, 3).toString()
    if (!['v10', 'v11'].includes(prefix))
@@ -15,7 +13,7 @@ index a190c87..c83ee47 100644
    let clear
    if (platform === 'win32') {
      const cipher = crypto.createDecipheriv(
-@@ -169,17 +169,17 @@ function chromiumValue(row, version, key, platform = process.platform) {
+@@ -247,17 +247,17 @@
        clear.length < 32 ||
        !crypto.timingSafeEqual(digest, clear.subarray(0, 32))
      )
@@ -36,7 +34,7 @@ index a190c87..c83ee47 100644
    const result = []
    let offset = 8 + pages * 4
    for (let i = 0; i < pages; i++) {
-@@ -187,19 +187,19 @@ function safariCookies(bytes) {
+@@ -265,19 +265,19 @@
      const page = bytes.subarray(offset, offset + size)
      offset += size
      if (page.length !== size || size < 8)
@@ -60,3 +58,113 @@ index a190c87..c83ee47 100644
          return cookie.subarray(at, end).toString()
        }
        const flags = cookie.readUInt32LE(8)
+@@ -324,7 +324,7 @@
+     )
+     const wrapped = Buffer.from(state.os_crypt?.encrypted_key || '', 'base64')
+     if (wrapped.subarray(0, 5).toString() !== 'DPAPI' || wrapped.length <= 5)
+-      throw new Error('No supported Windows browser key.')
++      throw new Error('没有受支持的 Windows 浏览器密钥。')
+     // This handles the user's legacy DPAPI key only. Never request elevation,
+     // unwrap app-bound keys, or change the source browser's security settings.
+     const encoded = wrapped.subarray(5).toString('base64')
+@@ -338,7 +338,7 @@
+       },
+     )
+     const key = Buffer.from(stdout.trim(), 'base64')
+-    if (key.length !== 32) throw new Error('Invalid Windows browser key.')
++    if (key.length !== 32) throw new Error('Windows 浏览器密钥无效。')
+     return key
+   }
+   const { stdout } = await run(
+@@ -347,7 +347,7 @@
+     { timeout: 30000 },
+   )
+   const password = stdout.replace(/\r?\n$/, '')
+-  if (!password) throw new Error('Browser key unavailable.')
++  if (!password) throw new Error('浏览器密钥不可用。')
+   return crypto.pbkdf2Sync(password, 'saltysalt', 1, 16, 'sha1')
+ }
+ function encryptedPrefix(row) {
+@@ -381,12 +381,12 @@
+   if (profile.access === 'blocked')
+     throw Object.assign(
+       unavailable(
+-        'Allow Freebuff to read this browser’s data, then try again.',
++        '请允许 Freebuff 读取此浏览器的数据，然后重试。',
+       ),
+       { accessBlocked: true },
+     )
+   if (!profile.file)
+-    throw unavailable('This profile has no saved cookies to import.')
++    throw unavailable('此配置文件没有可导入的已保存 Cookie。')
+   const skippedReasons = {
+     appBound: 0,
+     encrypted: 0,
+@@ -405,8 +405,8 @@
+       throw Object.assign(
+         unavailable(
+           accessBlocked
+-            ? 'Allow Freebuff Full Disk Access in System Settings to import Safari cookies.'
+-            : 'Safari cookies could not be read. Close Safari and try again.',
++            ? '请在系统设置中授予 Freebuff「完全磁盘访问权限」以导入 Safari 的 Cookie。'
++            : '无法读取 Safari 的 Cookie，请关闭 Safari 后重试。',
+         ),
+         { accessBlocked },
+       )
+@@ -419,7 +419,7 @@
+       if (error.code === 'EPERM' || error.code === 'EACCES')
+         throw Object.assign(
+           unavailable(
+-            'Allow Freebuff to read this browser’s data, then try again.',
++            '请允许 Freebuff 读取此浏览器的数据，然后重试。',
+           ),
+           { accessBlocked: true },
+         )
+@@ -441,10 +441,10 @@
+       // Never forward those fields across IPC or into an agent transcript.
+       if (String(error.stderr || '').includes('10000-cookie import limit'))
+         throw unavailable(
+-          'This profile exceeds the 10,000-cookie import limit. Import a smaller cookie export instead.',
++          '此配置文件超出 10,000 条 Cookie 的导入上限，请改为导入更小的 Cookie 导出文件。',
+         )
+       throw unavailable(
+-        'The browser cookies could not be read. Close the source browser and try again.',
++        '无法读取浏览器的 Cookie，请关闭来源浏览器后重试。',
+       )
+     }
+     if (data.firefox) {
+@@ -563,28 +563,28 @@
+       await browserSession.cookies.flushStore()
+     } catch {
+       warnings.push(
+-        'Cookies were imported, but could not yet be saved to disk. Keep Freebuff open and try again.',
++        'Cookie 已导入，但还没能写入磁盘。请保持 Freebuff 开启后重试。',
+       )
+     }
+   }
+   if (skippedReasons.appBound)
+     warnings.push(
+-      'Chrome protects some Windows cookies with app-bound encryption. Sign in to those sites in Freebuff.',
++      'Chrome 对部分 Windows Cookie 使用了应用绑定加密，请在 Freebuff 中登录这些网站。',
+     )
+   if (skippedReasons.encrypted)
+     warnings.push(
+-      'Some encrypted cookies could not be unlocked. Allow access to the browser’s key when your operating system asks, or sign in again.',
++      '部分加密 Cookie 无法解锁。系统询问时请允许访问浏览器的密钥，或重新登录。',
+     )
+   if (skippedReasons.partitioned)
+     warnings.push(
+-      'Partitioned cookies and Firefox container sessions cannot be transferred.',
++      '分区 Cookie 与 Firefox 容器会话无法迁移。',
+     )
+   if (skippedReasons.invalid || skippedReasons.failed)
+     warnings.push(
+-      'Some cookies are incompatible with the Freebuff browser and were skipped.',
++      '部分 Cookie 与 Freebuff 浏览器不兼容，已被跳过。',
+     )
+   if (!imported && !Object.values(skippedReasons).some(Boolean))
+-    warnings.push('This profile has no saved cookies to import.')
++    warnings.push('此配置文件没有可导入的已保存 Cookie。')
+   return {
+     imported,
+     skipped: Object.values(skippedReasons).reduce(

@@ -1,0 +1,155 @@
+--- a/electron/browser-data.cjs
++++ b/electron/browser-data.cjs
+@@ -32,49 +32,49 @@
+       event.senderFrame !== event.sender.mainFrame ||
+       !isAppUrl(event.senderFrame.url)
+     )
+-      throw new Error('Browser import is only available in the Desktop app.')
++      throw new Error('浏览器导入仅在桌面版可用。')
+   }
+ 
+   function context(event, id) {
+     assertApp(event)
+-    if (!Number.isSafeInteger(id)) throw new Error('Choose a browser tab.')
++    if (!Number.isSafeInteger(id)) throw new Error('请选择一个浏览器标签页。')
+     const state = getGuest(id)
+     if (state.host !== event.sender)
+-      throw new Error('This browser tab belongs to another window.')
++      throw new Error('此浏览器标签页属于另一个窗口。')
+     if (!state.partition.startsWith('persist:'))
+       throw new Error(
+-        'Open a regular browser tab to import data. Private tabs cannot import.',
++        '请打开普通的浏览器标签页再导入数据，隐私标签页无法导入。',
+       )
+     return { partition: state.partition, browserSession: state.wc.session }
+   }
+ 
+   function source(event, id) {
+     const profile = typeof id === 'string' && sources.get(event.sender)?.get(id)
+-    if (!profile) throw new Error('Choose a browser profile again.')
++    if (!profile) throw new Error('请重新选择浏览器配置文件。')
+     if (profile.access === 'blocked')
+-      throw new Error('Allow access to this browser, then check again.')
++      throw new Error('请先允许访问此浏览器，然后重新检查。')
+     return profile
+   }
+ 
+   async function handle(event, request) {
+     assertApp(event)
+     if (request?.action === 'reveal-app') {
+-      if (!appBundle) throw new Error('Could not locate the macOS app bundle.')
++      if (!appBundle) throw new Error('找不到 macOS 应用包。')
+       try {
+         await showItemInFolder(appBundle.path)
+       } catch {
+-        throw new Error('Could not show the app in Finder. Try again.')
++        throw new Error('无法在访达中显示该应用，请重试。')
+       }
+       return { ok: true }
+     }
+     if (request?.action === 'open-access-settings') {
+       if (platform !== 'darwin')
+-        throw new Error('This system has no Full Disk Access setting.')
++        throw new Error('此系统没有「完全磁盘访问权限」设置。')
+       try {
+         await openExternal(FULL_DISK_ACCESS_SETTINGS_URL)
+       } catch {
+         throw new Error(
+-          'Open System Settings → Privacy & Security → Full Disk Access.',
++          '打开「系统设置 → 隐私与安全性 → 完全磁盘访问权限」。',
+         )
+       }
+       return { ok: true }
+@@ -84,7 +84,7 @@
+       try {
+         profiles = await discover()
+       } catch {
+-        throw new Error('Could not check browser access. Try again.')
++        throw new Error('无法检查浏览器访问权限，请重试。')
+       }
+       assertApp(event)
+       const browsers = new Map()
+@@ -111,7 +111,7 @@
+           profiles = await discover()
+         } catch {
+           throw new Error(
+-            'Could not find browser profiles. Try again after closing Chrome.',
++            '找不到浏览器配置文件，请关闭 Chrome 后重试。',
+           )
+         }
+         context(event, request.webContentsId)
+@@ -141,7 +141,7 @@
+           return { extensions: await extensions.discover(profile) }
+         } catch {
+           throw new Error(
+-            'Could not read extensions from this profile. Close the source browser and retry.',
++            '无法读取此配置文件的扩展，请关闭来源浏览器后重试。',
+           )
+         }
+       }
+@@ -149,7 +149,7 @@
+         try {
+           return { extensions: await extensions.list(target) }
+         } catch {
+-          throw new Error('Could not read installed extensions. Try again.')
++          throw new Error('无法读取已安装的扩展，请重试。')
+         }
+       case 'import': {
+         const profile = source(event, request.sourceId)
+@@ -162,10 +162,10 @@
+           ) ||
+           (!request.cookies && !request.extensionIds.length)
+         )
+-          throw new Error('Choose cookies or extensions to import.')
++          throw new Error('请选择要导入的 Cookie 或扩展。')
+         if (busy.has(target.partition))
+           throw new Error(
+-            'An import is already running for this browser profile.',
++            '此浏览器配置文件的导入正在进行中。',
+           )
+         busy.add(target.partition)
+         try {
+@@ -189,7 +189,7 @@
+                 error?.code === 'BROWSER_IMPORT_UNAVAILABLE'
+                   ? error.message
+                   : error?.code === 'EPERM' || error?.code === 'EACCES'
+-                    ? 'Cookies could not be read. Check the source browser’s access permissions and try again.'
++                    ? '无法读取 Cookie。请检查来源浏览器的访问权限后重试。'
+                     : 'Cookies could not be imported. Close the source browser and try again; you can also sign in here.',
+               )
+             }
+@@ -203,7 +203,7 @@
+               })
+             } catch {
+               result.warnings.push(
+-                'Extensions could not be imported. Close the source browser and try again.',
++                '扩展导入失败，请关闭来源浏览器后重试。',
+               )
+             }
+           }
+@@ -217,21 +217,21 @@
+           typeof request.extensionId !== 'string' ||
+           !/^[a-p]{32}$/.test(request.extensionId)
+         )
+-          throw new Error('Choose an installed extension.')
++          throw new Error('请选择一个已安装的扩展。')
+         if (busy.has(target.partition))
+-          throw new Error('Wait for this profile’s import to finish.')
++          throw new Error('请等待此配置文件的导入完成。')
+         busy.add(target.partition)
+         try {
+           await extensions.remove({ ...target, id: request.extensionId })
+           return { ok: true }
+         } catch {
+-          throw new Error('Could not remove this extension. Try again.')
++          throw new Error('无法移除该扩展，请重试。')
+         } finally {
+           busy.delete(target.partition)
+         }
+       }
+       default:
+-        throw new Error('Unknown browser data action.')
++        throw new Error('未知的浏览器数据操作。')
+     }
+   }
+   return { handle, isBusy: (partition) => busy.has(partition) }

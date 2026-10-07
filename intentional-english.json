@@ -3042,6 +3042,190 @@
     {
       "text": "ช่วง IP แบบ IPv6",
       "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
+    },
+    {
+      "text": "After rain",
+      "why": "内置壁纸的标题（壁纸选择器里作为作品名显示），属作品/素材名，与摄影师署名同类，按品牌与专有名词保留。"
+    },
+    {
+      "text": "Summer Engine",
+      "why": "同上，内置壁纸标题。"
+    },
+    {
+      "text": "The Met",
+      "why": "同上，内置壁纸标题（亦为博物馆的通用简称，作为素材名保留）。"
+    },
+    {
+      "text": "Violet hour",
+      "why": "同上，内置壁纸标题。"
+    },
+    {
+      "text": "Bayer 2 by 2",
+      "why": "壁纸抖动（dithering）算法名。Bayer 是算法专名，尺寸后缀按原样保留才能与图形学惯例一致。"
+    },
+    {
+      "text": "Bayer 4 by 4",
+      "why": "同上。"
+    },
+    {
+      "text": "Bayer 8 by 8",
+      "why": "同上。"
+    },
+    {
+      "text": "Bernd Dittrich",
+      "why": "内置壁纸的摄影师署名（人名），不译。"
+    },
+    {
+      "text": "Emma Van Sant",
+      "why": "同上。"
+    },
+    {
+      "text": "Katsushika Hokusai",
+      "why": "同上（葛饰北斋，但此处是作品署名，按原样保留）。"
+    },
+    {
+      "text": "Krisztián Korhetz",
+      "why": "同上。"
+    },
+    {
+      "text": "Luca Bravo",
+      "why": "同上。"
+    },
+    {
+      "text": "Madhu Shesharam",
+      "why": "同上。"
+    },
+    {
+      "text": "Mary Brennan",
+      "why": "同上。"
+    },
+    {
+      "text": "Milad Fakurian",
+      "why": "同上。"
+    },
+    {
+      "text": "Vincent Guth",
+      "why": "同上。"
+    },
+    {
+      "text": "Authorization: Bearer $FREEBUFF_API_KEY",
+      "why": "开发者 API 文档里的 HTTP 请求头示例（协议与凭据格式），属代码/协议内容，不译。"
+    },
+    {
+      "text": "Content-Type: application/json",
+      "why": "同上，HTTP 请求头示例。"
+    },
+    {
+      "text": "artifact-site-mark large",
+      "why": "CSS 类名（字体图标尺寸变体），翻掉样式就找不到类。"
+    },
+    {
+      "text": "btn control-small",
+      "why": "CSS 类名（按钮尺寸变体）。"
+    },
+    {
+      "text": "btn danger",
+      "why": "CSS 类名（危险操作按钮样式）。"
+    },
+    {
+      "text": "modal browser-data-dialog",
+      "why": "CSS 类名（浏览器数据弹窗）。"
+    },
+    {
+      "text": "noopener noreferrer",
+      "why": "HTML `<a>` 的 rel 属性值，属安全协议标识符，翻掉会破坏外链安全性。"
+    },
+    {
+      "text": "toa lalalalalalal",
+      "why": "字体/布局测量用的假文本（Lorem-ipsum 式占位串），只为测宽高，无意义，不译。"
+    },
+    {
+      "text": "experimental_prefetchInRender feature flag",
+      "why": "React 的实验性特性开关名（标识符），属内部诊断。"
+    },
+    {
+      "text": "in h?-h.wheelDeltaY:",
+      "why": "滚轮事件分支的调试标签（代码片段），只在开发者控制台可见。"
+    },
+    {
+      "text": "in h?h.deltaX:",
+      "why": "同上。"
+    },
+    {
+      "text": "in h?h.deltaY:",
+      "why": "同上。"
+    },
+    {
+      "text": "data is undefined",
+      "why": "第三方库（TanStack Query）内部抛出的错误（`${this.queryHash} data is undefined`）：只在开发者控制台与异常栈里出现，不是界面文案"
+    },
+    {
+      "text": "experimental_prefetchInRender feature flag is not enabled",
+      "why": "React 的 feature flag 报错（库内部 Promise reject），不是界面文案"
+    },
+    {
+      "text": "Missing in date parts",
+      "why": "日期解析库内部错误 `Missing ${r} in ${t} date parts`（r / t 都是库内变量），不是界面文案"
+    },
+    {
+      "text": "-- preview-accent",
+      "why": "CSS 自定义属性名（预览主题色变量），翻掉就没有对应样式"
+    },
+    {
+      "text": "-- preview-opacity",
+      "why": "同上，CSS 变量名"
+    },
+    {
+      "text": "-- preview-surface",
+      "why": "同上，CSS 变量名"
+    },
+    {
+      "text": "-- preview-text",
+      "why": "同上，CSS 变量名"
+    },
+    {
+      "text": "/api/byok/account/ /validate",
+      "why": "REST 接口路径片段（片段提取把内层变量抹成了空格），不是文案"
+    },
+    {
+      "text": "/api/cloud/projects/ /settings",
+      "why": "同上，REST 接口路径"
+    },
+    {
+      "text": "/api/sites/ /environments/",
+      "why": "同上，REST 接口路径"
+    },
+    {
+      "text": "/api/sites/ /environments/ /analytics",
+      "why": "同上，REST 接口路径"
+    },
+    {
+      "text": "/api/sites/ /environments/ /auth/users?",
+      "why": "同上，REST 接口路径（带查询串）"
+    },
+    {
+      "text": "/api/sites/ /environments/ /operations",
+      "why": "同上，REST 接口路径"
+    },
+    {
+      "text": "/api/sites/ /environments/ /secrets/",
+      "why": "同上，REST 接口路径"
+    },
+    {
+      "text": "/api/sites/ /environments/ /storage/ /objects",
+      "why": "同上，REST 接口路径"
+    },
+    {
+      "text": "/api/sites/ /environments/ /storage/ /rows?",
+      "why": "同上，REST 接口路径（带查询串）"
+    },
+    {
+      "text": "/api/sites/ /environments/ /storage/ /tables",
+      "why": "同上，REST 接口路径"
+    },
+    {
+      "text": "/wallpapers/ .webp",
+      "why": "静态资源路径片段（/wallpapers/<名字>.webp），不是文案"
     }
   ],
   "uiStrings": [
@@ -3236,6 +3420,34 @@
     {
       "text": "תאריך וזמן ISO",
       "why": "Zod v4 多语言错误表（希伯来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
+    },
+    {
+      "text": "#727c76",
+      "why": "颜色十六进制占位符（输入框 placeholder 里的示例值），与正文里的色值同类，不是文案"
+    },
+    {
+      "text": "#92968f",
+      "why": "同上，颜色十六进制占位符"
+    },
+    {
+      "text": "GitHub",
+      "why": "品牌名（第三方服务名；既有译文里一律保留 GitHub 原样，如「GitHub 已连接」「GitHub 仓库」）"
+    },
+    {
+      "text": "TypeScript",
+      "why": "语言名（技术名词，与 CSS / JSON / Python 同类，界面里作为语言标签出现）"
+    },
+    {
+      "text": "${…} Freebucks",
+      "why": "计费单位名 Freebucks（与已登记的 Freebucks 同一条理由）；此处是 `[e.reward,\" Freebucks\"]` 这个文本节点，中文语序（「赚取 100 Freebucks」）已通顺，不需要再加量词"
+    },
+    {
+      "text": "Restore ${…}",
+      "why": "骨架落在 aria-label 模板 `Restore ${x.title||\"New thread\"}` 上：pattern 分区的 \"New thread\"（→新会话）会先把 ${…} 内部翻掉，而 apply 的顺序是 pattern → template，于是 template 分区再也匹配不到英文原文；键又必须与原版逐字节一致（missed_diagnose 的口径），两者不可兼得。固定段 Restore 保留英文，与上一版产物形态一致。"
+    },
+    {
+      "text": "Extensions",
+      "why": "闸四（lint_collisions）判定的「代码占用」：同一个字面量在 browser-extensions.cjs:122 与 browser-import.cjs:111 是磁盘目录名（path.join(…,'Extensions')）——词典收录会把主进程的路径替换掉，让扩展导入找不到目录。翻进程侧要靠 patches/electron-browser-*.patch，而 UI 侧（browser-data 的导入结果行、Sites 的 tab）与主进程共用这个字面量，无法只翻 UI，故本版保留英文。"
     }
   ]
 }

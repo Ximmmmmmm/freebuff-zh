@@ -1,8 +1,15 @@
-diff --git "a/C:\\Users\\XIM\\Desktop\\freebuff\\freebuff-zh\\work\\patch-src\\browser-native.cjs" "b/C:\\Users\\XIM\\Desktop\\freebuff\\freebuff-zh\\work\\patch-out\\browser-native.cjs"
-index 632136b..829b7fc 100644
 --- a/electron/browser-native.cjs
 +++ b/electron/browser-native.cjs
-@@ -35,7 +35,7 @@ function createBrowserNative({
+@@ -51,7 +51,7 @@
+         .catch(() => {
+           prepared.delete(partition)
+           throw new Error(
+-            'Could not restore this profile’s extensions. Try again.',
++            '无法恢复此配置文件的扩展，请重试。',
+           )
+         })
+       prepared.set(partition, pending)
+@@ -61,7 +61,7 @@
    function get(id) {
      const state = guests.get(id)
      if (!state || state.wc.isDestroyed())
@@ -11,7 +18,7 @@ index 632136b..829b7fc 100644
      return state
    }
    const permitted = (url) => allowedUrl(url) && !isAppUrl(url)
-@@ -56,14 +56,14 @@ function createBrowserNative({
+@@ -82,14 +82,14 @@
            )
          )
            return callback(false)
@@ -29,7 +36,7 @@ index 632136b..829b7fc 100644
              detail: origin,
            })
            callback(result.response === 1)
-@@ -149,7 +149,7 @@ function createBrowserNative({
+@@ -175,7 +175,7 @@
          { role: 'paste' },
          { type: 'separator' },
          {
@@ -38,7 +45,16 @@ index 632136b..829b7fc 100644
            click: () => {
              if (wc.debugger.isAttached()) wc.debugger.detach()
              wc.inspectElement(params.x, params.y)
-@@ -265,7 +265,7 @@ function createBrowserNative({
+@@ -208,7 +208,7 @@
+         !isAppUrl(event.senderFrame.url)
+       )
+         throw new Error(
+-          'Browser profiles are only available in the Desktop app.',
++          '浏览器配置文件仅在桌面版可用。',
+         )
+       await prepare(partition)
+     })
+@@ -316,7 +316,7 @@
  
    async function startRecording(state) {
      if (captures.has(state.wc.id))
@@ -47,7 +63,7 @@ index 632136b..829b7fc 100644
      const directory = path.join(app.getPath('userData'), 'browser-recordings')
      await fs.mkdir(directory, { recursive: true })
      const file = path.join(
-@@ -313,7 +313,7 @@ function createBrowserNative({
+@@ -364,7 +364,7 @@
          const data = Buffer.from(payload.bytes)
          entry.bytes += data.length
          if (entry.bytes > 50 * 1024 * 1024)
@@ -56,7 +72,7 @@ index 632136b..829b7fc 100644
          entry.chunks.push(data)
          if (payload.final) {
            await fs.writeFile(file, Buffer.concat(entry.chunks), { mode: 0o600 })
-@@ -331,7 +331,7 @@ function createBrowserNative({
+@@ -382,7 +382,7 @@
      window.once('closed', () => {
        ipcMain.removeListener('browser:recording-data', onData)
        clearInterval(entry.timer)
@@ -65,7 +81,7 @@ index 632136b..829b7fc 100644
      })
      try {
        await window.loadFile(path.join(__dirname, 'browser-recorder.html'))
-@@ -366,7 +366,7 @@ function createBrowserNative({
+@@ -417,7 +417,7 @@
    }
    async function stopRecording(id) {
      const entry = captures.get(id)
@@ -74,7 +90,7 @@ index 632136b..829b7fc 100644
      if (!entry.stopping) {
        entry.stopping = true
        clearInterval(entry.timer)
-@@ -379,7 +379,7 @@ function createBrowserNative({
+@@ -430,7 +430,7 @@
          entry.done,
          new Promise((_, reject) => {
            timer = setTimeout(
@@ -83,7 +99,7 @@ index 632136b..829b7fc 100644
              15000,
            )
          }),
-@@ -400,9 +400,9 @@ function createBrowserNative({
+@@ -451,12 +451,12 @@
          !PARTITION.test(params.partition || '') ||
          !params.partition.startsWith('persist:')
        )
@@ -92,10 +108,14 @@ index 632136b..829b7fc 100644
        if ([...guests.values()].some((g) => g.partition === params.partition))
 -        throw new Error('Close this profile’s browser tabs before removing it.')
 +        throw new Error('移除该配置前，请先关闭它的浏览器标签页。')
+       if (dataManager?.isBusy(params.partition))
+         throw new Error(
+-          'Wait for this profile’s import to finish before removing it.',
++          '请等待此配置文件的导入完成后再移除。',
+         )
        const ses = session.fromPartition(params.partition)
-       await ses.clearStorageData()
-       await ses.clearCache()
-@@ -412,7 +412,7 @@ function createBrowserNative({
+       await prepare(params.partition)
+@@ -473,7 +473,7 @@
      const wc = state.wc
      if (method === 'Freebuff.verifyGuest') {
        if (params.partition !== state.partition)
@@ -104,7 +124,7 @@ index 632136b..829b7fc 100644
        return { ok: true }
      }
      if (method === 'Freebuff.beginAction') {
-@@ -434,7 +434,7 @@ function createBrowserNative({
+@@ -495,7 +495,7 @@
            if (wc.canGoForward()) wc.goForward()
          } else if (params.to === 'reload') wc.reload()
          else {
@@ -113,7 +133,7 @@ index 632136b..829b7fc 100644
            void wc.loadURL(params.to).catch(() => {})
          }
          return { ok: true }
-@@ -480,7 +480,7 @@ function createBrowserNative({
+@@ -541,7 +541,7 @@
              params.zoom < 0.25 ||
              params.zoom > 5
            )
@@ -122,7 +142,7 @@ index 632136b..829b7fc 100644
            wc.setZoomFactor(params.zoom)
            state.zoom = params.zoom
          }
-@@ -496,7 +496,7 @@ function createBrowserNative({
+@@ -557,7 +557,7 @@
                height < 240 ||
                height > 2160
              )
@@ -131,7 +151,7 @@ index 632136b..829b7fc 100644
              wc.enableDeviceEmulation({
                screenPosition: 'desktop',
                screenSize: { width, height },
-@@ -508,10 +508,10 @@ function createBrowserNative({
+@@ -569,10 +569,10 @@
          }
          if (params.colorScheme !== undefined) {
            if (!['system', 'light', 'dark'].includes(params.colorScheme))
@@ -144,7 +164,7 @@ index 632136b..829b7fc 100644
              )
            if (!wc.debugger.isAttached()) wc.debugger.attach('1.3')
            await wc.debugger.sendCommand('Emulation.setEmulatedMedia', {
-@@ -532,15 +532,15 @@ function createBrowserNative({
+@@ -593,15 +593,15 @@
          const profiles = await discoverProfiles()
          if (!profiles.length)
            throw new Error(
@@ -164,7 +184,7 @@ index 632136b..829b7fc 100644
            buttons: ['Cancel', ...profiles.map((p) => p.label)],
            defaultId: 0,
            cancelId: 0,
-@@ -554,20 +554,20 @@ function createBrowserNative({
+@@ -615,20 +615,20 @@
            })
          } catch (error) {
            throw new Error(
@@ -189,7 +209,7 @@ index 632136b..829b7fc 100644
          const { parseCookies } = require('./browser-cookies.cjs')
          const cookies = parseCookies(await fs.readFile(file, 'utf8'))
          let imported = 0,
-@@ -604,7 +604,7 @@ function createBrowserNative({
+@@ -665,7 +665,7 @@
          })
      }
      if (method === 'Page.navigate' && !permitted(params.url))

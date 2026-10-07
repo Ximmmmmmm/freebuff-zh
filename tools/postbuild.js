@@ -198,7 +198,6 @@ const MAIN_SENTINELS = {
     '该应用不可用',
     '导出为 Markdown…',
     '移到新窗口',
-    '将标签页移到新窗口',
     // 窗口按钮区（titleBarOverlay）跟随 UI 的 --chrome / --faint / --tabbar-height（产物改动，不是翻译）：
     // 上游给 UI 换了新配色、又把 --tabbar-height 覆盖成 48px，主进程那张影子表却留着旧值，
     // 于是窗口按钮区在标签条右侧露出一块颜色、高度与图标深浅都对不上的矩形。
@@ -209,6 +208,37 @@ const MAIN_SENTINELS = {
     // 0.0.154 修的那一半：CSS 最外层的 --chrome 是 `var(--shell-base)` 的转发，必须解到底再交出去。
     // 没有它就等于回到「把 var(...) 字符串当颜色」——哨兵只查上面那几行文本，查不出这个差别。
     'const shellColor = (re, name, fallbackValue) => {',
+  ],
+  // 0.0.162：上游把原生应用菜单从 main.cjs 拆成了 electron/app-menu.cjs（main.cjs 里那
+  // 段 buildMenu 已不存在），菜单译文随 patches/electron-app-menu.cjs.patch 一起搬了过来。
+  // 哨兵跟着搬，否则「补丁没套上」会退回成静默失败——菜单是英文而其余界面是中文。
+  'electron/app-menu.cjs': [
+    '将标签页移到新窗口',
+    '重新打开已关闭的标签页',
+    '打开项目…',
+    '重新加载应用',
+    '检查更新…',
+  ],
+  // 0.0.162：浏览器导入子系统的用户可见文案全在主进程（IPC 报错、原生对话框），词典够不着，
+  // 只能靠 patches/electron-browser-*.cjs.patch。本版上游给这套 IPC 新加了一批报错
+  // （导入 Cookie / 导入扩展的失败路径），下面四个文件的哨兵随之补齐。
+  'electron/browser-data.cjs': [
+    '浏览器导入仅在桌面版可用。',
+    '打开「系统设置 → 隐私与安全性 → 完全磁盘访问权限」。',
+  ],
+  'electron/browser-extensions.cjs': [
+    '扩展的工具栏按钮与弹出窗口暂不可用。',
+    '不支持该扩展的清单文件。',
+  ],
+  'electron/browser-import.cjs': [
+    // 0.0.131 适配时补翻的那批
+    '不支持的应用绑定 Cookie 加密。',
+    // 0.0.162 新增的导入失败路径
+    '部分加密 Cookie 无法解锁。系统询问时请允许访问浏览器的密钥，或重新登录。',
+  ],
+  'electron/browser-native.cjs': [
+    '检查元素',
+    '请等待此配置文件的导入完成后再移除。',
   ],
   'electron/orchestrator-failure.cjs': [
     '编排器未能在规定时间内就绪。',

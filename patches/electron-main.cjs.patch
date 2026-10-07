@@ -1,6 +1,6 @@
 --- a/electron/main.cjs
 +++ b/electron/main.cjs
-@@ -185,11 +185,72 @@ let appOrigin = null
+@@ -186,11 +186,72 @@ let appOrigin = null
  /** @type {string | null} */
  let appUrl = null
  
@@ -75,7 +75,7 @@
      // the renderer's --surface-2 / --brand-dim: the splash bar and the one the app holds after it
      // are the same bar, and a colour change between them would show as a flicker
      splashTrack: '#282a29',
-@@ -197,8 +258,8 @@ const SHELL_THEMES = {
+@@ -198,8 +259,8 @@ const SHELL_THEMES = {
    },
    light: {
      background: '#e3e7e4',
@@ -86,7 +86,7 @@
      splashTrack: '#e9ede8',
      splashBar: '#5e774e',
    },
-@@ -543,14 +604,14 @@ async function showOrchestratorFailure(failure, parent = mainWindow) {
+@@ -544,14 +605,14 @@ async function showOrchestratorFailure(failure, parent = mainWindow) {
    const buttons = []
    const actions = []
    if (compatibilityBuildUrl) {
@@ -104,7 +104,7 @@
    actions.push(() => {})
  
    const options = {
-@@ -575,10 +636,10 @@ function startOrchestrator(requestedPort = 0) {
+@@ -576,10 +637,10 @@ function startOrchestrator(requestedPort = 0) {
    return new Promise((resolve, reject) => {
      const { bun, args, cwd, uiDir, wasmDir, packaged } = resolveOrchestrator()
      const capture = createStderrCapture(bun, args)
@@ -119,7 +119,7 @@
      apiLaunchToken = launchId
      let exited = false
      let ready = false
-@@ -620,7 +681,7 @@ function startOrchestrator(requestedPort = 0) {
+@@ -621,7 +682,7 @@ function startOrchestrator(requestedPort = 0) {
      }
  
      if (!shellLifetime) {
@@ -128,7 +128,7 @@
        return
      }
      // No secret goes in `env`. Another process of the same user reads a child's STARTING environment
-@@ -690,10 +751,10 @@ function startOrchestrator(requestedPort = 0) {
+@@ -691,10 +752,10 @@ function startOrchestrator(requestedPort = 0) {
        rejectStartup(
          failure('spawn', {
            errorMessage:
@@ -142,7 +142,7 @@
          }),
        )
      })
-@@ -801,7 +862,7 @@ function startOrchestrator(requestedPort = 0) {
+@@ -802,7 +863,7 @@ function startOrchestrator(requestedPort = 0) {
          closed
            ? failure('timeout')
            : failure('cleanup', {
@@ -151,7 +151,7 @@
              }),
        )
      }
-@@ -985,7 +1046,7 @@ function buildWindow(sizeOpts = {}) {
+@@ -974,7 +1035,7 @@ function buildWindow(sizeOpts = {}) {
            titleBarOverlay: {
              color: colors.overlay,
              symbolColor: colors.overlaySymbol,
@@ -160,7 +160,7 @@
            },
          }
        : {}),
-@@ -1159,15 +1220,15 @@ function confirmQuit(parent) {
+@@ -1148,15 +1209,15 @@ function confirmQuit(parent) {
    try {
      const response = askSync(parent, {
        type: 'question',
@@ -182,7 +182,7 @@
        // a stray Return keeps the agents alive
        defaultId: 0,
        cancelId: 0,
-@@ -1253,8 +1314,8 @@ ipcMain.handle('dialog:pickAttachments', async (event, kind) => {
+@@ -1211,8 +1272,8 @@ ipcMain.handle('dialog:pickAttachments', async (event, kind) => {
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return []
    const res = await dialog.showOpenDialog(win, {
@@ -193,7 +193,7 @@
      properties: attachmentDialogProperties(kind),
    })
    if (res.canceled) return []
-@@ -1283,13 +1344,13 @@ ipcMain.handle('dialog:pickImages', async (event) => {
+@@ -1241,13 +1302,13 @@ ipcMain.handle('dialog:pickImages', async (event) => {
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return []
    const res = await dialog.showOpenDialog(win, {
@@ -211,7 +211,7 @@
          extensions: [...VIEWABLE_IMAGE_EXTENSIONS, ...OTHER_IMAGE_EXTENSIONS],
        },
      ],
-@@ -1307,8 +1368,8 @@ ipcMain.handle('dialog:pickDirectory', async (event) => {
+@@ -1265,8 +1326,8 @@ ipcMain.handle('dialog:pickDirectory', async (event) => {
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return null
    const res = await dialog.showOpenDialog(win, {
@@ -222,7 +222,7 @@
      properties: ['openDirectory', 'createDirectory'],
    })
    return res.canceled || res.filePaths.length === 0 ? null : res.filePaths[0]
-@@ -1318,10 +1379,10 @@ ipcMain.handle('dialog:saveMarkdown', async (event, { filename, content }) => {
+@@ -1276,10 +1337,10 @@ ipcMain.handle('dialog:saveMarkdown', async (event, { filename, content }) => {
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return false
    if (typeof filename !== 'string' || typeof content !== 'string') {
@@ -235,7 +235,7 @@
      defaultPath: path.basename(filename),
      filters: [{ name: 'Markdown', extensions: ['md'] }],
      properties: ['createDirectory', 'showOverwriteConfirmation'],
-@@ -1417,17 +1478,17 @@ ipcMain.handle('shell:openIn', async (event, request) => {
+@@ -1354,17 +1415,17 @@ ipcMain.handle('shell:openIn', async (event, request) => {
    if (!isTrustedAppSender(event, isAppUrl)) return { ok: false, error: 'Untrusted sender' }
    try {
      if (!request || typeof request !== 'object' || Array.isArray(request)) {
@@ -258,7 +258,7 @@
  
      if (target.id === 'copy-path') {
        clipboard.writeText(resolved.requested)
-@@ -1440,7 +1501,7 @@ ipcMain.handle('shell:openIn', async (event, request) => {
+@@ -1377,7 +1438,7 @@ ipcMain.handle('shell:openIn', async (event, request) => {
        }
      } else {
        const args = launchArgs(target, resolved, line)
@@ -267,7 +267,7 @@
        await new Promise((resolve, reject) => {
          const child = spawn(target.executable, args, {
            cwd: launchCwd(target, resolved),
-@@ -1457,7 +1518,7 @@ ipcMain.handle('shell:openIn', async (event, request) => {
+@@ -1394,7 +1455,7 @@ ipcMain.handle('shell:openIn', async (event, request) => {
      }
      return { ok: true, path: resolved.requested, openedPath: resolved.opened, fallback: resolved.fallback }
    } catch (error) {
@@ -276,7 +276,7 @@
    }
  })
  
-@@ -1592,7 +1653,7 @@ function paintWindows() {
+@@ -1529,7 +1590,7 @@ function paintWindows() {
    for (const win of BrowserWindow.getAllWindows()) {
      win.setBackgroundColor(colors.background)
      if (process.platform === 'win32') {
@@ -285,7 +285,7 @@
      }
    }
  }
-@@ -1660,10 +1721,10 @@ ipcMain.handle('menu:tabContext', (event) => {
+@@ -1597,10 +1658,10 @@ ipcMain.handle('menu:tabContext', (event) => {
        resolve(action)
      }
      const menu = Menu.buildFromTemplate([
@@ -300,100 +300,7 @@
      ])
      menu.popup({
        window: BrowserWindow.fromWebContents(event.sender) ?? undefined,
-@@ -1686,9 +1747,9 @@ function buildMenu(reloadApp) {
-             label: app.name,
-             submenu: [
-               { role: 'about' },
--              { label: 'Check for Updates…', click: () => checkForUpdatesInteractive() },
-+              { label: '检查更新…', click: () => checkForUpdatesInteractive() },
-               { type: 'separator' },
--              { label: 'Settings…', accelerator: 'CmdOrCtrl+,', click: () => sendMenuCommand('settings') },
-+              { label: '设置…', accelerator: 'CmdOrCtrl+,', click: () => sendMenuCommand('settings') },
-               { type: 'separator' },
-               { role: 'services' },
-               { type: 'separator' },
-@@ -1698,7 +1759,7 @@ function buildMenu(reloadApp) {
-               { type: 'separator' },
-               {
-                 // not `role: 'quit'`: that reaches app.quit() directly, with no chance to ask
--                label: `Quit ${app.name}`,
-+                label: `退出 ${app.name}`,
-                 accelerator: 'Command+Q',
-                 click: () => requestQuit(),
-               },
-@@ -1707,16 +1768,16 @@ function buildMenu(reloadApp) {
-         ]
-       : []),
-     {
--      label: 'File',
-+      label: '文件',
-       submenu: [
--        ...(!isMac ? [{ label: 'Settings…', accelerator: 'CmdOrCtrl+,', click: () => sendMenuCommand('settings') }, { type: 'separator' }] : []),
-+        ...(!isMac ? [{ label: '设置…', accelerator: 'CmdOrCtrl+,', click: () => sendMenuCommand('settings') }, { type: 'separator' }] : []),
-         {
--          label: 'New Tab',
-+          label: '新建标签页',
-           accelerator: 'CmdOrCtrl+T',
-           click: () => sendMenuCommand('new-tab'),
-         },
-         {
--          label: 'Reopen Closed Tab',
-+          label: '重新打开已关闭的标签页',
-           accelerator: 'CmdOrCtrl+Shift+T',
-           click: () => sendMenuCommand('reopen-tab'),
-         },
-@@ -1725,24 +1786,24 @@ function buildMenu(reloadApp) {
-         // other, and on a fresh install its menu lists only the project already open — so ⌘O is
-         // where someone who has never heard the word "space" is going to look.
-         {
--          label: 'Open Project…',
-+          label: '打开项目…',
-           accelerator: 'CmdOrCtrl+O',
-           click: () => sendMenuCommand('open-project'),
-         },
-         { type: 'separator' },
--        { label: 'Move Tab to New Window', click: () => sendMenuCommand('pop-out-tab') },
--        { label: 'Close Tab', accelerator: 'CmdOrCtrl+W', click: () => sendMenuCommand('close-tab') },
-+        { label: '将标签页移到新窗口', click: () => sendMenuCommand('pop-out-tab') },
-+        { label: '关闭标签页', accelerator: 'CmdOrCtrl+W', click: () => sendMenuCommand('close-tab') },
-         { type: 'separator' },
-         isMac
--          ? { role: 'close', label: 'Close Window', accelerator: 'CmdOrCtrl+Shift+W' }
--          : { label: 'Quit', accelerator: 'CmdOrCtrl+Q', click: () => requestQuit() },
-+          ? { role: 'close', label: '关闭窗口', accelerator: 'CmdOrCtrl+Shift+W' }
-+          : { label: '退出', accelerator: 'CmdOrCtrl+Q', click: () => requestQuit() },
-       ],
-     },
-     { role: 'editMenu' },
-     {
--      label: 'View',
-+      label: '视图',
-       submenu: [
--        { label: 'Reload App', accelerator: 'CmdOrCtrl+R', click: () => reloadApp() },
-+        { label: '重新加载应用', accelerator: 'CmdOrCtrl+R', click: () => reloadApp() },
-         { role: 'toggleDevTools' },
-         { type: 'separator' },
-         ...zoomMenuItems(process.platform, (action) => interfaceZoom.command(action)),
-@@ -1750,15 +1811,15 @@ function buildMenu(reloadApp) {
-         { role: 'togglefullscreen' },
-       ],
-     },
--    { label: 'Window', submenu: [{ role: 'minimize' }, { role: 'zoom' }] },
-+    { label: '窗口', submenu: [{ role: 'minimize' }, { role: 'zoom' }] },
-     // Non-mac has no app menu, so "Check for Updates…" lives under Help.
-     ...(isMac
-       ? []
-       : [
-           {
--            label: 'Help',
-+            label: '帮助',
-             submenu: [
--              { label: 'Check for Updates…', click: () => checkForUpdatesInteractive() },
-+              { label: '检查更新…', click: () => checkForUpdatesInteractive() },
-             ],
-           },
-         ]),
-@@ -1923,7 +1984,7 @@ async function boot() {
+@@ -1779,7 +1840,7 @@ async function boot() {
      if (err?.orchestratorFailure) {
        await showOrchestratorFailure(err.orchestratorFailure, win)
      } else {
@@ -402,7 +309,7 @@
      }
      app.quit()
      return
-@@ -2052,9 +2113,9 @@ else if (!app.requestSingleInstanceLock()) {
+@@ -1908,9 +1969,9 @@ else if (!app.requestSingleInstanceLock()) {
        canRelaunch: !!relaunchExecPath,
      })
      const buttons = canRetryWithoutSandbox
@@ -415,7 +322,7 @@
      // A launch failure this early can land before `ready`, where the dialog
      // module throws — and an exception here would replace the message we came to
      // show with a silent crash, which is the exact failure being fixed.
-@@ -2062,7 +2123,7 @@ else if (!app.requestSingleInstanceLock()) {
+@@ -1918,7 +1979,7 @@ else if (!app.requestSingleInstanceLock()) {
      // buttons, so the pre-ready path explains and quits rather than offering the
      // retry. Nothing is running yet, so there is nothing to tear down.
      if (!app.isReady()) {
@@ -424,7 +331,7 @@
        app.exit(1)
        return
      }
-@@ -2070,7 +2131,7 @@ else if (!app.requestSingleInstanceLock()) {
+@@ -1926,7 +1987,7 @@ else if (!app.requestSingleInstanceLock()) {
      try {
        response = dialog.showMessageBoxSync({
          type: 'error',
