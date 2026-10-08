@@ -1,20 +1,18 @@
-diff --git a/electron/app-menu.cjs b/electron/app-menu.cjs
-index 5f4d745..48273d1 100644
 --- a/electron/app-menu.cjs
 +++ b/electron/app-menu.cjs
-@@ -37,9 +37,9 @@ function appMenuTemplate({
+@@ -37,9 +37,9 @@
              label: appName,
              submenu: [
                { role: 'about' },
 -              { label: 'Check for Updates…', click: () => checkForUpdates() },
 +              { label: '检查更新…', click: () => checkForUpdates() },
                { type: 'separator' },
--              { label: 'Settings…', accelerator: 'CmdOrCtrl+,', click: () => sendMenuCommand('settings') },
-+              { label: '设置…', accelerator: 'CmdOrCtrl+,', click: () => sendMenuCommand('settings') },
+-              { id: 'settings', label: 'Settings…', accelerator: 'CmdOrCtrl+,', click: () => sendMenuCommand('settings') },
++              { id: 'settings', label: '设置…', accelerator: 'CmdOrCtrl+,', click: () => sendMenuCommand('settings') },
                { type: 'separator' },
                { role: 'services' },
                { type: 'separator' },
-@@ -49,7 +49,7 @@ function appMenuTemplate({
+@@ -49,7 +49,7 @@
                { type: 'separator' },
                {
                  // not `role: 'quit'`: that reaches app.quit() directly, with no chance to ask
@@ -23,41 +21,41 @@ index 5f4d745..48273d1 100644
                  accelerator: 'Command+Q',
                  click: () => requestQuit(),
                },
-@@ -58,16 +58,16 @@ function appMenuTemplate({
+@@ -58,16 +58,16 @@
          ]
        : []),
      {
 -      label: 'File',
 +      label: '文件',
        submenu: [
--        ...(!isMac ? [{ label: 'Settings…', accelerator: 'CmdOrCtrl+,', click: () => sendMenuCommand('settings') }, { type: 'separator' }] : []),
-+        ...(!isMac ? [{ label: '设置…', accelerator: 'CmdOrCtrl+,', click: () => sendMenuCommand('settings') }, { type: 'separator' }] : []),
+-        ...(!isMac ? [{ id: 'settings', label: 'Settings…', accelerator: 'CmdOrCtrl+,', click: () => sendMenuCommand('settings') }, { type: 'separator' }] : []),
++        ...(!isMac ? [{ id: 'settings', label: '设置…', accelerator: 'CmdOrCtrl+,', click: () => sendMenuCommand('settings') }, { type: 'separator' }] : []),
          {
--          label: 'New Tab',
-+          label: '新建标签页',
+-          id: 'new-tab', label: 'New Tab',
++          id: 'new-tab', label: '新建标签页',
            accelerator: 'CmdOrCtrl+T',
            click: () => sendMenuCommand('new-tab'),
          },
          {
--          label: 'Reopen Closed Tab',
-+          label: '重新打开已关闭的标签页',
+-          id: 'reopen-tab', label: 'Reopen Closed Tab',
++          id: 'reopen-tab', label: '重新打开已关闭的标签页',
            accelerator: 'CmdOrCtrl+Shift+T',
            click: () => sendMenuCommand('reopen-tab'),
          },
-@@ -75,24 +75,24 @@ function appMenuTemplate({
+@@ -75,24 +75,24 @@
          // The one route to a second project that is not a bare glyph, so ⌘O is where someone
          // looking for one is going to look.
          {
--          label: 'Open Project…',
-+          label: '打开项目…',
+-          id: 'open-project', label: 'Open Project…',
++          id: 'open-project', label: '打开项目…',
            accelerator: 'CmdOrCtrl+O',
            click: () => sendMenuCommand('open-project'),
          },
          { type: 'separator' },
 -        { label: 'Move Tab to New Window', click: () => sendMenuCommand('pop-out-tab') },
--        { label: 'Close Tab', accelerator: 'CmdOrCtrl+W', click: () => sendMenuCommand('close-tab') },
+-        { id: 'close-tab', label: 'Close Tab', accelerator: 'CmdOrCtrl+W', click: () => sendMenuCommand('close-tab') },
 +        { label: '将标签页移到新窗口', click: () => sendMenuCommand('pop-out-tab') },
-+        { label: '关闭标签页', accelerator: 'CmdOrCtrl+W', click: () => sendMenuCommand('close-tab') },
++        { id: 'close-tab', label: '关闭标签页', accelerator: 'CmdOrCtrl+W', click: () => sendMenuCommand('close-tab') },
          { type: 'separator' },
          isMac
 -          ? { role: 'close', label: 'Close Window', accelerator: 'CmdOrCtrl+Shift+W' }
@@ -76,7 +74,7 @@ index 5f4d745..48273d1 100644
          { role: 'toggleDevTools' },
          { type: 'separator' },
          ...zoomMenuItems(platform, (action) => zoomCommand(action)),
-@@ -100,15 +100,15 @@ function appMenuTemplate({
+@@ -100,15 +100,15 @@
          { role: 'togglefullscreen' },
        ],
      },

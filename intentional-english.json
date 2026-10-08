@@ -3226,6 +3226,202 @@
     {
       "text": "/wallpapers/ .webp",
       "why": "静态资源路径片段（/wallpapers/<名字>.webp），不是文案"
+    },
+    {
+      "text": "agent instructions claude.md context rules",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "auto topup automatic recharge payment",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "background image gradient custom preset",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "check update download install restart release",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "dark mode light mode system auto preset colors accent surface text",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "developer access token secret create revoke key",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "developer api credit balance",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "discord presence playing activity",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "earn rewards freebucks",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "endpoint custom server compatible local ollama",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "font text size zoom scale icons controls",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "import chrome safari edge cookies history bookmarks permissions full disk access",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "input output cached tokens statistics activity",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "invite friends referral link rewards leaderboard",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "keybindings hotkeys terminal panels customize reset keys",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "login password google github authentication",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "model connection context window maximum output tokens",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "opacity blur glass style surface fade",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "permissions approval administrator commands",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "pixel size color levels invert image",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "profile account personal email address",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "region location",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "report issue bug feature request help",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "requests credits balance rate limits",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "restore unarchive conversations threads history",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "setup command install dependencies environment project cloud",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "submissions tasks rewards freebucks",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "subscription upgrade downgrade cancel renewal monthly yearly pricing",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "suspension suspended review appeal rules",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "auto start sessions renew hour",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "balance wallet purchase credits payment card",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "bring your own key byok openrouter openai anthropic gemini credentials token",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "composer mode buttons skills context usage slash commands",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "connect authorize repository repos integration",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "connect community account integration",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "daily limit quota wallet balance freebucks",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "instructions library add create edit import delete skill packages",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "log out logout",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "model context protocol servers tools integrations stdio http",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "remove account data privacy",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "session usage history premium free models",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "theme file save share preset",
+      "why": "设置搜索索引关键词（0.0.164 新增的 `keywords:\"…\"` 隐藏元数据，界面上不显示）。检索的 haystack 里同时有已翻成中文的条目名与页码名，中文检索照常命中；保留英文术语还能让英文关键词命中，翻成中文反而两头都丢。与已登记的 mcpServers、模型 payload 同类。"
+    },
+    {
+      "text": "/api/sites/ /environments/ /publication",
+      "why": "API 路径片段：来自 `` `/api/sites/${…}/environments/${…}` `` 这类模板 URL（片段提取把模板里的固定段切了出来），是请求地址不是文案。"
+    },
+    {
+      "text": "freebuff:shortcuts:v1: :",
+      "why": "localStorage 键前缀（`` `freebuff:shortcuts:v1:${…}:${…}` ``，读写在同一个键上），翻掉就不再读得到已保存的快捷键。"
+    },
+    {
+      "text": ":hover, :focus-within",
+      "why": "CSS 选择器（`matches(\":hover, :focus-within\")`，用来判断指针是否悬停在卡片上），功能串，翻掉选择器立刻失效。"
+    },
+    {
+      "text": "in ee?ee.error:",
+      "why": "代码片段误报：来自 `!(\"error\" in ee) ? … : ee.error` 这种条件表达式，根本不是字符串字面量（片段提取把压缩后的代码切了一段出来）。"
+    },
+    {
+      "text": "tool-row-status failure",
+      "why": "CSS 类名拼接（`className:\"tool-row-status failure\"`，与已登记的 `msg sponsored-task`、`streak-day on` 同类），翻掉就没有对应样式；同一行里给用户看的 `\" failed\"` 计数文案另在 dict.json 里。"
+    },
+    {
+      "text": "· frees in m",
+      "why": "嵌套模板的「待补翻」误报：整句已由 dict.json 的 template 词条（键以 Open active tab${… 开头）翻译，界面渲染为「打开当前标签页 · X 分钟后释放」；片段提取把内层模板去掉插值后切成独立片段（规范形 · frees in m），而 upstreamdiff 的覆盖判定（词条键 includes 片段骨架）对带插值的模板键天然够不着——登记说明，避免每版重复进「待补翻」。"
+    },
+    {
+      "text": "animation:",
+      "why": "CSS 属性片段：来自 xterm 光标闪烁（animation: ${…} 1s step-end infinite）与 CodeMirror 光标层的 steps 闪烁动画（animation: 键）等样式字符串，是给样式表/浏览器看的，不是文案；翻掉动画定义立刻失效。与已登记的 :hover, :focus-within 选择器同类。"
     }
   ],
   "uiStrings": [
@@ -3448,6 +3644,98 @@
     {
       "text": "Extensions",
       "why": "闸四（lint_collisions）判定的「代码占用」：同一个字面量在 browser-extensions.cjs:122 与 browser-import.cjs:111 是磁盘目录名（path.join(…,'Extensions')）——词典收录会把主进程的路径替换掉，让扩展导入找不到目录。翻进程侧要靠 patches/electron-browser-*.patch，而 UI 侧（browser-data 的导入结果行、Sites 的 tab）与主进程共用这个字面量，无法只翻 UI，故本版保留英文。"
+    },
+    {
+      "text": "Postgres",
+      "why": "技术/产品专名（0.0.164 profile 调查的选项标签 / 主题预设名）；与已登记的 TypeScript、GitHub 同类，专名不译。"
+    },
+    {
+      "text": "Supabase",
+      "why": "技术/产品专名（0.0.164 profile 调查的选项标签 / 主题预设名）；与已登记的 TypeScript、GitHub 同类，专名不译。"
+    },
+    {
+      "text": "Firebase",
+      "why": "技术/产品专名（0.0.164 profile 调查的选项标签 / 主题预设名）；与已登记的 TypeScript、GitHub 同类，专名不译。"
+    },
+    {
+      "text": "MongoDB",
+      "why": "技术/产品专名（0.0.164 profile 调查的选项标签 / 主题预设名）；与已登记的 TypeScript、GitHub 同类，专名不译。"
+    },
+    {
+      "text": "MySQL",
+      "why": "技术/产品专名（0.0.164 profile 调查的选项标签 / 主题预设名）；与已登记的 TypeScript、GitHub 同类，专名不译。"
+    },
+    {
+      "text": "SQLite",
+      "why": "技术/产品专名（0.0.164 profile 调查的选项标签 / 主题预设名）；与已登记的 TypeScript、GitHub 同类，专名不译。"
+    },
+    {
+      "text": "Vercel",
+      "why": "技术/产品专名（0.0.164 profile 调查的选项标签 / 主题预设名）；与已登记的 TypeScript、GitHub 同类，专名不译。"
+    },
+    {
+      "text": "Cloudflare",
+      "why": "技术/产品专名（0.0.164 profile 调查的选项标签 / 主题预设名）；与已登记的 TypeScript、GitHub 同类，专名不译。"
+    },
+    {
+      "text": "React",
+      "why": "技术/产品专名（0.0.164 profile 调查的选项标签 / 主题预设名）；与已登记的 TypeScript、GitHub 同类，专名不译。"
+    },
+    {
+      "text": "Vue",
+      "why": "技术/产品专名（0.0.164 profile 调查的选项标签 / 主题预设名）；与已登记的 TypeScript、GitHub 同类，专名不译。"
+    },
+    {
+      "text": "Svelte",
+      "why": "技术/产品专名（0.0.164 profile 调查的选项标签 / 主题预设名）；与已登记的 TypeScript、GitHub 同类，专名不译。"
+    },
+    {
+      "text": "Swift",
+      "why": "技术/产品专名（0.0.164 profile 调查的选项标签 / 主题预设名）；与已登记的 TypeScript、GitHub 同类，专名不译。"
+    },
+    {
+      "text": "Go",
+      "why": "技术/产品专名（0.0.164 profile 调查的选项标签 / 主题预设名）；与已登记的 TypeScript、GitHub 同类，专名不译。"
+    },
+    {
+      "text": "Rust",
+      "why": "技术/产品专名（0.0.164 profile 调查的选项标签 / 主题预设名）；与已登记的 TypeScript、GitHub 同类，专名不译。"
+    },
+    {
+      "text": "Python",
+      "why": "技术/产品专名（0.0.164 profile 调查的选项标签 / 主题预设名）；与已登记的 TypeScript、GitHub 同类，专名不译。"
+    },
+    {
+      "text": "JavaScript",
+      "why": "技术/产品专名（0.0.164 profile 调查的选项标签 / 主题预设名）；与已登记的 TypeScript、GitHub 同类，专名不译。"
+    },
+    {
+      "text": "Next.js",
+      "why": "技术/产品专名（0.0.164 profile 调查的选项标签 / 主题预设名）；与已登记的 TypeScript、GitHub 同类，专名不译。"
+    },
+    {
+      "text": "Rails",
+      "why": "技术/产品专名（0.0.164 profile 调查的选项标签 / 主题预设名）；与已登记的 TypeScript、GitHub 同类，专名不译。"
+    },
+    {
+      "text": "Laravel",
+      "why": "技术/产品专名（0.0.164 profile 调查的选项标签 / 主题预设名）；与已登记的 TypeScript、GitHub 同类，专名不译。"
+    },
+    {
+      "text": "C#",
+      "why": "技术/产品专名（0.0.164 profile 调查的选项标签 / 主题预设名）；与已登记的 TypeScript、GitHub 同类，专名不译。"
+    },
+    {
+      "text": "Google Cloud",
+      "why": "技术/产品专名（0.0.164 profile 调查的选项标签 / 主题预设名）；与已登记的 TypeScript、GitHub 同类，专名不译。"
+    },
+    {
+      "text": "OG Shine",
+      "why": "技术/产品专名（0.0.164 profile 调查的选项标签 / 主题预设名）；与已登记的 TypeScript、GitHub 同类，专名不译。"
+    },
+    {
+      "text": "${…}",
+      "why": "纯插值模板（`` `${e}-title` `` 这类只有插值、没有任何可译文本的模板），无文案可翻。"
     }
   ]
 }

@@ -1,5 +1,14 @@
 --- a/electron/browser-native.cjs
 +++ b/electron/browser-native.cjs
+@@ -43,7 +43,7 @@
+   }
+   function prepare(partition) {
+     if (typeof partition !== 'string' || !PARTITION.test(partition))
+-      throw new Error('Invalid browser profile.')
++      throw new Error('无效的浏览器配置文件。')
+     if (!partition.startsWith('persist:')) return Promise.resolve()
+     if (!prepared.has(partition)) {
+       const pending = extensions()
 @@ -51,7 +51,7 @@
          .catch(() => {
            prepared.delete(partition)

@@ -93,6 +93,11 @@ const CONSISTENT_LABELS = new Set([
   '浏览器',
   '模型与价格',
   '额度',
+  // 0.0.164：设置页导航新增的「键盘快捷键」页。与上一版导航表同构——同一个字面量既是 label，
+  // 又被比较（s==="Keyboard shortcuts"），还是设置关键字表 Ddt 的对象键（Ddt[r.label]），
+  // 显示与比较必须同一个值：走 exact 全局一致替换并在白名单里放行比较位置。
+  // 已核对：本版 bundle 里只出现在导航表、上述比较、关键字表键与同页标签上，没有协议取值。
+  '键盘快捷键',
 ])
 
 const SEMANTIC_CALLS = [
