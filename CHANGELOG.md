@@ -4,6 +4,69 @@
 > 逐条账目（对差统计、词典条数与替换次数、各扫描的残留条数、发布包哈希）与工具口径不收在这里——
 > 需要时看 `git log`：每次适配与发布的提交里都写着完整过程。
 
+## [0.0.167] · 2026-10-09（已发布 `pack-v0.0.167`）
+
+上游这一版把**聊天自动归档**做成了设置项：新增 auto-archive 面板（`Auto-archive chats` /
+`Auto-archive cloud chats after` / `Auto-archive local chats after`、时段 `1 day` / `3 days` / `1 week` /
+`2 weeks`、说明 `Applies to chats on this device.` 与 `Archive inactive chats after the selected time. …`、
+`Synced across Desktop and Web. …`、两条失败提示），以及一批小文案（`Efficient` / `Unavailable`、
+`Cloud chats` / `Local chats`、`Model preference`、`Your API provider`、`Session ·` 等）。
+
+- **词典**：2912 → **2931 条**（`exact` 2232 / `template` 366 / `code` 31 / `pattern` 302），
+  替换 **3619 处**全命中；纯字面量词条覆盖 **2177/2177（100.0%）**；2931 条词条全部能在本版 UI bundle 命中。
+- **词典迁移**：`remap` 366 条模板全部 `SAME`；`resituate` 11 条 `CONFIRM`（`Close` / `Sponsored` /
+  `Details for` 等变量组）+ 2 条被扫描器正则偏航漏掉的手工迁移（`daily pool` / `ignored locally`，
+  函数改名 `mat` / `li` / `Up` / `lv`），译文插值随新形态同步；迁移后**全命中、待定位 0**。
+- **新增文案 19 条**全部入库；`Auto-archive settings unavailable`（`throw` 的内部 Error message，
+  唯一调用处 catch 后显示的是另一条固定文案、不进界面）登进 `intentional-english.json` 的 `uiStrings`。
+- **主进程**：16 个补丁一次干净套用、锚点无漂移；英文扫描 0 条疑似漏翻、0 条短标签，107 条属约定保留。
+- **快照重捕获**：装机 `ui` 曾被多开控制器的 LocalPatches 打过补丁（「高级模式默认开启」），
+  本次以备份的 `.pre-localpatch-*` 原版 bundle 重建纯原版源后再 capture，保证快照（发布资产）与构建输入纯净。
+- **工具链**：`tools/build_locked.sh` 落地段升级为「`app.asar` 有变化 → 覆盖写」——实测 WorkBuddy 持锁
+  只挡删除 / 改名（safe-delete fail-closed），写权限可用，写完逐字节复核。
+- **发布事故与修复**：发布时网络不通、读不到 `origin/main`（该检查只警告不拦），`gh release create`
+  默认把 tag 落到了远端旧 HEAD（`e70e49f`）上——包与 tag 不同源；修 tag 时又被 GitHub 转成 draft。
+  现在创建 release 一律 `--target <本地 HEAD>`，tag 永远钉在打包时的提交上。
+- **影响面**：`targetVersion` / `packVersion` 升到 0.0.167，已装 `pack-v0.0.164` 的机器自动跟进。
+
+### 记一笔：UI 行为补丁整体退场（0.0.164 → 0.0.167 之间）
+
+汉化包从此**只做汉化**：删除 `tools/apply_ui_code_patch.js`（stream-epoch / token-epoch 两组行为补丁）、
+`probe_stream_epoch` / `probe_token_epoch`（行为取证探针）与 `ui_patch_status` 及配套自测，构建链路上
+不再有任何 UI bundle 行为改动；该缺陷按上游原版行为存在（遇到时重发一条消息即自愈）。
+`patches/electron-main.cjs.patch` 的窗口按钮区（`titleBarOverlay`）底色改为全透明——露出的就是标签条
+自己的背景，图标色与高度仍跟随界面 CSS。
+
+## [0.0.164] · 2026-10-08（已发布 `pack-v0.0.164`）
+
+词典 / 补丁 / 登记表全量适配，外加两处收尾补翻。
+
+- **词典**：0.0.164 新文案入库（`exact` / `pattern` / `template` 三区），清理下线死条目；
+  收尾补翻模型标语 `Parallel agents` → 「并行智能体」、调查进度「 answered. 」→ 「 题已作答。 」。
+- **登记表**：登记本版新增的 `keywords` 隐藏元数据与 profile 调查专名；补登记 `· frees in m`
+  （嵌套模板已被 `template` 词条覆盖，片段提取误报）与 `animation:`（CSS 片段）。
+- **主进程**：`electron-app-menu.cjs` / `electron-browser-native.cjs` 两个补丁适配 0.0.164。
+- **语义守卫**：`semantic_guard.js` 放行「键盘快捷键」比较位置（设置导航表同构，显示与比较须同值）。
+- **验证**：全量构建自检全绿（词条覆盖 100%、产物侧行为取证 5/5）；`update.sh` 7/7 全绿
+  （上游新增全覆盖 / 回归闸门 / 单词差集 / 字面量占用 / 主进程扫描均 0 告警）。
+- **影响面**：`targetVersion` / `packVersion` → 0.0.164，已装上一版的机器自动跟进。
+
+## [0.0.162] · 2026-10-07（已发布 `pack-v0.0.162.1` / `pack-v0.0.162.2`）
+
+上游这一版把一些词从「界面文案」变成了「代码里的值」，踩到一个会**崩界面**的坑，当日连发两个修正包。
+
+- **词典 / 补丁 / 登记表**适配 0.0.162；新增 `browser-data` / `browser-extensions` / `app-menu`
+  三个主进程补丁。
+- **修复：`chat` 词条引发的 React #130**——新版把 `chat` 当图标名用（组件按 `name` 查图标表），
+  它原先在 `exact` 分区被全局替换成「个会话」，查表得到 `undefined` → `jsx(undefined)` → 界面崩溃
+  （会话视图崩、侧栏正常）。已把 `chat` 从 `exact` 迁进 `pattern`：图标名 / 查询值保持英文，显示文案照旧中文。
+- **盲扫补翻 18 条（0.0.162.2）**：`blindscan` 对差筛出真·界面文案——推荐资格提示、模型 tooltip
+  （Experimental / Frontier / Strongest）、图片上传错误、MCP 参数提示、权限说明、钱包去向等，
+  界面英文残留 386 → 363；`Arguments must be…` 走 `code` 分区（原文在单引号串里，`exact` 只匹配双引号字面量）。
+- **工具链**：新增 `tools/build_locked.sh`——`output/app.asar` 被 WorkBuddy 持锁时（长期行为）的等效
+  构建 + 落地（`app.asar` 逐字节比对跳过 + `ui` 整目录替换；支持 `--dry-run`）。
+- **影响面**：`packVersion` 0.0.162 → 0.0.162.1 → 0.0.162.2，已装旧包的机器自动跟进。
+
 ## [0.0.161] · 2026-10-06（已发布 `pack-v0.0.161`）
 
 上游这两版把**附件图片预览**做成了正经功能：主进程多了一个 `electron/attachment-preview.cjs`，
