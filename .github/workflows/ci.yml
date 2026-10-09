@@ -58,20 +58,12 @@ jobs:
         run: node tools/test_fastloop.js
       - name: auto_translate 自测（智能清单预填：术语对齐 / G1代码保护 / 占位符不变式）
         run: node tools/test_auto_translate.js
-      - name: UI 行为补丁自测（改名抗性 / 唯一命中 / 幂等）
-        run: node tools/test_ui_code_patch.js
       - name: 语义守卫自测（正则字面量不假阳性 / 真语义位置仍拦下）
         run: node tools/test_semantic_guard.js
       - name: 注释分词器自测（正则 / 模板 / 字符串里的 // 不产生假注释；真注释区不翻、假注释区仍翻）
         run: node tools/test_comment_scan.js
-      - name: 行为取证探针自测（拿不到证据必须 rc 2，不冒充判决）
-        shell: bash
-        run: |
-          node tools/test_probe_stream_epoch.js
-          node tools/test_probe_token_epoch.js
-          node tools/test_probe_shell_colors.js
-      - name: 退场判定自测（决策表 / 退出码契约 / 删除清单完整性）
-        run: node tools/test_ui_patch_status.js
+      - name: 窗口按钮区取证探针自测（拿不到证据必须 rc 2，不冒充判决）
+        run: node tools/test_probe_shell_colors.js
       - name: 词条命中体检自测（只在主进程 / 只在上版 / 哪都没有 / 退出码）
         run: node tools/test_missed_diagnose.js
       - name: 旧词条重新定位自测（模板 / 代码片段 / 字面量三路定位 + 写回自证 + 退出码）

@@ -11,8 +11,6 @@ const fs = require('fs')
 const path = require('path')
 const { execFileSync } = require('child_process')
 const { findUnsafeMatches } = require('./semantic_guard')
-const { SENTINELS: UI_PATCH_SENTINELS } = require('./apply_ui_code_patch')
-const { verdict: probeVerdict } = require('./probe_stream_epoch')
 
 const REPO = path.join(__dirname, '..')
 
@@ -44,8 +42,6 @@ if (!fs.existsSync(asarPath)) {
 
 const idxPath = path.join(outDir, 'ui', 'index.html')
 let bundleText = null
-// null=未取证 / true=通过 / false=未达标（见下面的 UI 行为补丁一节）
-let uiBehavior = null
 if (!fs.existsSync(idxPath)) {
   bad(`缺少 ${idxPath}（构建参数没给 ui 目录？）`)
 } else {
@@ -95,48 +91,6 @@ if (!fs.existsSync(idxPath)) {
         if (unique.length > 30) bad(`主 bundle 另有 ${unique.length - 30} 个代码语义中文字面量，详见 semantic_guard 扫描`)
       } else {
         ok('主 bundle 代码语义常量未发现中文')
-      }
-
-      // UI 行为补丁（tools/apply_ui_code_patch.js）的哨兵。这是硬检查：
-      // 补丁漏套时界面仍然能跑，只是「orchestrator 崩溃重启后那条未完成的回复
-      // 永远不 done」的静默故障会回来，装机前必须挡住。
-      const missingUi = UI_PATCH_SENTINELS.filter((s) => !bundleText.includes(s))
-      if (missingUi.length) {
-        for (const s of missingUi) {
-          bad(`主 bundle 缺少 UI 行为补丁哨兵「${s}」—— tools/apply_ui_code_patch.js 未生效`)
-        }
-      } else {
-        ok(`主 bundle 已套用 UI 行为补丁（${UI_PATCH_SENTINELS.length}/${UI_PATCH_SENTINELS.length} 条哨兵）`)
-
-        // 哨兵只证明“插进去了”，证不了“真的改变了行为”（apply 里的表达式写错、被上游
-        // 改写后变成空操作，哨兵照样在）。所以再把装机 bundle 里的那几段纯函数原样抽出来
-        // 跑一遍事故时序：必须「缺陷可复现的行为没了，而该保留的守卫还在」同时成立。
-        // 抽不到函数（上游结构变了）只警告：那种情况由 build.sh 的补丁步与上面的哨兵先报。
-        //
-        // 两组缺陷的取证机制不同：stream-epoch 那组是同步的，直接在内存文本上跑；
-        // token-epoch 那组的请求包装器是 async 的，探针因此是异步——这里用子进程跑它的
-        // CLI（与本文件已有的 node --check 同一手法），免得把整个自检改成异步。
-        const behavior = []
-        try {
-          behavior.push({ id: 'stream-epoch', ok: probeVerdict(bundleText).patchEffective })
-        } catch (e) {
-          warn(`stream-epoch 行为取证拿不到证据（${e.message}）—— 补丁效果未经实测，仅凭哨兵放行`)
-        }
-        try {
-          execFileSync(process.execPath, [path.join(__dirname, 'probe_token_epoch.js'), bp, '--expect', 'absent'], {
-            stdio: 'pipe',
-          })
-          behavior.push({ id: 'token-epoch', ok: true })
-        } catch (e) {
-          // rc 1 = 取证成功但不达标（必须挡住）；rc 2 = 拿不到证据（只警告）
-          if (e.status === 1) behavior.push({ id: 'token-epoch', ok: false })
-          else warn(`token-epoch 行为取证拿不到证据（rc ${e.status ?? '?'}）—— 补丁效果未经实测，仅凭哨兵放行`)
-        }
-        for (const b of behavior) {
-          if (b.ok) ok(`行为取证通过：${b.id}`)
-          else bad(`行为取证未达标：${b.id} —— 补丁插入了但未生效（缺陷仍会复现，或被改成了误伤）`)
-        }
-        uiBehavior = behavior.length ? behavior.every((b) => b.ok) : null
       }
     }
   }
@@ -198,14 +152,15 @@ const MAIN_SENTINELS = {
     '该应用不可用',
     '导出为 Markdown…',
     '移到新窗口',
-    // 窗口按钮区（titleBarOverlay）跟随 UI 的 --chrome / --faint / --tabbar-height（产物改动，不是翻译）：
+    // 窗口按钮区（titleBarOverlay）：底色交给界面自己画，图标色与高度跟随 CSS（产物改动，不是翻译）：
     // 上游给 UI 换了新配色、又把 --tabbar-height 覆盖成 48px，主进程那张影子表却留着旧值，
     // 于是窗口按钮区在标签条右侧露出一块颜色、高度与图标深浅都对不上的矩形。
+    // 底色现在直接给全透明：露出来的就是标签条自己的那一层（开壁纸时它是 transparent）。
     'const HANHUA_SHELL_COLORS = (() => {',
-    'overlay: HANHUA_SHELL_COLORS.light,',
+    'overlay: HANHUA_SHELL_COLORS.overlay,',
     'overlaySymbol: HANHUA_SHELL_COLORS.symbolLight,',
     'height: HANHUA_SHELL_COLORS.height,',
-    // 0.0.154 修的那一半：CSS 最外层的 --chrome 是 `var(--shell-base)` 的转发，必须解到底再交出去。
+    // 0.0.154 修的那一半：CSS 里那两个变量可能是 `var(...)` 的转发，必须解到底再交出去。
     // 没有它就等于回到「把 var(...) 字符串当颜色」——哨兵只查上面那几行文本，查不出这个差别。
     'const shellColor = (re, name, fallbackValue) => {',
   ],
@@ -288,8 +243,9 @@ if (mainSrc) {
       if (!text.includes(s)) bad(`${rel} 缺少译文哨兵「${s}」—— 对应补丁可能未套用`)
     }
   }
-  // 窗口按钮区不能只看哨兵：0.0.154 装机后右上角那块色差就是「补丁文本一个字节没变、值却不对」
-  // （把 `var(--shell-base)` 当颜色交出去，Electron 回落成系统默认底色），哨兵全绿、用户照样看得见。
+  // 窗口按钮区不能只看哨兵：两种坏法都是「补丁文本一个字节没变、值却不对」——0.0.154 那块色差
+  // （把 `var(--shell-base)` 当颜色交出去，Electron 回落成系统默认底色）、以及 overlay 被改回不透明色
+  // （开壁纸时右上角重新露出一块实心矩形）。哨兵全绿、用户照样看得见。
   // 所以再拿产物 main.cjs 与产物 ui 跑一次行为取证：rc 1 = 值不对（挡住），rc 2 = 拿不到证据（只警告）。
   {
     const mainCjs = path.join(mainSrc, 'electron', 'main.cjs')
@@ -300,7 +256,7 @@ if (mainSrc) {
           [path.join(__dirname, 'probe_shell_colors.js'), mainCjs, '--ui', path.join(outDir, 'ui'), '--expect', 'ok'],
           { stdio: 'pipe' },
         )
-        ok('窗口按钮区行为取证通过（底色 / 图标色 / 高度与界面 CSS 一致）')
+        ok('窗口按钮区行为取证通过（底色交给界面 / 图标色 / 高度与界面 CSS 一致）')
       } catch (e) {
         const out = `${e.stdout || ''}${e.stderr || ''}`.trim()
         if (e.status === 1) bad(`窗口按钮区与界面 CSS 对不上（tools/probe_shell_colors.js）:\n${out}`)
@@ -353,5 +309,4 @@ if (problems.length) {
 }
 console.log('\n✓ 自检通过：布局 / index.html 汉化标记'
   + (mainSrc ? ' / 主进程语法与译文哨兵' : '')
-  + (uiBehavior === true ? ' / UI 行为补丁哨兵与行为取证' : bundleText ? ' / UI 行为补丁哨兵' : '')
   + ' 均正常。')

@@ -3,7 +3,7 @@
 // `HANHUA_SHELL_COLORS` 原样抽出来跑一遍，再拿界面 CSS 独立解一遍，两边比对。
 //
 // 为什么要有这个工具：这处补丁是**产物改动**（不是译文），它的全部工作是把 UI 的 CSS 变量喂给
-// `titleBarOverlay`。哨兵只能证明那段代码**在**（`overlay: HANHUA_SHELL_COLORS.light,` 还写着），
+// `titleBarOverlay`。哨兵只能证明那段代码**在**（`overlay: HANHUA_SHELL_COLORS.overlay,` 还写着），
 // 证不了它**值对**——0.0.154 装机后右上角那块颜色对不上的矩形就是这么漏过去的：
 //
 //   · CSS 最外那层写的是 `--chrome: var(--shell-base)`（同一选择器声明了四次，后一份生效）；
@@ -13,10 +13,12 @@
 //   · 哨兵照旧全绿，因为那段文本一个字节都没变。
 //
 // 判据因此是**差分**（两侧独立实现，不复用补丁的代码）：
-//   ① 抽出来的块跑出来的四个颜色必须都是**颜色字面量**（`var(…)` 这种转发没解到底，直接判负）；
-//   ② 必须等于界面 CSS 级联出来的实际值（`:root` 与 `:root[data-theme=light]` 两个选择器分别解，
-//      浅色按 CSS 的优先级取后者）——按钮区画出来的颜色必须与标签条一致，这才是用户看到的那个「对得上」；
-//   ③ 高度必须等于「标签条高度 − 标签条底部 1px 边框」（overlay 是原生色块，盖住那行线就只剩色块）。
+//   ① **overlay 必须全透明**：按钮区自己不画底色，露出来的才是标签条自己的背景（`.shell-tab-row`
+//      的 `--shell-base`；开壁纸时它是 transparent）。一旦被改回不透明色，开壁纸时右上角就会重新
+//      露出一块与旁边对不上的实心矩形 —— 这正是本探针守的那条线；
+//   ② 图标色必须是**颜色字面量**（`var(…)` 这种转发没解到底，直接判负），且等于界面 CSS 级联出来
+//      的实际值（`:root` 与 `:root[data-theme=light]` 两个选择器分别解，浅色按优先级取后者）；
+//   ③ 高度必须等于「标签条高度 − 标签条底部 1px 边框」（overlay 的高度决定系统按钮的位置与留白）。
 //
 // 怎么取「界面 CSS」：那块代码是按 `process.resourcesPath/orchestrator/ui` 找 CSS 的，而本机的 ui
 // 往往不在这个布局里（仓库里是 output/ui，装机目录才是 resources/orchestrator/ui）。探针因此搭一个
@@ -106,6 +108,25 @@ function resolveColor(vars, value, depth = 0) {
 }
 
 /**
+ * 全透明色（alpha = 0）判定：`rgba(r,g,b,0)` / `#RRGGBB00` / `#RGBA`（第四位为 0）/ `hsla(…,0)` /
+ * 字面量 `transparent`。按钮区靠这个把底色交还给界面，所以它必须是「真的不画」，不能是深色近似。
+ */
+function isFullyTransparent(v) {
+  if (typeof v !== 'string') return false
+  const s = v.trim().toLowerCase()
+  if (s === 'transparent') return true
+  let m = s.match(/^rgba\(\s*[\d.]+%?\s*,\s*[\d.]+%?\s*,\s*[\d.]+%?\s*,\s*([\d.]+)\s*\)$/)
+  if (m) return parseFloat(m[1]) === 0
+  m = s.match(/^hsla\(\s*[^,]+,\s*[^,]+,\s*[^,]+,\s*([\d.]+)\s*\)$/)
+  if (m) return parseFloat(m[1]) === 0
+  m = s.match(/^#([0-9a-f]{8})$/)
+  if (m) return m[1].slice(6) === '00'
+  m = s.match(/^#([0-9a-f]{4})$/)
+  if (m) return m[1][3] === '0'
+  return false
+}
+
+/**
  * 独立解出界面 CSS 的期望值（不复用补丁里的代码：两侧各写一遍，差出来的才是问题）。
  * 读不到 / 解不出颜色时返回 null（调用方转 rc 2，不冒充判决）。
  */
@@ -114,8 +135,8 @@ function resolveCssVars(css) {
   // CSS 级联：:root[data-theme=light] 命中时优先级高于 :root，但只覆盖它自己声明的那些变量。
   const lightVars = { ...darkVars, ...declarationsOf(css, ':root[data-theme=light]') }
 
-  const dark = { chrome: resolveColor(darkVars, darkVars['--chrome']), faint: resolveColor(darkVars, darkVars['--faint']) }
-  const light = { chrome: resolveColor(lightVars, lightVars['--chrome']), faint: resolveColor(lightVars, lightVars['--faint']) }
+  const dark = { faint: resolveColor(darkVars, darkVars['--faint']) }
+  const light = { faint: resolveColor(lightVars, lightVars['--faint']) }
 
   const heights = [...css.matchAll(/--tabbar-height:\s*([\d.]+)px/g)]
   const barHeight = heights.length ? Math.round(parseFloat(heights[heights.length - 1][1])) : null
@@ -123,7 +144,7 @@ function resolveCssVars(css) {
   const border = (barRule || '').match(/border-bottom:\s*([\d.]+)px/)
   const height = barHeight == null ? null : Math.max(0, barHeight - (border ? parseFloat(border[1]) : 0))
 
-  if (!dark.chrome || !dark.faint || !light.chrome || !light.faint || height == null) return null
+  if (!dark.faint || !light.faint || height == null) return null
   return { dark, light, height }
 }
 
@@ -203,22 +224,26 @@ function verdict({ mainPath, uiDir }) {
   const reasons = []
   const fellBack =
     fallback &&
-    ['light', 'dark', 'symbolLight', 'symbolDark', 'height'].every((k) => String(actual[k]) === String(fallback[k]))
+    ['overlay', 'symbolLight', 'symbolDark', 'height'].every((k) => String(actual[k]) === String(fallback[k]))
   if (fellBack) {
     reasons.push(
       `按钮区回落到了块里写死的那组值（${JSON.stringify(fallback)}）—— 说明它没读到 UI 的 CSS：` +
-        '装机布局里 resources/orchestrator/ui 必须可读，否则底色 / 图标色 / 高度全按老值画，和标签条对不上',
+        '装机布局里 resources/orchestrator/ui 必须可读，否则图标色 / 高度全按老值画，和标签条对不上',
+    )
+  }
+  if (!fellBack && !isFullyTransparent(actual.overlay)) {
+    reasons.push(
+      `overlay（按钮区底色）：${JSON.stringify(actual.overlay)} 不是全透明 —— 按钮区会盖住标签条自己的背景，` +
+        '开壁纸时右上角就会露出一块与旁边对不上的实心矩形',
     )
   }
   const pairs = [
-    ['light（浅色底色）', actual.light, expected.light.chrome],
-    ['dark（深色底色）', actual.dark, expected.dark.chrome],
     ['symbolLight（浅色图标色）', actual.symbolLight, expected.light.faint],
     ['symbolDark（深色图标色）', actual.symbolDark, expected.dark.faint],
   ]
   for (const [label, got, want] of (fellBack ? [] : pairs)) {
     if (!isColor(got)) {
-      reasons.push(`${label}：${JSON.stringify(got)} 不是颜色字面量 —— 变量转发没解到底（Electron 会回落成系统默认底色，与标签条露出色差）`)
+      reasons.push(`${label}：${JSON.stringify(got)} 不是颜色字面量 —— 变量转发没解到底（Electron 会回落成系统默认图标色）`)
     } else if (got.trim().toLowerCase() !== want.trim().toLowerCase()) {
       reasons.push(`${label}：按钮区要画成 ${got}，界面实际用的是 ${want}（CSS 级联的结果）`)
     }
@@ -229,7 +254,7 @@ function verdict({ mainPath, uiDir }) {
   return { evidence: true, ok: reasons.length === 0, reasons, expected, actual }
 }
 
-module.exports = { verdict, extractShellColors, resolveCssVars, isColor, defaultUiDir }
+module.exports = { verdict, extractShellColors, resolveCssVars, isColor, isFullyTransparent, defaultUiDir }
 
 function main() {
   const argv = process.argv.slice(2)
@@ -275,8 +300,8 @@ function main() {
   }
 
   const { actual, expected } = result
-  log(`窗口按钮区（${path.basename(mainPath)}）：light=${actual.light} dark=${actual.dark} height=${actual.height}`)
-  log(`界面 CSS 级联：            light=${expected.light.chrome} dark=${expected.dark.chrome} height=${expected.height}`)
+  log(`窗口按钮区（${path.basename(mainPath)}）：overlay=${actual.overlay} symbolLight=${actual.symbolLight} symbolDark=${actual.symbolDark} height=${actual.height}`)
+  log(`界面 CSS 级联：            faintLight=${expected.light.faint} faintDark=${expected.dark.faint} height=${expected.height}`)
 
   if (expect === 'missing') {
     console.log('缺陷可复现：按钮区补丁已套用（本文件不该是英文原版）')

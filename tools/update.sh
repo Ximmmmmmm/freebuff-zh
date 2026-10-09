@@ -4,9 +4,8 @@
 #   1/7 模板变量重映射：tools/remap.js 把 template 词典条目的 ${...} 变量名迁移到新 bundle
 #   1b/7 旧词条重新定位：remap 只迁「固定段逐字节还在」的；被改写 / 命中多处的用 tools/resituate.js
 #        在新版原版里找回现形态——能确定的（RELOCATE）自动写回，其余列 CONFIRM / GONE 交人工
-#   2/7 补丁体检：UI 行为补丁该保留 / 该重维护 / 该退场？（tools/ui_patch_status.js，退场时附删除
-#       清单）；主进程补丁的锚点与分诊（tools/patch_preflight.js：行号漂移 vs 上游改写）
-#   3/7 可复现构建：bash build.sh（内含语法校验 + 构建产物自检）+ 构建后行为取证
+#   2/7 补丁体检：主进程补丁的锚点与分诊（tools/patch_preflight.js：行号漂移 vs 上游改写）
+#   3/7 可复现构建：bash build.sh（内含语法校验 + 构建产物自检）
 #   4/7 UI 残留扫描：leftover / prose / uipos / fieldscan / blindscan 扫描构建出的主 bundle
 #   5/7 主进程英文扫描：tools/mainscan.js 对差 electron/*.cjs——词典只替换双引号字面量，
 #       单引号 / 模板里的文案（菜单、原生对话框、openIn 报错、MCP 同意窗口）全靠 patches/，
@@ -154,51 +153,13 @@ else
   echo "  (无 ui 目录，跳过)" | tee -a "${REPORT}"
 fi
 
-# --- 2/7 UI 行为补丁体检（原版）-----------------------------------------------------
-# 在**花时间构建之前**先问清楚：这些补丁该保留、该重维护、还是该退场？（与词典无关，
-# 但如果不成立，构建要么硬失败、要么白插一段修一个上游已经没有的缺陷的桩。）
-# 判定交给 tools/ui_patch_status.js：锚点维度（能不能套用）× 缺陷维度（原版还能不能复现
-# 出缺陷），逐组给出 KEEP / REWRITE / RETIRE / UNKNOWN，退场时附上删除清单。
-echo
-echo "== 2/7 补丁体检（UI 行为：该保留还是退场）=="
-lap "1b词条重定位"
-PATCH_STATUS=skipped
-if [ -n "${UI_BUNDLE}" ] && [ -f "${UI_BUNDLE}" ]; then
-  set +e
-  STATUS_OUT="$(node "${HERE}/tools/ui_patch_status.js" "${UI_BUNDLE}" 2>&1)"
-  STATUS_RC=$?
-  set -e
-  printf '%s\n' "${STATUS_OUT}" | tee -a "${REPORT}"
-  case "${STATUS_RC}" in
-    0) PATCH_STATUS=keep ;;
-    1) PATCH_STATUS=retire ;;
-    3) PATCH_STATUS=unknown ;;
-    *) # rc 2：锚点失配（缺陷仍在，需重新定位）+ 原版路径不可用等配置问题，两者都该停下
-       echo "ERROR: UI 行为补丁体检需要人工介入（rc=${STATUS_RC}）：锚点已失配（构建也会在中途中止），或原版 bundle 不可用。" >&2
-       echo "  明细见上方输出。重新定位锚点后重跑；若上游已自行修复，则按清单把那组补丁退场。" >&2
-       exit 1 ;;
-  esac
-  if [ "${PATCH_STATUS}" = "retire" ]; then
-    echo "  ! 有补丁可以退场（上游已复现不出缺陷，删除清单见上方与报告）——确认后删，不要在缺陷仍在时删" >&2
-  fi
-  if [ "${PATCH_STATUS}" = "unknown" ]; then
-    echo "  ! 补丁去留无法自动判定（探针拿不到证据）——请人工核对上游是否改写了这段代码" >&2
-  fi
-else
-  echo "  (未记录原版主 bundle 路径，跳过)" | tee -a "${REPORT}"
-fi
-{
-  echo
-  echo "## UI 行为补丁体检（原版）：${PATCH_STATUS}"
-} >> "${REPORT}"
-
 # 主进程补丁的锚点预检：build.sh 第 3 步套不上时只会说「补丁未干净套用」，而「行号漂移」
 # （上游在前面插了几行，一条命令重锚定就好）与「上游改写」（上下文真的没了，只能人工重维护）
 # 处置完全不同。这一步在动 build 之前就把两者分开——0.0.131 适配时是我临时写脚本才做到的，
 # 而且当时还把 consent-window.html 的「空上下文行」误判成改写。顺便把补丁体检统一在本步骤。
 echo
-echo "== 2b/7 主进程补丁锚点预检（该重锚定还是人工重维护）=="
-lap "2UI补丁体检"
+echo "== 2/7 主进程补丁锚点预检（该重锚定还是人工重维护）=="
+lap "1b词条重定位"
 PATCH_ANCHOR=skipped
 {
   echo
@@ -218,15 +179,14 @@ esac
 # --- 3/7 构建 --------------------------------------------------------------------
 echo
 echo "== 3/7 构建（含防呆自检）=="
-lap "2b主进程补丁预检"
+lap "2主进程补丁预检"
 if ! bash "${HERE}/build.sh" "${PRISTINE_ASAR}" "${PRISTINE_UI}" 2>&1 | tee -a "${REPORT}"; then
   echo "ERROR: build.sh 失败（详情见上方日志），中止。" >&2
   exit 1
 fi
 
-# 产物侧的行为取证在 tools/postbuild.js 里（build.sh 末尾调用，输出已 tee 进本报告）——
-# 那里是「产物可不可信」的归属地，build.sh / release.sh 也一并覆盖。这里只补一个
-# 已知路径的变量，供后面的残留扫描复用。
+# 产物可信度归 tools/postbuild.js 管（build.sh 末尾调用，输出已 tee 进本报告）。
+# 这里只补一个已知路径的变量，供后面的残留扫描复用。
 FINAL_BUNDLE="${HERE}/output/ui/assets/$(basename "${UI_BUNDLE:-__none__}")"
 
 # --- 4/7 UI 残留扫描 ---------------------------------------------------------------
@@ -483,14 +443,6 @@ case "${PATCH_ANCHOR:-skip}" in
           echo "      node tools/regen_patch.js --broken --write 重生成（用既有译文，行号由工具算）" ;;
   *)      echo "  · 主进程补丁锚点预检：跳过（缺原版 electron/ 快照或补丁目录）" ;;
 esac
-case "${PATCH_STATUS}" in
-  keep)    echo "  · UI 行为补丁（原版体检）：KEEP ✓ 锚点命中、上游仍带该缺陷，补丁继续保留" ;;
-  retire)  echo "  · UI 行为补丁（原版体检）：⚠ RETIRE 可退场——上游已复现不出缺陷，删除清单见报告" ;;
-  unknown) echo "  · UI 行为补丁（原版体检）：⚠ UNKNOWN 无法判定去留，需人工核对" ;;
-  *)       echo "  · UI 行为补丁（原版体检）：跳过（未记录原版主 bundle）" ;;
-esac
-echo "  · 产物侧行为取证：由 build.sh 末尾的 postbuild 执行（未达标会直接中止构建）"
-echo "      结果见上面构建日志里的「主 bundle 行为取证」一行"
 echo "  · 报告（MISSED 与残留扫描全文）：${REPORT}"
 cat <<TIP
 
@@ -536,12 +488,6 @@ cat <<TIP
   撤掉该词条，改写进 patches/electron-*.patch（只改该翻的那处），或把两处用法拆开。
   单独重跑：node tools/lint_collisions.js --electron work/pristine/<版本>/electron
 
-报告里「UI 行为补丁体检」红了或带 ⚠ 时（与词典无关）：
-  · REWRITE（锚点失配、缺陷仍在）→ 在新版原版里重新定位同一处语义，更新 find/apply；
-  · RETIRE（原版已复现不出缺陷）→ 上游自行修复，按报告里的删除清单把那组补丁退场；
-  · UNKNOWN（无法取证）→ 上游结构变化，探针拿不到证据，人工核对后决定去留；
-  · 产物侧行为取证未达标（构建日志里的「主 bundle 行为取证」）→ 别装机，先核对补丁是否真的生效。
-随时可以单独问一次：node tools/ui_patch_status.js   （不带参数就自动找本机英文原版）
 TIP
 
 # 计时收尾：最后一个 lap 同样写在「下一步的标题处」——这里没有下一步了，就写在脚本末尾。

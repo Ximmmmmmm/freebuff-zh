@@ -4,16 +4,16 @@
  /** @type {string | null} */
  let appUrl = null
  
-+// 汉化包补丁：窗口按钮区（titleBarOverlay）跟随渲染进程的 --chrome / --faint / --tabbar-height。
-+// 主进程这张影子表一直是手抄 UI 的 CSS：0.0.154 又换了一轮配色与高度（写死 dark #292b2a /
-+// light #e3e7e4、高度 48），而 CSS 里 :root 的 --chrome 与 .app-workspace 的 --tabbar-height
-+// 未必同值，抄错一次按钮区就在标签条右侧露出一块对不上的矩形。这里改成从 UI 的 CSS 里读实际值，
-+// 以后再换配色自动跟上；读不到时回落到下面这组当前值（＝上游本版的写死值），不会比上游更糟。
-+// 上游若再改这一节，补丁本身不用跟：CSS 读得到就用 CSS 的值。
-+// 唯一的例外是**转发**：0.0.154 起最外那层写的是 `--chrome: var(--shell-base)`，读到的
-+// 必须是一路解到底的颜色字面量（见下面的 shellColor）。
++// 汉化包补丁：窗口按钮区（titleBarOverlay）——底色交给界面自己画，图标色与高度跟随 CSS。
++// 主进程这张影子表一直是手抄 UI 的 CSS，抄错一次按钮区就露出一块对不上的矩形（0.0.154 差 13 级）。
++// 现在 overlay 直接给**全透明**：按钮区不画底色，露出来的就是标签条自己的背景（.shell-tab-row
++// 的 --shell-base）——开壁纸时那一层是 transparent，按钮区跟着一起透，不再是一块实心矩形；
++// 没开壁纸时露出的正是同一个 --shell-base，与上游写死值同色。
++// 图标色与高度仍从 CSS 读（--faint / --tabbar-height，后者再减掉 .tabbar 底部那条 1px 边框）；
++// 读不到就回落到下面这组当前值（＝上游本版的写死值），CSS 读得到就用 CSS 的值。
++// 图标色的例外是**转发**：最外那层可能写 `--faint: var(…)`，读到的必须是一路解到底的颜色字面量。
 +const HANHUA_SHELL_COLORS = (() => {
-+  const fallback = { dark: '#292b2a', light: '#e3e7e4', symbolDark: '#dedfdd', symbolLight: '#232b26', height: 48 }
++  const fallback = { overlay: 'rgba(0, 0, 0, 0)', symbolDark: '#dedfdd', symbolLight: '#232b26', height: 48 }
 +  try {
 +    const uiDir = path.join(process.resourcesPath, 'orchestrator', 'ui')
 +    const html = fs.readFileSync(path.join(uiDir, 'index.html'), 'utf8')
@@ -54,8 +54,8 @@
 +    const barBorder = (barRule || '').match(/border-bottom:\s*([\d.]+)px/)
 +    const barInset = barBorder ? parseFloat(barBorder[1]) : 0
 +    return {
-+      dark: shellColor(/:root\s*\{([^}]*)\}/g, 'chrome', fallback.dark),
-+      light: shellColor(/:root\[data-theme=light\]\s*\{([^}]*)\}/g, 'chrome', fallback.light),
++      // 按钮区不画底色：透明之后露出来的就是标签条自己的背景（见文件头）
++      overlay: fallback.overlay,
 +      symbolDark: shellColor(/:root\s*\{([^}]*)\}/g, 'faint', fallback.symbolDark),
 +      symbolLight: shellColor(/:root\[data-theme=light\]\s*\{([^}]*)\}/g, 'faint', fallback.symbolLight),
 +      height: Math.max(0, barHeight - barInset),
@@ -70,7 +70,7 @@
      background: '#292b2a',
 -    overlay: '#292b2a',
 -    overlaySymbol: '#dedfdd',
-+    overlay: HANHUA_SHELL_COLORS.dark,
++    overlay: HANHUA_SHELL_COLORS.overlay,
 +    overlaySymbol: HANHUA_SHELL_COLORS.symbolDark,
      // the renderer's --surface-2 / --brand-dim: the splash bar and the one the app holds after it
      // are the same bar, and a colour change between them would show as a flicker
@@ -81,7 +81,7 @@
      background: '#e3e7e4',
 -    overlay: '#e3e7e4',
 -    overlaySymbol: '#232b26',
-+    overlay: HANHUA_SHELL_COLORS.light,
++    overlay: HANHUA_SHELL_COLORS.overlay,
 +    overlaySymbol: HANHUA_SHELL_COLORS.symbolLight,
      splashTrack: '#e9ede8',
      splashBar: '#5e774e',
