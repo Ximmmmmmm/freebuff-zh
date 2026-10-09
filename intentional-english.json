@@ -3736,6 +3736,10 @@
     {
       "text": "${…}",
       "why": "纯插值模板（`` `${e}-title` `` 这类只有插值、没有任何可译文本的模板），无文案可翻。"
+    },
+    {
+      "text": "Auto-archive settings unavailable",
+      "why": "自动归档设置接口 fetch 失败时 throw 的 Error message（`throw new Error(\"Auto-archive settings unavailable\")`）；唯一调用处 catch 后显示的是另一条固定文案（「无法加载自动归档设置。」），该 message 不进界面、没有翻译位置。0.0.167 适配时登记。"
     }
   ]
 }

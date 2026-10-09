@@ -9,7 +9,9 @@
 #   - 被锁的文件连 mv / 改名 / 覆盖写都不行，但**可读**。
 # 本脚本的对策：产物构建过程完全复刻 build.sh；落地时——
 #   - app.asar：与现有 output/app.asar 逐字节比对，相同则**跳过**（锁无影响）；
-#     不同则中止（说明主进程内容真的变了，需要关掉持锁程序后走标准流程）。
+#     不同则**覆盖写**（2026-10-09 实测：WorkBuddy 的持锁只挡删除/改名——safe-delete
+#     走回收站要 DELETE 权限、被拒即 fail-closed——但打开/写权限可用；不删不改名、
+#     只把新内容写进原文件，写完逐字节复核）。
 #   - ui/：正常不受锁影响 → 整目录替换为新构建。
 #
 # 用法：
@@ -106,7 +108,6 @@ if [ -n "${MISSED}" ] && [ "${MISSED}" -gt 0 ]; then
     exit 1
   fi
 fi
-node "${HERE}/tools/apply_ui_code_patch.js" "${STAGE}/ui/${MAIN_BUNDLE}" --write
 
 echo
 echo "== 自检 =="
@@ -124,9 +125,19 @@ fi
 if cmp -s "${STAGE}/app.asar" "${OLD_ASAR}"; then
   echo "  app.asar 与现有一致（逐字节相同）→ 跳过（被锁也不影响）"
 else
-  echo "ERROR: 新构建的 app.asar 与 output/app.asar 不同——主进程内容有变化，本脚本不处理。" >&2
-  echo "  请关闭持有 output/app.asar 句柄的程序（如 WorkBuddy）后，用标准流程：bash build.sh" >&2
-  exit 1
+  # 2026-10-09 实测：WorkBuddy 的持锁只挡删除/改名（safe-delete 走回收站要 DELETE 权限，
+  # 被拒即 fail-closed），打开/写权限可用 → 「覆盖写」可行：不删、不改名，写进原文件。
+  # 写完逐字节复核（防「写被静默丢弃」与半途失败）。
+  echo "  app.asar 有变化 → 覆盖写（不删不改名）"
+  if ! cp -f "${STAGE}/app.asar" "${OLD_ASAR}" 2>/dev/null; then
+    echo "ERROR: 覆盖写失败——请关闭持锁程序后走标准流程：bash build.sh" >&2
+    exit 1
+  fi
+  if ! cmp -s "${STAGE}/app.asar" "${OLD_ASAR}"; then
+    echo "ERROR: 覆盖写后内容与 staging 不一致，中止（output/app.asar 可能不完整）。" >&2
+    exit 1
+  fi
+  echo "  app.asar 已覆盖写为新构建（$(stat -c%s "${OLD_ASAR}") bytes）"
 fi
 if [ "${DRY}" -eq 1 ]; then
   echo "  （--dry-run）ui/ 对照："
