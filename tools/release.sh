@@ -61,12 +61,16 @@ grep -q 'hanhua-pack' "${HERE}/output/ui/index.html" || {
 }
 
 # --- 包与 tag 必须是同一份内容 -------------------------------------------------------
-# `gh release create` 把 tag 落在**远端默认分支的 HEAD** 上，而这个包是从**本地工作区**打出来的。
+# `gh release create` 默认把 tag 落在**远端默认分支的 HEAD** 上，而这个包是从**本地工作区**打出来的。
 # 工作区有未提交改动、或本地 HEAD 还没推上去，tag 指的就是另一份内容——tag 触发的 CI（发布后的
 # 自动复跑）会拿那份内容重建镜像、再与本次发布的包对差，于是报出一堆与本次发布无关的「回归」。
 # 实测：2026-10-06 发 pack-v0.0.161 时包是带 0.0.161 适配的脏工作区打的，tag 落在 0.0.159.1 那个
 # 提交上，CI 的 snapshot-gates 就这么红了一次（看着像漏翻回归，其实是拿两份内容在比）。
 # 这种红最骗人，所以默认拦住；确要跳过去加 --allow-dirty。
+# 2026-10-09 补：下面这道检查读不到 origin/main 时只警告不拦——当天发 0.0.167 就因此在网络不通时
+# 把 tag 落到了远端旧 HEAD（e70e49f）上；发布本身成功，但 tag 与包不同源，事后修 tag 又触发
+# GitHub 把 release 转成 draft。根因是 `gh release create` 没显式指定 target；现在创建 release
+# 一律 `--target <本地 HEAD>`，tag 永远钉在打包时的提交上（tag 已存在时该项被忽略）。
 if [ "${ALLOW_DIRTY}" -eq 0 ]; then
   DIRTY_LIST="$(git -C "${HERE}" status --porcelain --untracked-files=no 2>/dev/null || true)"
   if [ -n "${DIRTY_LIST}" ]; then
@@ -417,6 +421,7 @@ if gh release view "${REL_TAG}" -R "${REPO}" >/dev/null 2>&1; then
     --notes "词典/补丁适配 Freebuff Desktop v${TARGET}。控制器会自动检查、下载并应用，无需手动操作。"
 else
   gh release create "${REL_TAG}" "${ZIP}" "${MANIFEST}" -R "${REPO}" \
+    --target "$(git -C "${HERE}" rev-parse HEAD)" \
     --title "汉化包 v${VER}（适配 Freebuff v${TARGET}）" \
     --notes "词典/补丁适配 Freebuff Desktop v${TARGET}。控制器会自动检查、下载并应用，无需手动操作。"
 fi
