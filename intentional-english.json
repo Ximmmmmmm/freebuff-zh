@@ -3422,6 +3422,62 @@
     {
       "text": "animation:",
       "why": "CSS 属性片段：来自 xterm 光标闪烁（animation: ${…} 1s step-end infinite）与 CodeMirror 光标层的 steps 闪烁动画（animation: 键）等样式字符串，是给样式表/浏览器看的，不是文案；翻掉动画定义立刻失效。与已登记的 :hover, :focus-within 选择器同类。"
+    },
+    {
+      "text": "/api/coordinator/ /resolve",
+      "why": "API 路径（coordinator 的请求地址，插值抹成空格后成了片段），写给服务端读的 URL，不是界面文案；翻掉请求直接打不通。与已登记的 /api/ad/proposal/ /connect 同类。0.0.169 适配时登记。"
+    },
+    {
+      "text": "/api/coordinator/ /threads",
+      "why": "同上（coordinator 的另一个 API 路径）。"
+    },
+    {
+      "text": "coordinator-sent-thread failed",
+      "why": "CSS 类名组合（发送到会话失败的消息卡片 className:\"coordinator-sent-thread failed\"），给样式表定位用，翻掉就没有对应样式——与已登记的 streak-day on 同类。"
+    },
+    {
+      "text": "explorer project-overview-panel",
+      "why": "CSS 类名（项目概览侧栏 aside 的 `explorer project-overview-panel${…}` 拼接，含 collapsed 变体），同上理由。"
+    },
+    {
+      "text": "input, textarea",
+      "why": "选择器字符串（`matches(\"input, textarea\")` 判断事件目标），写给 DOM API 读的，不是界面文案。"
+    },
+    {
+      "text": "modal close-work-modal",
+      "why": "CSS 类名（关闭工作中的弹窗 `modal close-work-modal`），同上。"
+    },
+    {
+      "text": "msg sponsored-background",
+      "why": "CSS 类名（赞助任务后台运行消息卡片，与已登记的 msg sponsored-task 同类），同上。"
+    },
+    {
+      "text": "option ids must be unique within a question",
+      "why": "zod 校验 message（选项结构校验失败时给 API/模型侧的错误），不进界面——与已登记的「模型输入 payload」类片段同处理。"
+    },
+    {
+      "text": "workspace project-overview",
+      "why": "CSS 类名（项目概览 region 的 `workspace project-overview` 拼接），同上。"
+    },
+    {
+      "text": "in f?-f.wheelDeltaY:",
+      "why": "第三方库代码残片（wheel 事件字段归一化 `\"deltaY\"in f?f.deltaY:\"wheelDeltaY\"in f?-f.wheelDeltaY:…`），是 JS 运算符被片段提取器切出来的，不是文案。"
+    },
+    {
+      "text": "in f?f.deltaX:",
+      "why": "同上（wheel 归一化的另一处）。"
+    },
+    {
+      "text": "in f?f.deltaY:",
+      "why": "同上。"
+    },
+    {
+      "text": "in ge?ge.error:",
+      "why": "代码残片（`\"error\"in ge?ge.error:\"Could not save your answer.\"` 三元表达式），真实文案「无法保存你的回答。」已单独成条。"
+    },
+    {
+      "text": "unknown profile survey question or option",
+      "why": "zod 校验 message（提交的 profile 调查答案里含有未知题目 / 选项时给 API/模型侧的错误），不进界面——与已登记的「模型输入 payload」类片段同处理。0.0.169 适配时登记。"
     }
   ],
   "uiStrings": [
@@ -3740,6 +3796,38 @@
     {
       "text": "Auto-archive settings unavailable",
       "why": "自动归档设置接口 fetch 失败时 throw 的 Error message（`throw new Error(\"Auto-archive settings unavailable\")`）；唯一调用处 catch 后显示的是另一条固定文案（「无法加载自动归档设置。」），该 message 不进界面、没有翻译位置。0.0.167 适配时登记。"
+    },
+    {
+      "text": "Claude Code",
+      "why": "AI 编程工具产品名（0.0.169 调查问卷的选项标签），与已登记的 Cursor / Windsurf 同类，专名不译。"
+    },
+    {
+      "text": "Cline or Roo",
+      "why": "AI 编程工具产品名（Cline 或 Roo 两个工具的品牌并列），同 Claude Code 一类，专名不译。"
+    },
+    {
+      "text": "Gemini CLI",
+      "why": "AI 编程工具产品名（Gemini 命令行工具），同 Claude Code 一类，专名不译。"
+    },
+    {
+      "text": "Cursor",
+      "why": "AI 编程工具产品名（0.0.169 调查问卷的选项标签），专名不译。"
+    },
+    {
+      "text": "Windsurf",
+      "why": "AI 编程工具产品名（0.0.169 调查问卷的选项标签），专名不译。"
+    },
+    {
+      "text": "Codex",
+      "why": "OpenAI 的编程工具产品名（byok 提供商标签 / 文案内品牌词），与 ChatGPT 同类，专名不译。"
+    },
+    {
+      "text": "GitHub Copilot",
+      "why": "AI 编程工具产品名（0.0.169 调查问卷的选项标签），专名不译。"
+    },
+    {
+      "text": "ChatGPT",
+      "why": "OpenAI 品牌名（出现在标识符形态位置），专名不译。"
     }
   ]
 }

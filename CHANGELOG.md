@@ -4,6 +4,30 @@
 > 逐条账目（对差统计、词典条数与替换次数、各扫描的残留条数、发布包哈希）与工具口径不收在这里——
 > 需要时看 `git log`：每次适配与发布的提交里都写着完整过程。
 
+## [0.0.169] · 2026-10-10（已发布 `pack-v0.0.169`）
+
+上游这一版把「隔离工作区」重构成**本机 / 新 Git 工作树 / 云端**三条运行路径（`Continue locally` /
+`Run in Cloud…` 一整套交接与回迁文案），并新上线**协调器线程面板**、**使用场景调查问卷**、
+**ChatGPT 登录（byok）** 面板与 PR 状态行。
+
+- **词典**：2931 → **3116 条**（`exact` 2304 / `template` 405 / `code` 30 / `pattern` 377），替换 **3907 处**
+  全命中；纯字面量词条覆盖 **2250/2250（100.0%）**；3116 条词条全部能在本版 UI bundle 命中。
+- **词典迁移**：`remap` 104 条模板变量重命名、`resituate` 3 条自动重定位；38 条旧文案按新版形态
+  改写 / 下线（isolated workspace 系列整体退场；`Could not set the starting branch` → `Could not set the
+  branch`；`Muse Spark 1.3, on every paid plan.` 改为长句 tooltip；`Got it. We'll ask again in 7 days.`
+  参数化为 `${e.snoozeDays}` 等）；主包 `Isolated` 独立角标条目随上游下线删除。
+- **新增文案 156 条**入库（含 8 条合并后的大模板：智能体工作中提示、线程计数、`Switch to ?` 等）；
+  14 条代码残片 / CSS 类名 + 8 个品牌专名（`Claude Code` / `Cursor` / `Windsurf` / `Codex` 等）登进
+  `intentional-english.json`；两条 error 兜底文案（`Unknown error` / `Invalid path: `）自 0.0.167.1
+  本地修正候选并入。
+- **主进程**：`electron-main.cjs.patch` / `electron-renderer-health.cjs.patch` 随上游改写真生成
+  （`regen_patch` 会丢的 `HANHUA_SHELL_COLORS` 纯新增块已手工补回，postbuild 哨兵 + 按钮区行为取证
+  确认在位）；新增「关闭此聊天」原生对话框（0.0.169 新写入的行）的翻译；英文扫描 0 条疑似漏翻、
+  0 条短标签，108 条属约定保留。
+- **验证**：构建自检全绿（覆盖 100%、主进程语法与哨兵、按钮区行为取证）；临时 profile 启动验证
+  通过（orchestrator 正常监听、窗口标题「Freebuff 桌面版」）；四道发布闸门全绿。
+- **影响面**：`targetVersion` / `packVersion` → 0.0.169，装机自动更新到 0.0.169 后装本包即恢复汉化。
+
 ## [0.0.167] · 2026-10-09（已发布 `pack-v0.0.167`）
 
 上游这一版把**聊天自动归档**做成了设置项：新增 auto-archive 面板（`Auto-archive chats` /

@@ -1,6 +1,6 @@
 --- a/electron/main.cjs
 +++ b/electron/main.cjs
-@@ -186,11 +186,72 @@ let appOrigin = null
+@@ -191,11 +191,72 @@
  /** @type {string | null} */
  let appUrl = null
  
@@ -75,7 +75,7 @@
      // the renderer's --surface-2 / --brand-dim: the splash bar and the one the app holds after it
      // are the same bar, and a colour change between them would show as a flicker
      splashTrack: '#282a29',
-@@ -198,8 +259,8 @@ const SHELL_THEMES = {
+@@ -203,8 +203,8 @@
    },
    light: {
      background: '#e3e7e4',
@@ -86,7 +86,7 @@
      splashTrack: '#e9ede8',
      splashBar: '#5e774e',
    },
-@@ -544,14 +605,14 @@ async function showOrchestratorFailure(failure, parent = mainWindow) {
+@@ -560,14 +560,14 @@
    const buttons = []
    const actions = []
    if (compatibilityBuildUrl) {
@@ -104,7 +104,7 @@
    actions.push(() => {})
  
    const options = {
-@@ -576,10 +637,10 @@ function startOrchestrator(requestedPort = 0) {
+@@ -592,10 +592,10 @@
    return new Promise((resolve, reject) => {
      const { bun, args, cwd, uiDir, wasmDir, packaged } = resolveOrchestrator()
      const capture = createStderrCapture(bun, args)
@@ -119,7 +119,7 @@
      apiLaunchToken = launchId
      let exited = false
      let ready = false
-@@ -621,7 +682,7 @@ function startOrchestrator(requestedPort = 0) {
+@@ -637,7 +637,7 @@
      }
  
      if (!shellLifetime) {
@@ -128,7 +128,7 @@
        return
      }
      // No secret goes in `env`. Another process of the same user reads a child's STARTING environment
-@@ -691,10 +752,10 @@ function startOrchestrator(requestedPort = 0) {
+@@ -707,10 +707,10 @@
        rejectStartup(
          failure('spawn', {
            errorMessage:
@@ -142,7 +142,7 @@
          }),
        )
      })
-@@ -802,7 +863,7 @@ function startOrchestrator(requestedPort = 0) {
+@@ -818,7 +818,7 @@
          closed
            ? failure('timeout')
            : failure('cleanup', {
@@ -151,7 +151,7 @@
              }),
        )
      }
-@@ -974,7 +1035,7 @@ function buildWindow(sizeOpts = {}) {
+@@ -990,7 +990,7 @@
            titleBarOverlay: {
              color: colors.overlay,
              symbolColor: colors.overlaySymbol,
@@ -160,7 +160,20 @@
            },
          }
        : {}),
-@@ -1148,15 +1209,15 @@ function confirmQuit(parent) {
+@@ -1143,9 +1143,9 @@
+       // A failed/loading renderer cannot host a custom dialog. Keep this path usable,
+       // with a native warning since its thread's activity is unknown.
+       if (askSync(win, {
+-        type: 'question', title: 'Close this chat?', message: 'Close this chat?',
+-        detail: 'Any agent still working in this chat will be interrupted.',
+-        buttons: ['Keep open', 'Close chat'], defaultId: 0, cancelId: 0, noLink: true,
++        type: 'question', title: '关闭此聊天？', message: '关闭此聊天？',
++        detail: '此聊天中仍在工作的智能体将被中断。',
++        buttons: ['保持打开', '关闭聊天'], defaultId: 0, cancelId: 0, noLink: true,
+       }) !== 1) return false
+       closeThreadOnServer(threadId)
+       return true
+@@ -1192,15 +1192,15 @@
    try {
      const response = askSync(parent, {
        type: 'question',
@@ -182,7 +195,7 @@
        // a stray Return keeps the agents alive
        defaultId: 0,
        cancelId: 0,
-@@ -1211,8 +1272,8 @@ ipcMain.handle('dialog:pickAttachments', async (event, kind) => {
+@@ -1281,8 +1281,8 @@
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return []
    const res = await dialog.showOpenDialog(win, {
@@ -193,7 +206,7 @@
      properties: attachmentDialogProperties(kind),
    })
    if (res.canceled) return []
-@@ -1241,13 +1302,13 @@ ipcMain.handle('dialog:pickImages', async (event) => {
+@@ -1311,13 +1311,13 @@
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return []
    const res = await dialog.showOpenDialog(win, {
@@ -211,7 +224,7 @@
          extensions: [...VIEWABLE_IMAGE_EXTENSIONS, ...OTHER_IMAGE_EXTENSIONS],
        },
      ],
-@@ -1265,8 +1326,8 @@ ipcMain.handle('dialog:pickDirectory', async (event) => {
+@@ -1335,8 +1335,8 @@
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return null
    const res = await dialog.showOpenDialog(win, {
@@ -222,7 +235,7 @@
      properties: ['openDirectory', 'createDirectory'],
    })
    return res.canceled || res.filePaths.length === 0 ? null : res.filePaths[0]
-@@ -1276,10 +1337,10 @@ ipcMain.handle('dialog:saveMarkdown', async (event, { filename, content }) => {
+@@ -1346,10 +1346,10 @@
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return false
    if (typeof filename !== 'string' || typeof content !== 'string') {
@@ -235,7 +248,7 @@
      defaultPath: path.basename(filename),
      filters: [{ name: 'Markdown', extensions: ['md'] }],
      properties: ['createDirectory', 'showOverwriteConfirmation'],
-@@ -1354,17 +1415,17 @@ ipcMain.handle('shell:openIn', async (event, request) => {
+@@ -1424,17 +1424,17 @@
    if (!isTrustedAppSender(event, isAppUrl)) return { ok: false, error: 'Untrusted sender' }
    try {
      if (!request || typeof request !== 'object' || Array.isArray(request)) {
@@ -258,7 +271,7 @@
  
      if (target.id === 'copy-path') {
        clipboard.writeText(resolved.requested)
-@@ -1377,7 +1438,7 @@ ipcMain.handle('shell:openIn', async (event, request) => {
+@@ -1447,7 +1447,7 @@
        }
      } else {
        const args = launchArgs(target, resolved, line)
@@ -267,7 +280,7 @@
        await new Promise((resolve, reject) => {
          const child = spawn(target.executable, args, {
            cwd: launchCwd(target, resolved),
-@@ -1394,7 +1455,7 @@ ipcMain.handle('shell:openIn', async (event, request) => {
+@@ -1464,7 +1464,7 @@
      }
      return { ok: true, path: resolved.requested, openedPath: resolved.opened, fallback: resolved.fallback }
    } catch (error) {
@@ -276,7 +289,7 @@
    }
  })
  
-@@ -1529,7 +1590,7 @@ function paintWindows() {
+@@ -1612,7 +1612,7 @@
    for (const win of BrowserWindow.getAllWindows()) {
      win.setBackgroundColor(colors.background)
      if (process.platform === 'win32') {
@@ -285,7 +298,7 @@
      }
    }
  }
-@@ -1597,10 +1658,10 @@ ipcMain.handle('menu:tabContext', (event) => {
+@@ -1682,10 +1682,10 @@
        resolve(action)
      }
      const menu = Menu.buildFromTemplate([
@@ -300,16 +313,16 @@
      ])
      menu.popup({
        window: BrowserWindow.fromWebContents(event.sender) ?? undefined,
-@@ -1779,7 +1840,7 @@ async function boot() {
+@@ -1864,7 +1864,7 @@
      if (err?.orchestratorFailure) {
        await showOrchestratorFailure(err.orchestratorFailure, win)
      } else {
 -      dialog.showErrorBox('Freebuff failed to start', String(err?.message ?? err))
 +      dialog.showErrorBox('Freebuff 启动失败', String(err?.message ?? err))
      }
-     app.quit()
+     quitApp()
      return
-@@ -1908,9 +1969,9 @@ else if (!app.requestSingleInstanceLock()) {
+@@ -1995,9 +1995,9 @@
        canRelaunch: !!relaunchExecPath,
      })
      const buttons = canRetryWithoutSandbox
@@ -322,7 +335,7 @@
      // A launch failure this early can land before `ready`, where the dialog
      // module throws — and an exception here would replace the message we came to
      // show with a silent crash, which is the exact failure being fixed.
-@@ -1918,7 +1979,7 @@ else if (!app.requestSingleInstanceLock()) {
+@@ -2005,7 +2005,7 @@
      // buttons, so the pre-ready path explains and quits rather than offering the
      // retry. Nothing is running yet, so there is nothing to tear down.
      if (!app.isReady()) {
@@ -331,7 +344,7 @@
        app.exit(1)
        return
      }
-@@ -1926,7 +1987,7 @@ else if (!app.requestSingleInstanceLock()) {
+@@ -2013,7 +2013,7 @@
      try {
        response = dialog.showMessageBoxSync({
          type: 'error',

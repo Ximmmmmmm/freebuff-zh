@@ -4,9 +4,9 @@
 [![lint](https://github.com/Ximmmmmmm/freebuff-zh/actions/workflows/ci.yml/badge.svg)](https://github.com/Ximmmmmmm/freebuff-zh/actions/workflows/ci.yml)
 ![GitHub last commit](https://img.shields.io/github/last-commit/Ximmmmmmm/freebuff-zh)
 ![GitHub Repo stars](https://img.shields.io/github/stars/Ximmmmmmm/freebuff-zh?style=social)
-[![Target](https://img.shields.io/badge/目标-Freebuff%20Desktop%20v0.0.167-blue)](https://freebuff.com)
+[![Target](https://img.shields.io/badge/目标-Freebuff%20Desktop%20v0.0.169-blue)](https://freebuff.com)
 
-把已安装的 **Freebuff Desktop**（`@codebuff/freebuff-desktop`，当前适配 **v0.0.167**）界面整体换成简体中文：
+把已安装的 **Freebuff Desktop**（`@codebuff/freebuff-desktop`，当前适配 **v0.0.169**）界面整体换成简体中文：
 词典驱动、可复现构建、四道发布闸门把关。
 
 > **English**: A Simplified-Chinese localization pack for Freebuff Desktop. It patches the installed
@@ -171,14 +171,14 @@ workflow 里真的跑到的集合比对，漏接线（文件在、没人跑）�
 重复接线 / 步骤带 `if:` / 触发 `paths` 漏了 `tools/**` 只警告；判据只扫 `run:` 块，注释里提到的
 文件名不算接线。
 
-## 八、当前状态（适配 v0.0.167）
+## 八、当前状态（适配 v0.0.169）
 
 | 指标 | 实测 |
 | --- | --- |
-| 词典 / 替换 | 2931 条、3619 处替换全命中 |
-| 纯字面量词条覆盖 | 2177/2177（100.0%） |
+| 词典 / 替换 | 3116 条、3907 处替换全命中 |
+| 纯字面量词条覆盖 | 2250/2250（100.0%） |
 | 界面属性位置残留英文 | 77 处，扣除登记表后本版**无新增未登记项** |
-| 主进程 | 50 个文件的英文扫描 0 条疑似漏翻、0 条短标签，107 条属约定保留（品牌 / 协议 / 路径 / 命令 / 日志） |
+| 主进程 | 53 个文件的英文扫描 0 条疑似漏翻、0 条短标签，108 条属约定保留（品牌 / 协议 / 路径 / 命令 / 日志） |
 | 补丁 | 16 个主进程补丁（全部锚点唯一命中、干净套用；UI 行为补丁已退场，见下） |
 | 发布闸门 | 四道全绿 |
 
