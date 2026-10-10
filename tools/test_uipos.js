@@ -44,6 +44,11 @@ const src = [
   'const Ce=xe=>({key:`label:${xe}:${R}`,kind:"label",text:xe,focusable:!1}),Pe=xe=>xe.map(ee=>({key:ee.id,kind:"thread",thread:ee}));de.push(...$e.length&&ge.length?[Ce("Open"),...Pe($e),Ce("Closed"),...Pe(ge)]:Pe(J))}else de.push({key:`empty:${R}`,kind:"empty",path:R,loaded:re,focusable:!re});return de}),[L,x]),X=async R=>{await ce.openProject(R)}',
   // 误报 2：属性读取
   'const g=n?n.children:[n],h={children:[k.label:`Open in ${k.label}`]};',
+  // 正例：不带引号的 tooltip / ariaLabel（minifier 对合法标识符会去引号，0.0.169 漏翻的就这两种形态）
+  'const m={tooltip:"Resolve"};',
+  'const n2={ariaLabel:"Cloud project"};',
+  // 误报 3：字符串内容里的 tooltip:（与 label: 同形，前一个字符是反引号）
+  'const q=xe=>({key:`tooltip:${xe}:${R}`,kind:"tip"});',
 ].join('\n')
 
 const bundle = path.join(WORK, 'index-fixture.js')
@@ -64,6 +69,9 @@ chk(has('Ready when needed') && has('Disconnected'), '三元分支两个值都�
 chk(has('Close settings'), '"aria-label" 仍报出')
 chk(has(' A bare text'), 'JSX children 文本节点仍报出')
 chk(has('Connected · Manage ${…}'), '"data-tooltip" 模板仍报出')
+chk(has('Resolve'), '不带引号的 tooltip:"…" 报出（引号被 minifier 去掉的形态）')
+chk(has('Cloud project'), '不带引号的 ariaLabel:"…" 报出')
+chk(!has('tip'), '字符串内容里的 tooltip: 不被当成锚点')
 chk(out.startsWith('remaining UI-position English: '), '输出仍带表头（格式没被改坏）')
 
 // --- 2. 两类误报不再进报告 --------------------------------------------------------

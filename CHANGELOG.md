@@ -28,6 +28,34 @@
   通过（orchestrator 正常监听、窗口标题「Freebuff 桌面版」）；四道发布闸门全绿。
 - **影响面**：`targetVersion` / `packVersion` → 0.0.169，装机自动更新到 0.0.169 后装本包即恢复汉化。
 
+### 记一笔：0.0.169.1 —— 补齐 `tooltip:` / `ariaLabel:` 盲区
+
+装机后复查发现产物里还剩 10 处英文，而四道发布闸门全绿。根因是**锚点表只认带引号的属性名**：
+`tooltip` / `ariaLabel` 是合法标识符，minifier 必然把引号去掉（产物里只有 `tooltip:"…"` /
+`ariaLabel:"…"`），而 `uipos.js` 的 `ANCHORS` 与 `apply.js` 的 `ATTR_ANCHORS` 写的是
+`"data-tooltip":` / `"aria-label":` —— 这两个位置在 0.0.169 之前**从来没有被扫过**，
+闸三（单词级界面文案）因此看不见它们。
+
+- **词典**：3116 → **3126 条**（`exact` 2307 / `template` 410 / `code` 30 / `pattern` 379），
+  替换 **3918 处**全命中；纯字面量词条覆盖 **2253/2253（100.0%）**。
+- **补的 10 条**：`Resolve`→「解决」、`Cloud project`→「云端项目」、`Unpin`→「取消置顶」
+  （会话行置顶按钮的三个 hover tooltip）、`Fold line` / `Unfold line`→「折叠行」/「展开行」
+  （CodeMirror 折叠槽，第三方文案、词数低于所有对差通道的下限）、分支选择器 tooltip 里
+  **只翻了第三条**的两条模板分支（`Branch the new worktree starts from. …` / `Branch Cloud starts
+  from. …`，upstreamdiff 0.0.169 报告里列过、最终漏填）、`Rename ${R}`（会话改名 ariaLabel，
+  兄弟词条「Rename thread」/「Rename project ${t}」早就译过）、两条 `${…?"Collapse":"Expand"} ${…}`
+  aria-label（变量组与词典里已有的另两处不同，属历史漏项）。
+- **工具**：`uipos.js` / `apply.js` 的锚点表补上不带引号的 `tooltip` / `ariaLabel`；
+  `test_uipos.js` 加 4 组夹具（两个新锚点的正例 + 「字符串内容里的 `tooltip:`」反例）。
+  `semantic_guard` 的 `CONSISTENT_LABELS` 增「折叠行」「展开行」——它们是 CodeMirror 的 phrase 键，
+  形态命中 `.phrase(` 那条规则；已逐条核对**本版不存在任何 `phrases` 注册表**（bundle 里只有
+  `vn.phrases` 这个 facet 的定义与读取，没有一处 `phrases.of({…})`），`phrase()` 查不到表项时
+  原样返回传入的键，所以翻译后就是 tooltip 显示中文，不存在查表失配；理由写在该文件注释里。
+- **验证**：四道发布闸门全绿（基线换成 `pack-v0.0.169`：界面位置英文 83 → 77，未登记新增 0）；
+  24 个自测全过、`ci_wiring` 接线完整；产物抽查这 10 条——中文各命中 1 处、英文原文字面量 0 残留。
+- **影响面**：`packVersion` → 0.0.169.1（同一 `targetVersion` 内的修正重发），`targetVersion`
+  仍是 0.0.169；已装 0.0.169 的机器会被多开控制器判为「有新包」而自动应用。
+
 ## [0.0.167] · 2026-10-09（已发布 `pack-v0.0.167`）
 
 上游这一版把**聊天自动归档**做成了设置项：新增 auto-archive 面板（`Auto-archive chats` /

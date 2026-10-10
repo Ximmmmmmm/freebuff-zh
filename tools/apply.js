@@ -41,6 +41,11 @@ const ATTR_ANCHORS = [
   'actionLabel:',
   '"data-tooltip":',
   '"aria-label":',
+  // 不带引号的形态：`tooltip` / `ariaLabel` 是合法标识符，minifier 必然去掉引号，
+  // 只认 `"data-tooltip":` / `"aria-label":` 会让这两个位置对 pattern 分区完全不可达
+  // （0.0.169 的 `tooltip:"Resolve"` / `ariaLabel:"Cloud project"` 就是因此漏翻的）。
+  'tooltip:',
+  'ariaLabel:',
 ]
 // 值位置允许压缩后的「解构默认值 / 变量赋值」形态：
 //   children:"Delete"   与   confirmLabel:n="Delete"

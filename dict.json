@@ -2303,7 +2303,10 @@
     "you to sign in": "你登录",
     "Open the thread to see its progress.": "打开会话查看其进度。",
     "ChatGPT plan": "ChatGPT 套餐",
-    "Threads": "会话"
+    "Threads": "会话",
+    "Fold line": "折叠行",
+    "Unfold line": "展开行",
+    "Unpin": "取消置顶"
   },
   "template": {
     "Undone. ${l.reverted} ${l.reverted===1?\"file\":\"files\"} restored.": "已撤销。已恢复 ${l.reverted} 个文件。",
@@ -2710,7 +2713,12 @@
     ", paid by ${e1e[e.funding]}": "，由 ${e1e[e.funding]} 付费",
     "Pull request #${e.number}, ${SOt[n]}": "拉取请求 #${e.number}，${SOt[n]}",
     "Pull request #${e.number}, ${aY[t].toLowerCase()}": "拉取请求 #${e.number}，${aY[t].toLowerCase()}",
-    "Thread: ${e.title}": "会话：${e.title}"
+    "Thread: ${e.title}": "会话：${e.title}",
+    "Branch the new worktree starts from. ${g} fetches the latest commits; a local branch keeps its unpushed commits.": "新工作树从此分支开始。${g} 会拉取最新提交；本地分支会保留未推送的提交。",
+    "Branch Cloud starts from. ${g} is the latest remote default; a local branch is copied as committed.": "云端从此分支开始。${g} 是最新的远端默认分支；本地分支会按已提交状态复制。",
+    "Rename ${R}": "重命名 ${R}",
+    "${t?\"Collapse\":\"Expand\"} ${e}": "${t?\"收起\":\"展开\"} ${e}",
+    "${r?\"Collapse\":\"Expand\"} ${t}": "${r?\"收起\":\"展开\"} ${t}"
   },
   "code": {
     "Arguments must be a JSON array of strings, for example [\"-y\", \"my-server\"].": "参数必须是字符串组成的 JSON 数组，例如 [\"-y\", \"my-server\"]。",
@@ -3121,6 +3129,8 @@
     "Stop": "停止",
     "Student": "学生",
     "Starting…": "正在启动…",
-    "ChatGPT plan ·": "ChatGPT 套餐 ·"
+    "ChatGPT plan ·": "ChatGPT 套餐 ·",
+    "Resolve": "解决",
+    "Cloud project": "云端项目"
   }
 }

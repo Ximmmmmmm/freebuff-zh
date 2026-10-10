@@ -27,6 +27,13 @@ const ANCHORS = [
   'placeholder',
   '"data-tooltip"',
   '"aria-label"',
+  // 不带引号的形态同样要认：`tooltip` / `ariaLabel` 是**合法标识符**，minifier 会把引号去掉，
+  // 于是压缩产物里只有 `tooltip:"Resolve"` / `ariaLabel:"Cloud project"` 这种写法——
+  // 早期只认带引号的 `"data-tooltip":` / `"aria-label":`，这两个位置在 0.0.169 之前
+  // 从来没有被扫过（`tooltip:"Resolve"`、分支选择器 tooltip、`ariaLabel:"Cloud project"`
+  // 就是这样一路漏到装机产物里的）。
+  'tooltip',
+  'ariaLabel',
   'confirmLabel',
   'actionLabel',
 ]
@@ -242,7 +249,7 @@ const entries = [...counts.entries()]
   })
   .sort((a, b) => b.n - a.n || a.s.localeCompare(b.s))
 
-const kinds = ['children', 'label', 'title', 'placeholder', 'data-tooltip', 'aria-label', 'confirmLabel', 'actionLabel', 'text-node']
+const kinds = ['children', 'label', 'title', 'placeholder', 'data-tooltip', 'tooltip', 'aria-label', 'ariaLabel', 'confirmLabel', 'actionLabel', 'text-node']
 console.log(`remaining UI-position English: ${entries.length}`)
 for (const kind of kinds) {
   const list = entries.filter((e) => e.kind === kind)

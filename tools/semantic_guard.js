@@ -98,6 +98,15 @@ const CONSISTENT_LABELS = new Set([
   // 显示与比较必须同一个值：走 exact 全局一致替换并在白名单里放行比较位置。
   // 已核对：本版 bundle 里只出现在导航表、上述比较、关键字表键与同页标签上，没有协议取值。
   '键盘快捷键',
+  // 0.0.169：CodeMirror 折叠槽按钮的 hover title——
+  //   n.title=t.state.phrase(this.open?"Fold line":"Unfold line")
+  // 它的形态命中上面 `.phrase(` 那条规则（0.0.100 事故后加的，防的是把**查表用的键**翻掉
+  // 导致失配）。这里逐条核对过本版**不存在任何 phrases 注册表**：bundle 里只有 vn.phrases 这个
+  // facet 的定义与读取（phrase(t,…) 方法本身、facet 变更比较），没有一处 `phrases.of({…})`；
+  // phrase() 查不到表项时会把传入的键原样返回，所以翻译后就是 tooltip 显示中文，不存在失配路径。
+  // 两个值在本版 bundle 里各只出现 1 次（同一处三元），不参与比较、不进 IPC、不落盘。
+  '折叠行',
+  '展开行',
 ])
 
 const SEMANTIC_CALLS = [
