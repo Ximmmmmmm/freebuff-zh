@@ -29,6 +29,84 @@ const countOf = (src, re) => {
   return n
 }
 
+// --- 字面量批量扫描（Trie）-----------------------------------------------------------
+// 2026-10-11：把「逐条 regex 扫全文」换成「一次扫描全查」。旧写法每条词条对整个
+// 文件跑一次 new RegExp('"'+esc(en)+'"','g')——主 bundle 3.4MB × 2300+ 条 ≈ 8GB 的
+// regex 扫描量（CPU profile：applyExact 4.8s + GC 1.3s，占单文件 7.5s 的大头）。
+// 这里把本节所有 key 装进 Trie，对全文的每个引号位置从引号后逐字符尝试匹配。
+// 语义与 esc(key) 的正则逐字节等价（都是字面匹配，含转义形态与任意上下文），
+// 复杂度 O(文件大小 × 平均尝试步数)——实测主 bundle 端到端 7.5s → 1s 级。
+function buildTrie(keys) {
+  const root = { next: new Map(), key: null }
+  for (const k of keys) {
+    let node = root
+    for (let i = 0; i < k.length; i++) {
+      let nxt = node.next.get(k[i])
+      if (!nxt) {
+        nxt = { next: new Map(), key: null }
+        node.next.set(k[i], nxt)
+      }
+      node = nxt
+    }
+    node.key = k
+  }
+  return root
+}
+
+// 扫描 source 中所有「<quote>key<quote>」形态（不论上下文，含注释/转义区——与旧
+// regex 同为纯文本匹配），按出现位置升序返回 {en, start, end}。
+function scanQuoted(source, trie, quote) {
+  const hits = []
+  const len = source.length
+  let i = source.indexOf(quote)
+  while (i !== -1) {
+    let node = trie
+    let j = i + 1
+    while (j < len) {
+      const nxt = node.next.get(source[j])
+      if (!nxt) break
+      node = nxt
+      j++
+      if (node.key !== null && source[j] === quote) {
+        // 命中后继续走（不 break）：同一起点若还有更长 key 的形态（嵌套模板/共引号
+        // 设计），一并收集——保证命中集合与「每条 key 独立跑 regex」一致；这类重叠
+        // 场景会由各分区自己的重叠检测识别并回退逐条处理。
+        hits.push({ en: node.key, start: i, end: j + 1 })
+      }
+    }
+    i = source.indexOf(quote, i + 1)
+  }
+  return hits
+}
+
+// 一次重组替代「倒序逐条 slice 拼接」：后者每轮都生成一个新的整串（GC 压力的
+// 主要来源），对不重叠的 edits 两者结果完全一致。
+function spliceEdits(source, edits) {
+  if (edits.length === 0) return source
+  edits.sort((a, b) => a.start - b.start)
+  const out = []
+  let last = 0
+  for (const e of edits) {
+    out.push(source.slice(last, e.start), e.text)
+    last = e.end
+  }
+  out.push(source.slice(last))
+  return out.join('')
+}
+
+// 替换区间有无嵌套/重叠（区间[..,X) 与 [X,..) 纯相邻不算——只有共享字符才危险）。
+// 旧实现在这种场景里靠「按词典顺序逐条替换、后一条在前一条的结果上再匹配」的级联
+// 语义（0.0.169 的嵌套模板：外层 key 完整包含内层 key 的形态），一次性重组无法
+// 复刻——检测到就回退逐条实现，与旧行为逐字一致。
+function hasOverlappingRanges(hits) {
+  if (hits.length < 2) return false
+  const sorted = hits.slice().sort((a, b) => a.start - b.start)
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i].start < sorted[i - 1].end) return true
+  }
+  return false
+}
+
 // UI 属性的锚点：pattern 只在这些位置生效，所以短词（Delete / Manage / Available…）
 // 放这里不会碰到比较、枚举自映射或协议常量。
 const ATTR_ANCHORS = [
@@ -70,19 +148,66 @@ const semanticBlocked = []
 const isInsideComment = commentChecker()
 
 const applyExact = (source, dictSection) => {
-  // 0.0.159 改法：先把本节所有替换点收集齐，最后一次性倒序回写。理由——注释区间是按
+  // 0.0.159 改法：先把本节所有替换点收集齐，最后一次性回写。理由——注释区间是按
   // 「某一份具体文本」算出来的，逐条替换会让偏移持续位移，于是每换一条就得整份重新分词；
   // 而对着一份快照收集，则整节只分词一次（3MB bundle 约几十毫秒，旧实现是 1655 次行内重扫）。
+  // 2026-10-11 改法：收集从「逐条 regex 扫全文」换成 Trie 一次扫描（scanQuoted），
+  // 主 bundle 这一节从 4.8s+1.3s(GC) 降到亚秒级；各判定口径一字未动。命中区间若出现
+  // 嵌套/重叠（旧实现靠逐条级联处理的情形），回退 applyExactLegacy——两者行为逐字一致。
+  const section = dictSection || {}
+  const hits = scanQuoted(source, buildTrie(Object.keys(section)), '"')
+  if (hasOverlappingRanges(hits)) return applyExactLegacy(source, section)
   const edits = []
   // 本次真替换过的译文（zh → 处数）。未命中的词条要等整节跑完再判，理由见下面的
   // 幂等判断：同译文的兄弟词条不允许互相顶包。
   const replacedZh = new Map()
-  const unmatched = []
-  for (const [en, zh] of Object.entries(dictSection || {})) {
-    const re = new RegExp('"' + esc(en) + '"', 'g')
+  // 命中计数（含注释里的命中）——旧口径：只有整份文件里一个字面量都找不到才算未命中。
+  const hitCount = new Map()
+  for (const h of hits) {
+    const en = h.en
+    const zh = section[en]
     // 白名单标签（semantic_guard.CONSISTENT_LABELS）是「同表同值、进程内派生」的界面标签：
     // 它的比较位置与显示位置必须用同一个值，只翻一处反而会错，所以这里放行；其余中文落在
     // 比较 / switch / 协议参数位置仍会拦下。
+    const consistentLabel = CONSISTENT_LABELS.has(zh)
+    hitCount.set(en, (hitCount.get(en) || 0) + 1)
+    if (isInsideComment(source, h.start)) continue
+    const reason = !consistentLabel && contextReason(source, h.start, h.end)
+    if (reason) {
+      semanticBlocked.push({ en, reason })
+      continue
+    }
+    edits.push({ start: h.start, end: h.end, text: '"' + zh + '"' })
+    replacedZh.set(zh, (replacedZh.get(zh) || 0) + 1)
+  }
+  source = spliceEdits(source, edits)
+  totalReplaced += edits.length
+  // 未命中的词条在这里统一判定：幂等检查限定在完整的双引号字面量（不能用“译文在文件任意
+  // 位置出现”掩盖一个真漏翻的 key），而且**不能**被「同译文的兄弟词条」顶包——0.0.131
+  // 实测：dict 里同时有 "Resume queue"/"Resume the queue" 与 "Queue paused."/
+  // "The queue is paused." 两组同译文词条，上游把带 the 的两句改写成不带 the 之后，
+  // 旧词条本该报 MISSED，却因为兄弟词条刚把同一句译文写进文件而被当成「已经翻过」放行，
+  // 死词条就一直躺在词典里（而 build.sh 的 MISSED 是「全命中」的唯一凭据）。
+  for (const en of Object.keys(section)) {
+    if (hitCount.has(en)) continue
+    const zh = section[en]
+    // 幂等只认「进入本次运行之前文件里就带着这句译文」；本次运行写进去的一概不算，
+    // 否则同译文的兄弟词条（或已经把整句连同插值一起改写过的 template 分区）会把
+    // 死词条掩护过去。replacedZh 另外暴露「两个词条共用同一句译文」这种可疑配对。
+    if (!alreadyTranslated(zh) || replacedZh.get(zh)) missed.push(en)
+  }
+  return source
+}
+
+// 0.0.159 版逐条 regex 实现（每条都在「上一条替换后的文本」上再匹配，靠词典顺序
+// 级联处理嵌套形态）——仅在命中区间出现嵌套/重叠时由 applyExact 回退调用。
+// 除参数化 section 外与旧版逐字一致（含倒序逐条拼接回写）。
+const applyExactLegacy = (source, section) => {
+  const edits = []
+  const replacedZh = new Map()
+  const unmatched = []
+  for (const [en, zh] of Object.entries(section)) {
+    const re = new RegExp('"' + esc(en) + '"', 'g')
     const consistentLabel = CONSISTENT_LABELS.has(zh)
     let n = 0
     let m
@@ -99,23 +224,12 @@ const applyExact = (source, dictSection) => {
       edits.push({ start, end, text: '"' + zh + '"' })
       replacedZh.set(zh, (replacedZh.get(zh) || 0) + 1)
     }
-    // 命中判定沿用旧口径：注释里的命中**也算命中**（那些是真正的注释，本来就该跳过，
-    // 不该因此报 MISSED）；只有整份文件里一个字面量都找不到才算未命中。
     if (n === 0) unmatched.push([en, zh])
   }
   edits.sort((a, b) => b.start - a.start)
   for (const e of edits) source = source.slice(0, e.start) + e.text + source.slice(e.end)
   totalReplaced += edits.length
-  // 未命中的词条在这里统一判定：幂等检查限定在完整的双引号字面量（不能用“译文在文件任意
-  // 位置出现”掩盖一个真漏翻的 key），而且**不能**被「同译文的兄弟词条」顶包——0.0.131
-  // 实测：dict 里同时有 "Resume queue"/"Resume the queue" 与 "Queue paused."/
-  // "The queue is paused." 两组同译文词条，上游把带 the 的两句改写成不带 the 之后，
-  // 旧词条本该报 MISSED，却因为兄弟词条刚把同一句译文写进文件而被当成「已经翻过」放行，
-  // 死词条就一直躺在词典里（而 build.sh 的 MISSED 是「全命中」的唯一凭据）。
   for (const [en, zh] of unmatched) {
-    // 幂等只认「进入本次运行之前文件里就带着这句译文」；本次运行写进去的一概不算，
-    // 否则同译文的兄弟词条（或已经把整句连同插值一起改写过的 template 分区）会把
-    // 死词条掩护过去。replacedZh 另外暴露「两个词条共用同一句译文」这种可疑配对。
     if (!alreadyTranslated(zh) || replacedZh.get(zh)) missed.push(en)
   }
   return source
@@ -300,11 +414,16 @@ for (const lit of patternLiterals) {
   patternHits.set(lit.value, (patternHits.get(lit.value) || 0) + 1)
   patternEdits.push({ start: lit.start, end: lit.end, text: '"' + zh + '"' })
 }
-// 倒序回写，避免位移影响后面的区间
-patternEdits.sort((a, b) => b.start - a.start)
-for (const e of patternEdits) {
-  src = src.slice(0, e.start) + e.text + src.slice(e.end)
-  totalReplaced++
+// 回写：不重叠区间走一次重组（spliceEdits）；罕见的重叠区间回退旧的倒序逐条拼接
+if (hasOverlappingRanges(patternEdits)) {
+  patternEdits.sort((a, b) => b.start - a.start)
+  for (const e of patternEdits) {
+    src = src.slice(0, e.start) + e.text + src.slice(e.end)
+    totalReplaced++
+  }
+} else {
+  totalReplaced += patternEdits.length
+  src = spliceEdits(src, patternEdits)
 }
 // pattern 也必须报 MISSED——它是短词的安全区，零命中意味着「原文没了」或「匹配形态变了」，
 // 两种都要人看一眼，不能像 0.0.103 那样静静躺着 31 条死条目。
@@ -319,26 +438,55 @@ for (const [en, zh] of Object.entries(dict.pattern || {})) {
 // semantic-context filter used by exact literals.
 for (const [en, zh] of Object.entries(dict.code || {})) {
   const re = new RegExp(esc(en), 'g')
-  const n = countOf(src, re)
+  // 一次扫描同时完成计数与替换（旧写法 countOf + replace 是两遍全文）
+  let n = 0
+  src = src.replace(re, () => {
+    n++
+    return zh
+  })
   if (n === 0) {
     const reZh = new RegExp(esc(zh), 'g')
     if (countOf(src, reZh) === 0) missed.push('[code] ' + en)
     continue
   }
-  src = src.replace(re, () => zh)
   totalReplaced += n
 }
 
-for (const [en, zh] of Object.entries(dict.template || {})) {
-  const re = new RegExp('`' + esc(en) + '`', 'g')
-  const n = countOf(src, re)
-  if (n === 0) {
-    const reZh = new RegExp('`' + esc(zh) + '`', 'g')
-    if (countOf(src, reZh) === 0) missed.push('`' + en + '`')
-    continue
+// 2026-10-11 改法：Trie 一次扫描替代逐条 regex（旧写法每条都要 countOf + replace
+// 两遍全文）。missed 判定沿用旧口径（零命中且译文形态不在文本里）。命中区间若出现
+// 嵌套/重叠（0.0.169 实测：外层模板 key 完整包含内层模板 key 的形态），回退旧逐条
+// 实现——它靠词典顺序级联处理这类形态，行为逐字一致。
+{
+  const section = dict.template || {}
+  const hits = scanQuoted(src, buildTrie(Object.keys(section)), '`')
+  if (hasOverlappingRanges(hits)) {
+    // legacy：逐条 countOf + replace（即 0.0.159 版实现，一字未动）
+    for (const [en, zh] of Object.entries(section)) {
+      const re = new RegExp('`' + esc(en) + '`', 'g')
+      const n = countOf(src, re)
+      if (n === 0) {
+        const reZh = new RegExp('`' + esc(zh) + '`', 'g')
+        if (countOf(src, reZh) === 0) missed.push('`' + en + '`')
+        continue
+      }
+      src = src.replace(re, () => '`' + zh + '`')
+      totalReplaced += n
+    }
+  } else {
+    const hitCount = new Map()
+    const edits = []
+    for (const h of hits) {
+      hitCount.set(h.en, (hitCount.get(h.en) || 0) + 1)
+      edits.push({ start: h.start, end: h.end, text: '`' + section[h.en] + '`' })
+    }
+    for (const [en, zh] of Object.entries(section)) {
+      if (hitCount.has(en)) continue
+      const reZh = new RegExp('`' + esc(zh) + '`', 'g')
+      if (countOf(src, reZh) === 0) missed.push('`' + en + '`')
+    }
+    src = spliceEdits(src, edits)
+    totalReplaced += edits.length
   }
-  src = src.replace(re, () => '`' + zh + '`')
-  totalReplaced += n
 }
 
 // Apply exact literals after templates. This prevents an exact entry such as
