@@ -53,6 +53,19 @@
   原样返回传入的键，所以翻译后就是 tooltip 显示中文，不存在查表失配；理由写在该文件注释里。
 - **验证**：四道发布闸门全绿（基线换成 `pack-v0.0.169`：界面位置英文 83 → 77，未登记新增 0）；
   24 个自测全过、`ci_wiring` 接线完整；产物抽查这 10 条——中文各命中 1 处、英文原文字面量 0 残留。
+- **登记表清理**：`intentional-english.json` 867 + 87 → **841 + 87**（删掉 26 条已失效的 `fragments`）。
+  闸二提醒「可以清理」的判据只有一条（整串还在不在**主 bundle** 里），所以这次逐条多问了三处：
+  UI 其它 chunk、装机运行时目录（`orchestrator/`：`orchestrator.js` + `ui` + `vendor`）、产物主进程
+  `app.asar`——四处都查不到才删，避免把「挪进次级 chunk / vendor」的条目误杀（本次实测误杀候选 0 条）。
+  这 26 条是：13 条 Zod v4 多语言错误表（`Okänd nyckel` / `Ukendt nøgle` / `Unbekannte Schlüssel`
+  一族，含 `el valor` / `la valeur` 这类单词标签——上游这一版已不再打包这些语言表）、4 条压缩变量名
+  换掉的调试残片（`in h?h.deltaX:` 一族，现行形态 `in ge?ge.error:` 另有登记）、3 条 CSS 类名
+  （`streak-day on` / `model-badge muted` / `btn danger`）、2 条 gravity_index 工具文档示例
+  （`Get your Resend API key` / `Open preview`）、1 条嵌套模板内层残片（`· frees in m`，整句早由
+  `template` 词条译成「打开当前标签页 · X 分钟后释放」），以及 3 条 `Bayer 2 by 2` 一族——它们
+  **已经被词典翻成中文**（`exact` → 「拜耳 2×2」），登记表里「保留英文」那条决定已作废。
+  顺带记一个待办：闸二那道清理提醒只探主 bundle，遇到「文案挪进次级 chunk」会报出**假死条目**；
+  本次靠人工多探三处兜过去，后续可考虑把 `presenceProbe` 的 haystack 扩到整个 UI 目录 + 运行时目录。
 - **影响面**：`packVersion` → 0.0.169.1（同一 `targetVersion` 内的修正重发），`targetVersion`
   仍是 0.0.169；已装 0.0.169 的机器会被多开控制器判为「有新包」而自动应用。
 

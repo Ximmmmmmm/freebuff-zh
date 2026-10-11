@@ -79,7 +79,7 @@ Freebuff 自动更新冲掉汉化后它会自动换回中文（装机版本变�
 | 路径 | 是什么 |
 | --- | --- |
 | `dict.json` | 词典本体，**唯一真正的产出物**：3126 条（`exact` 2307 / `template` 410 / `code` 30 / `pattern` 379） |
-| `intentional-english.json` | 「有意保留英文」登记表，逐条写理由：`fragments` 867 条 + `uiStrings` 87 条 |
+| `intentional-english.json` | 「有意保留英文」登记表，逐条写理由：`fragments` 841 条 + `uiStrings` 87 条 |
 | `manifest.json` | `targetVersion`（适配的 Freebuff 版本）与 `packVersion`（本包版本） |
 | `patches/electron-*.patch` | 13 个主进程人工补丁（词典够不着的那一层） |
 | `tools/` | 66 个脚本（63 `.js` + 3 `.sh`，其中 28 个 `test_*`），构建 / 迁移 / 找漏翻 / 自测 |

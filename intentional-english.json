@@ -28,14 +28,6 @@
       "why": "网页标注（annotate page）里拼给模型的上下文 payload，与同一处的 `Preview element (untrusted page context): ` / ` Component: ` / ` Feedback: ` 同类——它们从 0.0.120 起就保持英文（属于模型输入，不是给人读的界面文案），翻译只会让模型侧的上下文中英混杂。"
     },
     {
-      "text": "streak-day on",
-      "why": "CSS 类名拼接（`className: filled ? \"streak-day on\" : \"streak-day\"`），是给样式表看的，翻掉就没有对应样式了。"
-    },
-    {
-      "text": "model-badge muted",
-      "why": "CSS 类名组合（`className: \"model-badge muted\"`，0.0.132 新增，就在 `Paid plan` 徽标那段——文案本身已翻），是给样式表看的，翻掉就没有对应样式了。与 streak-day on 同类。"
-    },
-    {
       "text": "agent-option-ask-action primary",
       "why": "CSS 类名组合（`className:\"agent-option-ask-action primary\"`，0.0.140 新增的「开启新时段」按钮），是给样式表看的，翻掉就没有对应样式了。与 streak-day on / model-badge muted 同类。"
     },
@@ -1089,14 +1081,6 @@
     },
     {
       "text": "Ogiltigt val: förväntade en av",
-      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
-    },
-    {
-      "text": "Okänd nyckel",
-      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
-    },
-    {
-      "text": "Okända nycklar",
       "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
     },
     {
@@ -2316,10 +2300,6 @@
       "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
     },
     {
-      "text": "Get your Resend API key",
-      "why": "gravity_index 工具文档里的示例代码片段（工具说明 payload 的一部分，文本形如按钮示例 `text:\"Get your Resend API key\"`）：属于送给模型看的示例，不是应用界面按钮，保留原文。"
-    },
-    {
       "text": "IPv4 address",
       "why": "Zod v4（第三方库）的英文错误表 / 内部诊断片段：不是应用界面文案，按项目惯例保留英文。"
     },
@@ -2628,10 +2608,6 @@
       "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
     },
     {
-      "text": "Open preview",
-      "why": "gravity_index 工具文档里的示例代码片段（工具说明 payload 的一部分，文本形如按钮示例 `text:\"Get your Resend API key\"`）：属于送给模型看的示例，不是应用界面按钮，保留原文。"
-    },
-    {
       "text": "Privalo būti",
       "why": "Zod v4 多语言错误表（立陶宛语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
     },
@@ -2664,14 +2640,6 @@
       "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
     },
     {
-      "text": "Tuntematon avain",
-      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
-    },
-    {
-      "text": "Tuntemattomat avaimet",
-      "why": "Zod v4 多语言错误表（土耳其 / 冰岛 / 瑞典语族）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
-    },
-    {
       "text": "Ugyldig input",
       "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
     },
@@ -2694,30 +2662,6 @@
     {
       "text": "Ugyldigt input",
       "why": "Zod v4（0.0.157 随 gravity_index 工具链打进 bundle 的第三方库）的内部诊断 / 错误表条目：不是应用界面文案——与已登记的 react-window console.warn 同类，按项目惯例保留英文（翻译不会有接收方，还会与库的文档对不上）。"
-    },
-    {
-      "text": "Ukendt nøgle",
-      "why": "Zod v4 多语言错误表（丹麦 / 挪威语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
-    },
-    {
-      "text": "Ukendte nøgler",
-      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
-    },
-    {
-      "text": "Ukjent nøkkel",
-      "why": "Zod v4 多语言错误表（丹麦 / 挪威语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
-    },
-    {
-      "text": "Ukjente nøkler",
-      "why": "Zod v4 多语言错误表（越南语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
-    },
-    {
-      "text": "Unbekannte Schlüssel",
-      "why": "Zod v4 多语言错误表（德语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
-    },
-    {
-      "text": "Unbekannter Schlüssel",
-      "why": "Zod v4 多语言错误表（德语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。"
     },
     {
       "text": "Undefined cannot be represented in JSON Schema",
@@ -2856,10 +2800,6 @@
       "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
     },
     {
-      "text": "el valor",
-      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
-    },
-    {
       "text": "endereço IPv4",
       "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
     },
@@ -2904,19 +2844,11 @@
       "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
     },
     {
-      "text": "ir lyklar",
-      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
-    },
-    {
       "text": "julat IPv4",
       "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
     },
     {
       "text": "julat IPv6",
-      "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
-    },
-    {
-      "text": "la valeur",
       "why": "Zod v4 多语言错误表里的单词标签（IP 地址 / JSON 字符串 / ISO 日期一类，与逐条登记的多词条目是同一批表）：库为各语言准备的本地化字符串，界面语言为中文时不会走到这些表——与 Zod 的英文诊断文案同为库内部字符串，保留原文。"
     },
     {
@@ -3060,18 +2992,6 @@
       "why": "同上，内置壁纸标题。"
     },
     {
-      "text": "Bayer 2 by 2",
-      "why": "壁纸抖动（dithering）算法名。Bayer 是算法专名，尺寸后缀按原样保留才能与图形学惯例一致。"
-    },
-    {
-      "text": "Bayer 4 by 4",
-      "why": "同上。"
-    },
-    {
-      "text": "Bayer 8 by 8",
-      "why": "同上。"
-    },
-    {
       "text": "Bernd Dittrich",
       "why": "内置壁纸的摄影师署名（人名），不译。"
     },
@@ -3124,10 +3044,6 @@
       "why": "CSS 类名（按钮尺寸变体）。"
     },
     {
-      "text": "btn danger",
-      "why": "CSS 类名（危险操作按钮样式）。"
-    },
-    {
       "text": "modal browser-data-dialog",
       "why": "CSS 类名（浏览器数据弹窗）。"
     },
@@ -3142,18 +3058,6 @@
     {
       "text": "experimental_prefetchInRender feature flag",
       "why": "React 的实验性特性开关名（标识符），属内部诊断。"
-    },
-    {
-      "text": "in h?-h.wheelDeltaY:",
-      "why": "滚轮事件分支的调试标签（代码片段），只在开发者控制台可见。"
-    },
-    {
-      "text": "in h?h.deltaX:",
-      "why": "同上。"
-    },
-    {
-      "text": "in h?h.deltaY:",
-      "why": "同上。"
     },
     {
       "text": "data is undefined",
@@ -3408,16 +3312,8 @@
       "why": "CSS 选择器（`matches(\":hover, :focus-within\")`，用来判断指针是否悬停在卡片上），功能串，翻掉选择器立刻失效。"
     },
     {
-      "text": "in ee?ee.error:",
-      "why": "代码片段误报：来自 `!(\"error\" in ee) ? … : ee.error` 这种条件表达式，根本不是字符串字面量（片段提取把压缩后的代码切了一段出来）。"
-    },
-    {
       "text": "tool-row-status failure",
       "why": "CSS 类名拼接（`className:\"tool-row-status failure\"`，与已登记的 `msg sponsored-task`、`streak-day on` 同类），翻掉就没有对应样式；同一行里给用户看的 `\" failed\"` 计数文案另在 dict.json 里。"
-    },
-    {
-      "text": "· frees in m",
-      "why": "嵌套模板的「待补翻」误报：整句已由 dict.json 的 template 词条（键以 Open active tab${… 开头）翻译，界面渲染为「打开当前标签页 · X 分钟后释放」；片段提取把内层模板去掉插值后切成独立片段（规范形 · frees in m），而 upstreamdiff 的覆盖判定（词条键 includes 片段骨架）对带插值的模板键天然够不着——登记说明，避免每版重复进「待补翻」。"
     },
     {
       "text": "animation:",
