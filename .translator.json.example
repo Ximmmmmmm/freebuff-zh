@@ -1,26 +1,33 @@
 {
-  "_说明": "把本文件复制为 .translator.json 并填入真实值(.translator.json 已被 .gitignore 排除,不会进版本库)。两种写法二选一:① 多模型故障切换(推荐):models 数组,顺序即主备顺序,某模型传输层失败(超时/网络/5xx/401/403/429)自动切下一个,全部失败才报错;② 单模型:baseUrl/apiKey/model(见下方 _单模型写法)。models 数组优先于单模型字段;环境变量 HANHUA_LLM_BASE/HANHUA_LLM_KEY/HANHUA_LLM_MODEL 优先级最高,可覆盖文件配置。",
+  "_说明": "复制为 .translator.json 并填入真实值（.translator.json 已被 .gitignore 排除，不会进版本库）。LLM 补漏层默认不启用：只有配置完整时，auto_translate.js 才会把「规则层翻不出来的句子」发给模型做补漏——规则优先、模型只补漏、任何失败自动回退纯规则；译文仍要过 dictapply --check。两种写法二选一：① 多模型故障切换（推荐）：models 数组，顺序即主备顺序，某模型传输层失败（超时/网络/5xx/401/403/429）自动切下一个，全部失败才放弃；② 单模型：baseUrl/apiKey/model 三个平铺字段（见下方 _单模型写法）。models 数组优先于单模型字段；环境变量 HANHUA_LLM_BASE/HANHUA_LLM_KEY/HANHUA_LLM_MODEL 优先级最高，可覆盖文件配置。",
+  "_免费选择（实测直连可用）": {
+    "智谱 GLM": "baseUrl 用 https://open.bigmodel.cn/api/paas/v4 ；免费文本模型按实测推荐排序：glm-4-flash-250414（约 0.8s，最快，建议主用）、glm-4.5-flash（约 12s）、glm-4.7-flash（最新但约 30s 且 429 频繁，放链尾）；注册不需要付费",
+    "OpenRouter": "baseUrl 用 https://openrouter.ai/api/v1 ，model 填带 :free 或价格 0 的免费模型（实测 nvidia/nemotron-3-super-120b-a12b:free 约 3.6s 可用；google/gemma-4-*:free 上游 429 频繁，不建议当主力；注意通用池里混有推理型模型，慢且可能把 token 吃在思考上）；注册无需实名、无需绑卡；免费层约 50 请求/天",
+    "硅基流动 SiliconFlow": "baseUrl 用 https://api.siliconflow.cn/v1 ，需要实名认证且账户余额不能为负（负余额会被全面拦截）；免费聊天模型只有 tencent/Hunyuan-MT-7B（翻译专用）与 XingChenAGI/Xing4.0-29B",
+    "不可用": "Gemini / OpenAI 直连被墙；GitHub Models 已于 2026-07-30 退役"
+  },
   "models": [
     {
-      "baseUrl": "https://api.openai.com/v1",
-      "apiKey": "sk-主模型密钥",
-      "model": "gpt-4o-mini"
+      "baseUrl": "https://open.bigmodel.cn/api/paas/v4",
+      "apiKey": "智谱 API Key",
+      "model": "glm-4-flash-250414",
+      "timeoutMs": 120000
     },
     {
-      "baseUrl": "https://router.flatkey.ai/v1",
-      "apiKey": "sk-备用模型密钥",
-      "model": "deepseek-v4-flash",
-      "timeoutMs": 120000
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "apiKey": "sk-or-v1-...（备用，可删）",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free"
     }
   ],
   "_单模型写法": {
-    "baseUrl": "https://api.openai.com/v1",
-    "apiKey": "sk-xxxxxxxx",
-    "model": "gpt-4o-mini"
+    "baseUrl": "https://open.bigmodel.cn/api/paas/v4",
+    "apiKey": "xxxx",
+    "model": "glm-4-flash-250414"
   },
   "_可选": {
     "maxBatch": 20,
-    "timeoutMs": 300000,
-    "temperature": 0.2
+    "timeoutMs": 120000,
+    "temperature": 0.2,
+    "paceMs": 800
   }
 }

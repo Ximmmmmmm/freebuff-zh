@@ -44,7 +44,7 @@ bash tools/release.sh           # 4. 发布（只在你确实要给别人用时�
 
 注意 `update.sh` 是 **bash 脚本**，`node tools/update.sh` 跑不起来（`docs/更新维护.md` 第 10 行那处示例是错的）。
 
-`update.sh` 第 6 步会自动把「上游未覆盖新增」写成 `work/changelist-<时间戳>.json` 骨架（`value` 全是空串）。**翻译由人/AI 填，不接任何 API 翻译服务。**
+`update.sh` 第 6 步会自动把「上游未覆盖新增」写成 `work/changelist-<时间戳>.json` 骨架（`value` 全是空串）。**翻译由人/AI 填**；可选：配置仓库根 `.translator.json`（示例见 `.translator.json.example`，含免费模型）后由 `auto_translate.js` 的 LLM 补漏层预填——规则优先、只补规则翻不出的句子、失败自动回退纯规则；不配置就是纯规则。填完一律过 `dictapply --check`。
 
 ## 改词典只用这一条路
 
