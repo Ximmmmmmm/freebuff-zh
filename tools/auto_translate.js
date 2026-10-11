@@ -6,12 +6,13 @@
 //      - 术语库对齐（thread=会话、agent=智能体、workspace=工作区……）与常见 UI 短语表
 //      - 历史词典记忆复用
 //      - 占位符 ${...} 逐字保序；code 分区逐字节原样（满足 G1）
+//      - 拼装质量守卫：整串拼装结果残留英文虚词（整句没拼完）一律改标 [EN]，
+//        交 LLM 补漏层 / 人工——半英半中不进词典（0.0.170 联调实锤的洞）
 //   ② LLM 补漏层（可选，默认关闭）：
 //      - 只补规则层翻不出的句子（结果带 [EN] 前缀标记的那些；code 分区永不提交给 LLM）
 //      - OpenAI 兼容接口；多模型按顺序故障切换；任何失败自动回退纯规则，绝不中断流程
 //      - 译文先过本地校验（占位符集合一致 / 含中文 / 不等于原文 / 无 E6 模板残骸 /
 //        术语守卫 / 英文残留守卫）再采纳；被校验拒绝的条目换链条下一档模型重试一轮
-//        （起因：0.0.170 联调实测小模型输出半英半中「Your 工作区 will restart in …」）
 //      - 配置：仓库根 .translator.json（模板见 .translator.json.example），或环境变量
 //        HANHUA_LLM_BASE / HANHUA_LLM_KEY / HANHUA_LLM_MODEL（优先级最高）；
 //        HANHUA_TRANSLATOR_CONFIG 可改配置文件路径（自测与换机器用）
@@ -214,10 +215,13 @@ function translateText(key, section, dict) {
     skeleton = skeleton.replace(`__PH_${idx}__`, ph)
   })
 
-  // 若处理后包含中文，则返回；否则若纯英文未匹配，标注 [EN] 豁免或保持
+  // 若处理后包含中文，还需过质量守卫；否则整串未命中，标注 [EN] 交 LLM 补漏层 / 人工
   const hasCJK = /[㐀-䶿一-鿿]/.test(skeleton)
   if (hasCJK) {
-    return skeleton
+    // 质量守卫：拼装结果只要残留英文虚词（your/will/in…），就是「整句没拼完」——
+    // 宁可标 [EN] 交 LLM 补漏层，也不能把「Your 工作区 will restart in ${…} seconds.」
+    // 这种半英半中直接写进词典。0.0.170 联调实锤：它含中文 → 绕过 LLM 通道 → 直通发布包。
+    if (!englishResidue(skeleton, 1)) return skeleton
   }
 
   // 无法识别的短串：保持并前缀 [EN] 避免 G2 报错，提示人工复核
@@ -234,10 +238,11 @@ const TERM_GUARDS = [
   { test: /\bthreads?\b/i, bad: /线程/, want: '会话' },
   { test: /\bagents?\b/i, bad: /代理/, want: '智能体' },
 ]
-// 英文残留守卫：剔掉 ${...} 后若还留有 ≥2 个不同的英文虚词，几乎可以断定整句没翻完。
-// 起因：0.0.170 联调实测，glm-4-flash 把整句译成「Your 工作区 will restart in ${…} seconds.」，
-// 通过了旧的最小校验——半英半中的残次译文绝不能进发布包。
-// 校准：对当时全量词典（约 4000 条）零误杀；品牌名/产品名（Claude Code、GitHub Copilot）不受影响。
+// 英文残留守卫：剔掉 ${...} 后若还留有英文虚词（your/will/in…），几乎可以断定整句没翻完。
+// 起因：0.0.170 联调实锤——规则层拼装路径把整句译成「Your 工作区 will restart in ${…} seconds.」
+// （只译出 glossary 命中的 workspace），且因含中文绕过 LLM 通道直通发布包；LLM 输出同样要防。
+// 规则层阈值 1（任何虚词都说明没拼完）；LLM 输出阈值 2（对模型输出保守些）。
+// 校准：阈值 2 对当时全量词典（约 4000 条）零误杀；品牌名/产品名（Claude Code、GitHub Copilot）不受影响。
 const FUNC_WORDS = new Set(
   (
     'the a an and or but if when while of to in on at for with from by as is are was were be been being ' +
@@ -334,13 +339,13 @@ function validateLlmTranslation(key, translated, section) {
   return { ok: true }
 }
 
-// 英文虚词检测：返回命中的虚词列表（≥2 个不同虚词视为「整句没翻完」）
-function englishResidue(stripped) {
+// 英文虚词检测：返回命中的虚词列表（≥ min 个不同虚词即视为「整句没翻完」）
+function englishResidue(stripped, min = 2) {
   const words = String(stripped).match(/[A-Za-z][A-Za-z0-9.'-]*/g) || []
   const bad = new Set(
     words.map((w) => w.toLowerCase().replace(/[.'-]+$/, '')).filter((w) => FUNC_WORDS.has(w)),
   )
-  return bad.size >= 2 ? [...bad].join('、') : null
+  return bad.size >= min ? [...bad].join('、') : null
 }
 
 const SYSTEM_PROMPT = [

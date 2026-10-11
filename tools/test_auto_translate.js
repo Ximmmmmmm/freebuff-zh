@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // auto_translate.js 自测：
-//   1) 规则层（术语对齐 / G1 / 占位符 / 词典复用 / 句式）
+//   1) 规则层（术语对齐 / G1 / 占位符 / 词典复用 / 句式 / 拼装质量守卫）
 //   2) LLM 补漏层（全部走本地 mock HTTP：不碰外网、不读真实配置文件）
 //      - 配置加载：无配置→null、环境变量优先、文件多模型与 maxBatch/timeoutMs
 //      - 译文本地校验：G2/G3/占位符集合/E6 残骸/术语守卫（thread≠线程、agent≠代理）/
@@ -54,6 +54,18 @@ chk(translateText('some_internal_code', 'code', mockDict) === 'some_internal_cod
 
 const tplRes = translateText('Connecting to ${e.server}...', 'template', mockDict)
 chk(tplRes.includes('${e.server}') && tplRes.includes('正在连接'), '模板占位符完整保留')
+
+// 规则层拼装质量守卫：结果残留英文虚词（整句没拼完）→ 一律 [EN]，半英半中绝不直通发布包
+const guardRes = translateText('Your workspace will restart in ${e.seconds} seconds.', 'template', mockDict)
+chk(
+  guardRes === '[EN] Your workspace will restart in ${e.seconds} seconds.',
+  '拼装质量守卫：半英半中（Your…will…in…）→ [EN] 交补漏层/人工',
+)
+const cleanRes = translateText('Workspace settings', 'exact', mockDict)
+chk(
+  !cleanRes.startsWith('[EN]') && cleanRes.includes('工作区') && cleanRes.includes('设置'),
+  '拼装质量守卫：完整拼装照常放行（workspace settings）',
+)
 
 chk(
   JSON.stringify(extractPlaceholders('Hello ${name}, you have ${count} items')) === JSON.stringify(['${name}', '${count}']),
