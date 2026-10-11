@@ -75,6 +75,22 @@ while [ $# -gt 0 ]; do
   esac
   shift
 done
+# 相对路径在「镜像目录里跑 git apply / 子工具」的环节会失效（git apply 的 cwd 是镜像目录，
+# 不是仓库根）——2026-10-11 实测：--patches patches 会在镜像里报 can't open patch。
+# 这里统一 resolve 成绝对路径；SNAP_OPT 在下文有自己的 cd+pwd 处理，不动。
+resolve_abs() {
+  case "$1" in
+    /*) printf '%s' "$1" ;;
+    *)
+      if [ -d "$1" ]; then (cd "$1" && pwd) || printf '%s' "$1"
+      elif [ -f "$1" ]; then (cd "$(dirname "$1")" && printf '%s/%s' "$(pwd)" "$(basename "$1")") || printf '%s' "$1"
+      else printf '%s' "$1"
+      fi
+      ;;
+  esac
+}
+if [ -n "${PATCH_OPT}" ]; then PATCH_OPT="$(resolve_abs "${PATCH_OPT}")"; fi
+if [ -n "${PREV_OPT}" ]; then PREV_OPT="$(resolve_abs "${PREV_OPT}")"; fi
 PATCH_DIR="${PATCH_OPT:-${HERE}/patches}"
 if [ ! -d "${PATCH_DIR}" ]; then
   echo "ERROR: 补丁目录不存在：${PATCH_DIR}" >&2

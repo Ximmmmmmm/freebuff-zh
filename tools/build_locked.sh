@@ -22,10 +22,12 @@ set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DRY=0
+REBUILD=0
 ARGS=()
 for a in "$@"; do
   case "$a" in
     --dry-run) DRY=1 ;;
+    --rebuild) REBUILD=1 ;;
     *) ARGS+=("$a") ;;
   esac
 done
@@ -58,6 +60,20 @@ fi
 echo "Pristine app.asar: ${PRISTINE_ASAR}"
 echo "Pristine ui dir:   ${PRISTINE_UI}"
 
+# --- 构建复用：与 build.sh 同一判据（输入指纹 + 产物哈希），命中则秒级返回 --------------
+# 为什么：本脚本常用于「output/ 被锁后想确认/刷新产物」的场景，多数时候输入一个字节
+# 没变——没有这层检查时每次全量 16s+。强制重建：bash tools/build_locked.sh --rebuild。
+if [ -n "${PRISTINE_UI}" ]; then
+  BUILD_KEY="$(node "${HERE}/tools/build_key.js" key --asar "${PRISTINE_ASAR}" --ui "${PRISTINE_UI}")"
+  if [ "${REBUILD}" -eq 0 ] && node "${HERE}/tools/build_key.js" verify --key "${BUILD_KEY}" --asar "${PRISTINE_ASAR}" --ui "${PRISTINE_UI}"; then
+    echo
+    echo "== 复用上次构建 =="
+    echo "   输入（词典 / 补丁 / tools / 原版）一个字节没变，output/ 的产物哈希也对得上——不重新生成。"
+    echo "   需要重建：bash tools/build_locked.sh --rebuild"
+    exit 0
+  fi
+fi
+
 # --- 门禁（与 build.sh 一致；几秒钟，先拦结构问题）-------------------------------------
 echo
 echo "== 0/4 词典门禁 =="
@@ -72,10 +88,10 @@ npx -y @electron/asar extract "${PRISTINE_ASAR}" "${WORK}/main"
 
 echo "== 2/4 套用翻译词典 =="
 printf '%s\n' "${WORK}/main/electron/"*.cjs "${WORK}/main/electron/"*.html "${WORK}/main/package.json" \
-  | xargs -d '\n' -P 8 -I{} node "${HERE}/tools/apply.js" {} --write --quiet
+  | xargs -d '\n' -P 8 -n 6 node "${HERE}/tools/apply.js" --write --quiet
 
 echo "== 3/4 套用人工补丁 =="
-find "${WORK}/main" -type f \( -name '*.cjs' -o -name '*.html' -o -name '*.js' -o -name '*.json' -o -name '*.ts' \) -exec sed -i 's/\r$//' {} +
+find "${WORK}/main" -type f \( -name '*.cjs' -o -name '*.html' -o -name '*.js' -o -name '*.json' -o -name '*.ts' \) -print0 | xargs -0 -r node "${HERE}/tools/to_lf.js"
 (cd "${WORK}/main" && for p in "${HERE}"/patches/electron-*.patch; do
   git apply -p1 "$p" || { echo "ERROR: 补丁未干净套用：$(basename "$p")" >&2; exit 1; }
 done)
@@ -148,6 +164,10 @@ fi
 rm -rf "${OLD_UI}"
 cp -r "${STAGE}/ui" "${OLD_UI}"
 echo "  ui/ 已整体替换为新构建"
+# 构建成功才记缓存（与 build.sh 同一机制；失败不会走到这里）
+if [ -n "${BUILD_KEY:-}" ]; then
+  node "${HERE}/tools/build_key.js" record --key "${BUILD_KEY}" || echo "  ! 构建缓存写入失败（不影响本次产物，只是下次要重建）" >&2
+fi
 echo
 echo "完成：output/ui 已更新；output/app.asar 保持（内容一致）。"
 echo "（若之后想走标准流程：关掉持锁程序后 bash build.sh，会自动全量重建。）"

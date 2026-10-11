@@ -165,17 +165,20 @@ echo "== 1/4 解包主进程 asar =="
 npx -y @electron/asar extract "${PRISTINE_ASAR}" "${WORK}/main"
 
 echo "== 2/4 套用翻译词典 (dict.json) =="
-# 每个文件仍是**一次独立的 apply.js**（口径一字不改，只是并发跑）：它们彼此独立、各写各的文件，
-# 换句话说就是「把 46 次进程冷启动叠起来」，实测 4.5s → 1.1s。--quiet 下每个文件只一行输出，
-# 行内不会交错；任何一个失败 xargs 返回 123，配合 set -e / pipefail 照样中止构建。
+# 每个进程处理一批文件（-n 6）：文件彼此独立、各写各的。既保留并发（-P），又把
+# 「进程冷启动 + require + 读词典 + 建 Trie」的固定成本从每文件一次摊到每批一次
+# （2026-10-11 实测：该步 1.8s → ~0.6s；apply.js 的单文件入口保持兼容不变）。
+# 任何一个失败 xargs 返回 123，配合 set -e / pipefail 照样中止构建。
 printf '%s\n' "${WORK}/main/electron/"*.cjs "${WORK}/main/electron/"*.html "${WORK}/main/package.json" \
-  | xargs -d '\n' -P "${JOBS}" -I{} node "${HERE}/tools/apply.js" {} --write --quiet
+  | xargs -d '\n' -P "${JOBS}" -n 6 node "${HERE}/tools/apply.js" --write --quiet
 
 echo "== 3/4 套用人工补丁 (patches/) =="
 # 原版 asar 内文本是 CRLF 行尾，而补丁文件是 LF。Windows 的 git apply 会自动
 # 处理行尾差异，但 Linux（服务器 CI）上严格匹配会直接失败，所以打补丁前先统一
 # 成 LF。词典步骤已用 node 重写这些文件，这里再转一次无副作用。
-find "${WORK}/main" -type f \( -name '*.cjs' -o -name '*.html' -o -name '*.js' -o -name '*.json' -o -name '*.ts' \) -exec sed -i 's/\r$//' {} +
+# 2026-10-11：sed -exec 换成 tools/to_lf.js 一次批量——口径等价（见该文件头），
+# 这一步实测 2.5s → ~0.4s（省的是几十次进程冷启动，不是工作量）。
+find "${WORK}/main" -type f \( -name '*.cjs' -o -name '*.html' -o -name '*.js' -o -name '*.json' -o -name '*.ts' \) -print0 | xargs -0 -r node "${HERE}/tools/to_lf.js"
 (cd "${WORK}/main" && for p in "${HERE}"/patches/electron-*.patch; do
   if ! git apply -p1 "$p"; then
     echo "ERROR: 补丁未干净套用：$(basename "$p")" >&2

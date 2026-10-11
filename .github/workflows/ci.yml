@@ -62,6 +62,8 @@ jobs:
         run: node tools/test_semantic_guard.js
       - name: 注释分词器自测（正则 / 模板 / 字符串里的 // 不产生假注释；真注释区不翻、假注释区仍翻）
         run: node tools/test_comment_scan.js
+      - name: apply 自测（多文件入口 / --dict 注入 / 嵌套模板回退 / 幂等 / MISSED 报告）
+        run: node tools/test_apply.js
       - name: 窗口按钮区取证探针自测（拿不到证据必须 rc 2，不冒充判决）
         run: node tools/test_probe_shell_colors.js
       - name: 词条命中体检自测（只在主进程 / 只在上版 / 哪都没有 / 退出码）
