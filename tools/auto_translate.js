@@ -9,7 +9,9 @@
 //   ② LLM 补漏层（可选，默认关闭）：
 //      - 只补规则层翻不出的句子（结果带 [EN] 前缀标记的那些；code 分区永不提交给 LLM）
 //      - OpenAI 兼容接口；多模型按顺序故障切换；任何失败自动回退纯规则，绝不中断流程
-//      - 译文先过本地校验（占位符集合一致 / 含中文 / 不等于原文 / 无 E6 模板残骸）再采纳
+//      - 译文先过本地校验（占位符集合一致 / 含中文 / 不等于原文 / 无 E6 模板残骸 /
+//        术语守卫 / 英文残留守卫）再采纳；被校验拒绝的条目换链条下一档模型重试一轮
+//        （起因：0.0.170 联调实测小模型输出半英半中「Your 工作区 will restart in …」）
 //      - 配置：仓库根 .translator.json（模板见 .translator.json.example），或环境变量
 //        HANHUA_LLM_BASE / HANHUA_LLM_KEY / HANHUA_LLM_MODEL（优先级最高）；
 //        HANHUA_TRANSLATOR_CONFIG 可改配置文件路径（自测与换机器用）
@@ -232,6 +234,18 @@ const TERM_GUARDS = [
   { test: /\bthreads?\b/i, bad: /线程/, want: '会话' },
   { test: /\bagents?\b/i, bad: /代理/, want: '智能体' },
 ]
+// 英文残留守卫：剔掉 ${...} 后若还留有 ≥2 个不同的英文虚词，几乎可以断定整句没翻完。
+// 起因：0.0.170 联调实测，glm-4-flash 把整句译成「Your 工作区 will restart in ${…} seconds.」，
+// 通过了旧的最小校验——半英半中的残次译文绝不能进发布包。
+// 校准：对当时全量词典（约 4000 条）零误杀；品牌名/产品名（Claude Code、GitHub Copilot）不受影响。
+const FUNC_WORDS = new Set(
+  (
+    'the a an and or but if when while of to in on at for with from by as is are was were be been being ' +
+    'will would shall should can could may might must do does did have has had not no yes it its this that ' +
+    'these those there their they them you your yours we our us my mine i he she his her him what which who ' +
+    'how why where all any some more most other into over under again then than so up down out off itself'
+  ).split(' '),
+)
 
 function hasCJK(s) {
   return /[㐀-䶿一-鿿]/.test(s)
@@ -315,7 +329,18 @@ function validateLlmTranslation(key, translated, section) {
   let stripped = t
   for (const ph of got) stripped = stripped.replace(ph, ' ')
   if (DEBRIS_RE.test(stripped)) return { ok: false, reason: 'E6：译文残留模板/代码残骸' }
+  const residue = englishResidue(stripped)
+  if (residue) return { ok: false, reason: `英文残留：疑似整句未译完（虚词 ${residue}）` }
   return { ok: true }
+}
+
+// 英文虚词检测：返回命中的虚词列表（≥2 个不同虚词视为「整句没翻完」）
+function englishResidue(stripped) {
+  const words = String(stripped).match(/[A-Za-z][A-Za-z0-9.'-]*/g) || []
+  const bad = new Set(
+    words.map((w) => w.toLowerCase().replace(/[.'-]+$/, '')).filter((w) => FUNC_WORDS.has(w)),
+  )
+  return bad.size >= 2 ? [...bad].join('、') : null
 }
 
 const SYSTEM_PROMPT = [
@@ -328,6 +353,7 @@ const SYSTEM_PROMPT = [
   '5. 代码标识符、路径、命令、枚举名、键盘键名、文件扩展名保持原文。',
   '6. 译文简洁得体，符合按钮/标签/提示的语气；问句保留问号，省略号用 …。',
   '7. 译文不得与原文逐字节相同；原文若本就是中文或无需翻译，原样返回。',
+  '8. 必须整句译完：除品牌/产品名、占位符与单位外，译文不得残留英文单词或英文句式。',
 ].join('\n')
 
 function buildMessages(chunk) {
@@ -376,8 +402,8 @@ async function sendChunk(model, chunk, cfg) {
   return arr
 }
 
-// 批量补漏：分块 → 逐模型故障切换 → 逐条本地校验
-async function llmFill(items, cfg) {
+// 发一轮：分块 → 逐模型故障切换 → 逐条本地校验（外层 llmFill 负责质量重试）
+async function llmFillOnce(items, cfg, models) {
   const filled = new Map()
   const rejected = new Map()
   const errors = []
@@ -385,7 +411,7 @@ async function llmFill(items, cfg) {
     const chunk = items.slice(i, i + cfg.maxBatch)
     let arr = null
     let lastErr = null
-    for (const model of cfg.models) {
+    for (const model of models) {
       try {
         arr = await sendChunk(model, chunk, cfg)
         break
@@ -408,6 +434,21 @@ async function llmFill(items, cfg) {
     }
   }
   return { filled, rejected, errors }
+}
+
+// 补漏主入口：先按全链跑一轮；被本地校验拒绝的条目（半英半中、E6 残骸等）换链条
+// 下一档模型重试一轮——小模型质量不够时由更强模型兜底；仍不过就保持 [EN] 交人工。
+async function llmFill(items, cfg) {
+  const out = await llmFillOnce(items, cfg, cfg.models)
+  const retryItems = items.filter((it) => out.rejected.has(it.key))
+  if (!retryItems.length || cfg.models.length < 2) return out
+  const retry = await llmFillOnce(retryItems, cfg, cfg.models.slice(1))
+  for (const [k, v] of retry.filled) {
+    out.filled.set(k, v)
+    out.rejected.delete(k)
+  }
+  out.errors.push(...retry.errors)
+  return out
 }
 
 function isMarker(v) {

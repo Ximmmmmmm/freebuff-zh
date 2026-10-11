@@ -3,9 +3,10 @@
 //   1) 规则层（术语对齐 / G1 / 占位符 / 词典复用 / 句式）
 //   2) LLM 补漏层（全部走本地 mock HTTP：不碰外网、不读真实配置文件）
 //      - 配置加载：无配置→null、环境变量优先、文件多模型与 maxBatch/timeoutMs
-//      - 译文本地校验：G2/G3/占位符集合/E6 残骸/术语守卫（thread≠线程、agent≠代理）/code 分区
+//      - 译文本地校验：G2/G3/占位符集合/E6 残骸/术语守卫（thread≠线程、agent≠代理）/
+//        英文残留守卫（半英半中拒绝）/code 分区
 //      - 补漏行为：成功采纳、坏占位符单条拒绝、HTTP 500 回退、多模型故障切换、超时回退、
-//        code 分区与无字母条目永不提交、paceMs 批次间隔
+//        code 分区与无字母条目永不提交、paceMs 批次间隔、质量重试（校验拒绝→下一档模型）
 const http = require('http')
 const fs = require('fs')
 const os = require('os')
@@ -147,6 +148,18 @@ async function main() {
   chk(!validateLlmTranslation('Review all agents', '审查所有代理', 'exact').ok, '术语守卫：agent 译成「代理」拒绝')
   chk(validateLlmTranslation('Open thread', '打开会话', 'exact').ok, '术语守卫：正确译「会话」放行')
   chk(!validateLlmTranslation('any', '译文', 'code').ok, '校验：code 分区永远不采纳 LLM')
+  chk(
+    !validateLlmTranslation(
+      'Your workspace will restart in ${e.seconds} seconds.',
+      'Your 工作区 will restart in ${e.seconds} seconds.',
+      'template',
+    ).ok,
+    '英文残留守卫：半英半中拒绝（虚词 your/will/in）',
+  )
+  chk(
+    validateLlmTranslation('Pick a framework', 'React Native 或 Flutter', 'exact').ok,
+    '英文残留守卫：品牌/产品名不受影响',
+  )
 
   // 2.3 无 LLM：行为与纯规则一致
   const list0 = {
@@ -296,6 +309,40 @@ async function main() {
   })
   chk(reqCount === 2 && Date.now() - tp >= 280, 'paceMs：两批之间按配置间隔（>=280ms）')
   mock7.srv.close()
+
+  // 2.11 质量重试：第一个模型译文过不了本地校验（半英半中）→ 换第二个模型重试成功
+  let sloppyCalls = 0
+  let goodCalls = 0
+  const mock8 = await startMock((req, res, body) => {
+    const model = JSON.parse(body).model
+    let arr
+    if (model === 'sloppy') {
+      sloppyCalls++
+      arr = ['Your 归档 ${e.count} will restart soon.']
+    } else {
+      goodCalls++
+      arr = ['归档 ${e.count} 个任务']
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' })
+    res.end(JSON.stringify({ choices: [{ message: { content: JSON.stringify(arr) } }] }))
+  })
+  const list8 = { add: [{ section: 'template', key: 'Archive ${e.count} missions', value: '' }] }
+  const r8 = await fillChangelist(list8, {
+    llmConfig: {
+      models: [
+        { baseUrl: mock8.url, apiKey: 'k', model: 'sloppy', timeoutMs: 3000 },
+        { baseUrl: mock8.url, apiKey: 'k', model: 'good', timeoutMs: 3000 },
+      ],
+      maxBatch: 20,
+      temperature: 0.2,
+    },
+  })
+  chk(
+    list8.add[0].value === '归档 ${e.count} 个任务' && r8.stats.llmFilled === 1 && r8.stats.llmRejected === 0,
+    '质量重试：小模型半英半中被拒 → 下一档模型补上',
+  )
+  chk(sloppyCalls >= 1 && goodCalls >= 1, '质量重试：确实换过模型（两个模型都被调用）')
+  mock8.srv.close()
 
   console.log(failures === 0 ? `\n✓ auto_translate 全部 ${total} 项自测通过！` : `\n✗ ${failures}/${total} 项失败`)
   process.exit(failures ? 1 : 0)
