@@ -45,17 +45,35 @@ const readDict = (p) => JSON.parse(fs.readFileSync(p, 'utf8'))
 // code："Showing" 只换了标识符名；"Step" 有两份形态；"Gone" 整段消失
 // 字面量："Already present label" 原样还在（命中，不进报告）；"| Sponsored by" 是
 // 「 · Sponsored by 」改写后的新句子（近邻候选）
+// 隔离填充：真实 bundle 里命中处相距几 MB，±160 的上下文窗口互不重叠。合成用例用两段
+// **引号内容不同**的长填充还原真实距离与"邻域不同"——标识符在这两段里会被抹平成一样的
+// `_`，只有引号里的字面量能承载"这块代码不一样"（真实 bundle 里正是靠类名字符串区分的）。
+const PAD_SAME = '"common-line";'.repeat(40)
+const PAD_DIFF = '"other-ctx-word";'.repeat(40)
+
 const CUR = pack(
   'cur',
   'var a=`Hello ${bb.name}, welcome`,b=`Open ${bb.name}`,c=`Open ${cc.title}`,d="Already present label",e="| Sponsored by";' +
     'q("Showing ",j.files.length," of ",j.matches,0);' +
-    'q("Step ",b.n," of ",b.total,1);q("Step ",c.n," of ",c.total,1);\n',
+    'q("Step ",b.n," of ",b.total,1);q("Step ",c.n," of ",c.total,1);' +
+    PAD_SAME + 'k1("panel-x",{"aria-label":`Close ${cc.label}`},["x"]);' + PAD_SAME +
+    PAD_DIFF + 'k9("OTHER",{"aria-label":`Close ${bb}`},["z"]);' + PAD_DIFF +
+    PAD_SAME + 'k2("box-y",{"aria-label":`Tap ${dd.label}`},["y"]);' + PAD_SAME +
+    PAD_DIFF + 'k8("drawer",{"aria-label":`Tap ${ee}`},["w"]);' + PAD_DIFF +
+    'r("job-a",()=>`Go ${bb.fn(2)}`);' + PAD_SAME +
+    'r2("job-b",()=>`Go ${bb.fn(2)}, ${cc.tag}`);' + PAD_SAME +
+    's1("diff-1",{"aria-label":`Spam ${bb.v}`});' + PAD_SAME +
+    's2("diff-2",{"aria-label":`Spam ${cc.v}`});' + PAD_SAME + '\n',
 )
 // 上一版原版（prev）：这些旧 key 逐字节还在（用来验 wasInPrev）；两条不在（更早遗留）
 const PREV = pack(
   'prev',
   'var p0=`Hello ${aa.name}, welcome`,p1=`Open ${aa.name}`,p2=`Vanished ${aa.x}`,p3="Already present label",p4=" · Sponsored by ";\n' +
-    'q("Showing ",A.files.length," of ",A.matches,0);q("Step ",A.n," of ",A.total,1);q("Gone ",A.x," code ",A.y,1);\n',
+    'q("Showing ",A.files.length," of ",A.matches,0);q("Step ",A.n," of ",A.total,1);q("Gone ",A.x," code ",A.y,1);\n' +
+    PAD_SAME + 'k1("panel-x",{"aria-label":`Close ${aa.label}`},["x"]);' + PAD_SAME +
+    PAD_SAME + 'k2("box-y",{"aria-label":`Tap ${aa.label}`},["y"]);' + PAD_SAME +
+    'r("job-a",()=>`Go ${aa.fn(1)}`);' + PAD_SAME +
+    's1("same-a",{"aria-label":`Spam ${aa.v}`});' + PAD_SAME + '\n',
 )
 const curSrc = fs.readFileSync(path.join(CUR, 'ui', 'assets', 'index-AAA.js'), 'utf8')
 const EMPTY = path.join(WORK, 'no-bundle')
@@ -72,6 +90,10 @@ const matrix = {
     'Hello ${aa.name}, welcome': '你好 ${aa.name}，欢迎',
     'Open ${aa.name}': '打开 ${aa.name}',
     'Vanished ${aa.x}': '已消失 ${aa.x}',
+    'Close ${aa.label}': '关闭「${aa.label}」',
+    'Tap ${aa.label}': '点按「${aa.label}」',
+    'Go ${aa.fn(1)}': '去 ${aa.fn(1)}',
+    'Spam ${aa.v}': '骚扰 ${aa.v}',
   },
   code: {
     '"Showing ",A.files.length," of ",A.matches,': '"显示 ",A.files.length," / ",A.matches,',
@@ -103,10 +125,10 @@ const rows = JSON.parse(fs.readFileSync(rowsJson, 'utf8'))
 const verdictOf = (key) => (rows.find((x) => x.key === key) || {}).verdict
 
 chk(r.code === 1, `有 CONFIRM / GONE → rc 1（实际 ${r.code}）`)
-chk(count(/旧词条 (\d+) 条/, r.out) === 10, '统计：词典共 10 条')
-chk(count(/命中 (\d+) · 待定位 (\d+)/, r.out) === 1 && /命中 1 · 待定位 9/.test(r.out), '统计：命中 1（旧 key 还在）· 待定位 9')
+chk(count(/旧词条 (\d+) 条/, r.out) === 14, '统计：词典共 14 条')
+chk(count(/命中 (\d+) · 待定位 (\d+)/, r.out) === 1 && /命中 1 · 待定位 13/.test(r.out), '统计：命中 1（旧 key 还在）· 待定位 13')
 chk(/其中 2 条连上一版原版里也没有/.test(r.out), '--prev-ui：点名「连上一版也没有」的 2 条（更早遗留 + 整句消失）')
-chk(count(/可自动迁移 (\d+)/, r.out) === 2 && /可自动迁移 2 · 需人工确认 3 · 疑似下线 4/.test(r.out), '小结：迁移 2 / 确认 3 / 下线 4')
+chk(count(/可自动迁移 (\d+)/, r.out) === 5 && /可自动迁移 5 · 需人工确认 4 · 疑似下线 4/.test(r.out), '小结：迁移 5 / 确认 4 / 下线 4')
 
 chk(!rows.some((x) => x.key === 'Already present label'), '命中（旧 key 还在 bundle 里）的词条不进报告')
 chk(verdictOf('Hello ${aa.name}, welcome') === 'RELOCATE', 'template 唯一改名 → RELOCATE')
@@ -118,28 +140,40 @@ chk(verdictOf('"Gone ",A.x," code ",A.y,') === 'GONE', 'code 片段消失 → GO
 chk(verdictOf(' · Sponsored by ') === 'CONFIRM', '字面量近邻改写 → CONFIRM（不自动写回散文）')
 chk(verdictOf('Completely gone phrase here') === 'GONE', '字面量无近邻 → GONE')
 chk(verdictOf('Legacy dead entry') === 'GONE', '两边都没有的遗留词条 → GONE')
+// 捕获吞并修复 + 上下文定位（0.0.170 真实事故回归）
+chk(verdictOf('Go ${aa.fn(1)}') === 'RELOCATE', '捕获吞并修复：跨界吞并的捕获不算候选（修前会被吞并态蒙住→CONFIRM）')
+chk(verdictOf('Close ${aa.label}') === 'RELOCATE', '上下文定位：邻域唯一对上（panel-x）→ 自动迁移')
+chk(verdictOf('Tap ${aa.label}') === 'RELOCATE', '上下文定位：同形态两处（box-y vs drawer）→ 靠周边代码选对')
+chk(verdictOf('Spam ${aa.v}') === 'CONFIRM', '上下文得分接近（diff-1 vs diff-2）→ 保持 CONFIRM（fail-closed）')
+chk(/不够确定/.test((rows.find((x) => x.key === 'Spam ${aa.v}') || {}).reason || ''), 'CONFIRM 明细里带上下文得分，人工一眼看出为什么没敢动')
 
 // 可自动迁移的条目：新 key 必须与 bundle 逐字节一致（落盘自证的前置）
 const hello = rows.find((x) => x.key === 'Hello ${aa.name}, welcome')
 chk(hello.newKey === 'Hello ${bb.name}, welcome' && curSrc.includes('`' + hello.newKey + '`'), 'template RELOCATE：新 key 与 bundle 逐字节一致')
 const showing = rows.find((x) => x.key === '"Showing ",A.files.length," of ",A.matches,')
 chk(showing.newKey === '"Showing ",j.files.length," of ",j.matches,' && curSrc.includes(showing.newKey), 'code RELOCATE：新片段就是命中处的源码原文')
+const goRow = rows.find((x) => x.key === 'Go ${aa.fn(1)}')
+chk(goRow.newKey === 'Go ${bb.fn(2)}', '捕获吞并修复：迁到独立字面量（而不是吞并成 Go ${bb.fn(2)}, ${cc.tag}）')
+const closeRow = rows.find((x) => x.key === 'Close ${aa.label}')
+chk(closeRow.newKey === 'Close ${cc.label}', '上下文定位：选中 panel-x 那处（不是 k9 的 OTHER 处）')
 
 // 报告小节与明细
-chk(/## 可自动迁移 RELOCATE（2）/.test(r.out), '报告列出 RELOCATE 小节')
-chk(/## 需人工确认 CONFIRM（3）/.test(r.out), '报告列出 CONFIRM 小节')
+chk(/## 可自动迁移 RELOCATE（5）/.test(r.out), '报告列出 RELOCATE 小节')
+chk(/## 需人工确认 CONFIRM（4）/.test(r.out), '报告列出 CONFIRM 小节')
 chk(/## 疑似已下线 GONE（4）/.test(r.out), '报告列出 GONE 小节')
 chk(/唯一近邻候选/.test(r.out), 'CONFIRM 明细写明「唯一近邻候选，不自动写回」')
 
 // --- --write 落盘：新译文（template 插值改名 / code 标识符改名） ---------------------
 const matrixWrite = writeDict('dict-matrix-write.json', matrix)
-const rw = run(['--ui', CUR, '--dict', matrixWrite, '--write', '--quiet'])
+const rw = run(['--ui', CUR, '--prev-ui', PREV, '--dict', matrixWrite, '--write', '--quiet'])
 chk(rw.code === 1, `--write（不带 --prune-gone）：CONFIRM / GONE 仍在 → rc 1（实际 ${rw.code}）`)
 const mw = readDict(matrixWrite)
 chk(mw.template['Hello ${bb.name}, welcome'] === '你好 ${bb.name}，欢迎', 'template RELOCATE：译文插值随变量名同步')
 chk(!Object.prototype.hasOwnProperty.call(mw.template, 'Hello ${aa.name}, welcome'), 'template RELOCATE：旧键已删除')
 chk(mw.code['"Showing ",j.files.length," of ",j.matches,'] === '"显示 ",j.files.length," / ",j.matches,', 'code RELOCATE：译文里的标识符按位置改名')
 chk(!Object.prototype.hasOwnProperty.call(mw.code, '"Showing ",A.files.length," of ",A.matches,'), 'code RELOCATE：旧片段已删除')
+chk(mw.template['Close ${cc.label}'] === '关闭「${cc.label}」', '上下文定位迁移：译文插值同步')
+chk(mw.template['Go ${bb.fn(2)}'] === '去 ${bb.fn(2)}', '吞并修复迁移：译文同步')
 chk(Object.prototype.hasOwnProperty.call(mw.template, 'Open ${aa.name}'), 'CONFIRM 条目原样保留（不猜着写回）')
 
 // --- 半截模板（partial）也能迁移 ---------------------------------------------------

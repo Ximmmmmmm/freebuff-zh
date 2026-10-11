@@ -10,7 +10,7 @@
 //
 // 四个分区的定位手段不同，因为它们的形态不同：
 //   · template / 任何含 `${…}` 的键 → 固定段当锚、插值当捕获组（与 remap 同源的三种捕获形态），
-//     命中处就是新键；唯一的候选且译文能同步 → RELOCATE，多候选 → CONFIRM；
+//     命中处就是新键；唯一的候选且译文能同步 → RELOCATE，多候选 → **上下文定位**（见下）；
 //   · code 片段（`"Showing ",A.files.length," of ",A.matches,` 这类跨引号的源码片段）→ 把片段里的
 //     标识符全抹成占位符做**骨架子串搜索**（含模板 `${…}` 内部的名字——minifier 同样会改它们）：
 //     命中处的原文就是新片段，译文里的名字再按位置同步过去；
@@ -20,6 +20,13 @@
 //   · exact / pattern（整句或短词，没有插值可当锚）→ 在**完整字面量集合**里按词级相似度找改写后的
 //     新句子（` · Sponsored by ` → ` | Sponsored by `），列出候选与相似度，绝不自动改写散文；
 //   · 都没有 → GONE（上游把这条下线了），`--prune-gone` 可一次清掉。
+//
+// 上下文定位（0.0.170 适配落地）：多候选且插值数相同时，用「旧键在上一版 bundle 里的邻域」
+// 比对新版里每个候选处的邻域（标识符抹平后比字符三元组 Dice），唯一明显胜出才自动迁移——
+// `Close ${ne.label}` 的 3 个同形候选靠 panel-tab-close 之类的周边代码区分，实测全对。
+// 另有捕获合法性防线：插值内部不允许「深度 0 的裸 }」——防止捕获跨过 `}, ${` 把两个插值
+// 吞成一个（0.0.170 真实事故：吞并态恰好括号平衡、蒙过长度校验被当唯一候选写回）。
+// 双阈值（CTX_MIN / CTX_GAP）不够就不动手，保持 CONFIRM 交人工（fail-closed）。
 //
 // 与邻居的分工：`remap.js` 管「固定段没变、只是插值变量改名」的自动迁移；`missed_diagnose.js`
 // 负责**分类**「够不着」的条目（命中 / 只在主进程 / 只在上一版 / 两边都没有）并拦构建；本工具
@@ -74,6 +81,123 @@ function dice(a, b) {
   let hit = 0
   for (const w of A) if (B.has(w)) hit++
   return (2 * hit) / (A.size + B.size)
+}
+
+// --- 上下文定位：多候选时用「旧词条在上一版里的邻域」比对，挑出同一处代码 -------------
+// 0.0.170 实战：`Close ${ne.label}` 有 3 个同形候选，固定段与插值形态都分不出来——但每个
+// 候选**周围那段代码**是唯一的（panel-tab-close、connector-card-content…）。两边邻域都做
+// 「标识符抹平」（引号里的字面量逐字保留——那才是稳定锚），再比字符三元组 Dice：对改名
+// 不敏感、对周边小改容忍。只有明显胜出（双阈值）才自动写回，否则保持 CONFIRM（fail-closed）。
+const CTX_W = 160
+const CTX_MIN = 0.55
+const CTX_GAP = 0.08
+
+// 标识符抹平（长度不变）：引号内逐字保留，引号外的标识符串按原长压成 `_`。
+// 必须对**整个源**跑一遍再切片：±160 的窗口可能从某个字符串中间开始，独立抹平一个
+// 半截窗口会把引号状态整个弄反（0.0.170 调试时实际踩到：窗口里的代码没抹、文案反被抹）。
+function maskSource(s) {
+  let out = ''
+  let i = 0
+  let q = null
+  while (i < s.length) {
+    const c = s[i]
+    if (q) {
+      out += c
+      if (c === '\\') {
+        out += s[i + 1] || ''
+        i += 2
+        continue
+      }
+      if (c === q) q = null
+      i++
+      continue
+    }
+    if (c === '"' || c === "'") {
+      q = c
+      out += c
+      i++
+      continue
+    }
+    if (/[A-Za-z_$]/.test(c)) {
+      let j = i
+      while (j < s.length && /[\w$]/.test(s[j])) j++
+      out += '_'.repeat(j - i)
+      i = j
+      continue
+    }
+    out += c
+    i++
+  }
+  return out
+}
+
+const maskCache = new Map()
+function maskedOf(src) {
+  let m = maskCache.get(src)
+  if (m === undefined) {
+    m = maskSource(src)
+    if (maskCache.size >= 4) maskCache.clear()
+    maskCache.set(src, m)
+  }
+  return m
+}
+
+function ctxWindow(src, start, len) {
+  const from = Math.max(0, start - CTX_W)
+  const to = Math.min(src.length, start + len + CTX_W)
+  return maskedOf(src).slice(from, to)
+}
+
+// 字符三元组 Dice（多重集）：改名/小改只动少数三元组，周边代码的相似度主导结果
+function triDice(a, b) {
+  if (a.length < 3 || b.length < 3) return 0
+  const tri = (s) => {
+    const m = new Map()
+    for (let i = 0; i + 3 <= s.length; i++) {
+      const k = s.slice(i, i + 3)
+      m.set(k, (m.get(k) || 0) + 1)
+    }
+    return m
+  }
+  const A = tri(a)
+  const B = tri(b)
+  let hit = 0
+  for (const [k, n] of A) {
+    const m = B.get(k)
+    if (m) hit += Math.min(n, m)
+  }
+  return (2 * hit) / (a.length - 2 + b.length - 2)
+}
+
+// 旧键在上一版 bundle 里的所有出现位置（内容坐标；>8 处就别猜了）
+function contextSites(src, key) {
+  const out = []
+  let i = -1
+  while ((i = src.indexOf(key, i + 1)) !== -1) {
+    out.push(i)
+    if (out.length >= 8) break
+  }
+  return out
+}
+
+// 对一组候选打分：每个候选取「所有命中处 × 所有旧位置」的最大相似度；返回前两名
+function pickByContext(key, candidates, src, prevSrc) {
+  const olds = contextSites(prevSrc, key)
+  if (!olds.length) return null
+  const oldWins = olds.map((o) => ctxWindow(prevSrc, o, key.length))
+  const scored = candidates.map((c) => {
+    let best = 0
+    for (const s of c.starts || []) {
+      const w = ctxWindow(src, s, c.text.length)
+      for (const ow of oldWins) {
+        const d = triDice(ow, w)
+        if (d > best) best = d
+      }
+    }
+    return { hit: c, score: best }
+  })
+  scored.sort((a, b) => b.score - a.score)
+  return { best: scored[0], second: scored[1] ? scored[1].score : 0 }
 }
 
 // --- 源码片段扫描：标识符（含模板字符串 `${…}` 内部的）与「其余字符」两层 -----------------
@@ -350,59 +474,98 @@ function templateHitsByScan(key, src) {
   if (scanCache.src !== src) scanCache = { src, list: scanTemplateLiterals(src) }
   const sig = tplSig(key)
   const hits = []
-  for (const { text } of scanCache.list) {
+  for (const { text, start } of scanCache.list) {
     if (tplSig(text) !== sig) continue
     const parts = parseTemplate(text)
     if (parts.some((p) => p.partial)) continue
-    hits.push({ text, caps: parts.filter((p) => p.t === 'expr').map((p) => p.v), okExpr: true })
+    hits.push({ text, caps: parts.filter((p) => p.t === 'expr').map((p) => p.v), okExpr: true, start })
     if (hits.length >= MAX_CANDIDATES * 3) break
   }
   return hits
 }
 
+// 捕获合法性：插值内部不允许出现「深度 0 的裸 }」——那是捕获跨过了插值边界，把
+// `${i.toLowerCase()}, ${s.toLowerCase()}` 整段当成一个插值（0.0.170 真实事故：STRICT_CAP
+// 的可选调用段能填括号，吞并后续 `}, ${…` 后整体依然「括号平衡」，蒙过了长度校验被当唯一候选）。
+function singleInterp(inner) {
+  let d = 0
+  let q = null
+  for (let k = 0; k < inner.length; k++) {
+    const c = inner[k]
+    if (q) {
+      if (c === '\\') k++
+      else if (c === q) q = null
+      continue
+    }
+    if (c === '"' || c === "'") {
+      q = c
+      continue
+    }
+    if (c === '{') d++
+    else if (c === '}') {
+      if (d === 0) return false
+      d--
+    }
+  }
+  return d === 0
+}
+
 function templateCandidates(key, src) {
-  let re = null
-  let capName = 'strict'
+  const partialTail = parseTemplate(key).some((p) => p.partial)
+  const collect = (re) => {
+    const got = []
+    let m
+    re.lastIndex = 0
+    while ((m = re.exec(src)) !== null && got.length < MAX_CANDIDATES * 3) {
+      const caps = m.slice(1)
+      const head = partialTail ? caps.slice(0, -1) : caps
+      got.push({
+        text: m[0].slice(1, -1),
+        caps,
+        okExpr: head.every((c) => balancedExpr(c) && singleInterp(innerOf(c))),
+        start: m.index + 1,
+      })
+      if (m.index === re.lastIndex) re.lastIndex++
+    }
+    return got
+  }
+  let capName = null
+  let hits = []
+  let fallback = null // 首个有命中的级别：全都没合法命中时兜底（保持旧行为）
   for (const [cap, name] of [
     [STRICT_CAP, 'strict'],
     [BALANCED_CAP, 'balanced'],
     [LAZY_CAP, 'lazy'],
   ]) {
     const cand = templateRegex(key, cap)
-    if (cand && cand.test(src)) {
-      re = templateRegex(key, cap)
+    if (!cand || !cand.test(src)) continue
+    const got = collect(cand)
+    if (!fallback) fallback = { hits: got, name }
+    // 首选的捕获级别必须产出**合法**命中：strict 只会吞并跨界形态时，降级到 balanced
+    if (got.some((h) => h.okExpr)) {
+      hits = got
       capName = name
       break
     }
   }
-  const hits = []
-  if (re) {
-    let m
-    re.lastIndex = 0
-    while ((m = re.exec(src)) !== null && hits.length < MAX_CANDIDATES * 3) {
-      const caps = m.slice(1)
-      const partialTail = parseTemplate(key).some((p) => p.partial)
-      const head = partialTail ? caps.slice(0, -1) : caps
-      hits.push({ text: m[0].slice(1, -1), caps, okExpr: head.every(balancedExpr) })
-      if (m.index === re.lastIndex) re.lastIndex++
-    }
-  } else {
-    hits.push(...templateHitsByScan(key, src))
+  if (!hits.length && fallback) {
+    hits = fallback.hits
+    capName = fallback.name
+  }
+  if (!hits.length) {
+    hits = templateHitsByScan(key, src)
     if (hits.length) capName = 'scan'
   }
   // 同一现形态被复制成多份时只留一条候选（`Remove ${e.name}` 出现两次不是两个答案），
-  // 但「有几处命中」这个事实不能丢：调用方靠候选条数判断「唯一才敢自动写回」。
-  const seen = new Set()
-  const uniq = []
+  // 但「有几处命中」这个事实不能丢：调用方靠候选条数判断「唯一才敢自动写回」；
+  // 每处命中的位置都留下——上下文定位要在所有命中处里挑最像旧邻域的那个。
+  const byText = new Map()
   for (const h of hits) {
-    const been = seen.has(h.text)
-    if (!been) {
-      seen.add(h.text)
-      uniq.push({ ...h, sites: 1 })
-      continue
-    }
-    uniq[uniq.findIndex((u) => u.text === h.text)].sites++
+    const seen = byText.get(h.text)
+    if (seen) seen.starts.push(h.start)
+    else byText.set(h.text, { ...h, starts: [h.start] })
   }
+  const uniq = [...byText.values()].map((h) => ({ ...h, sites: h.starts.length }))
   return { cap: uniq.length ? capName : null, hits: uniq }
 }
 
@@ -538,9 +701,30 @@ function main() {
             row.candidates = usable.slice(0, MAX_CANDIDATES).map(candOf)
           }
         } else {
-          row.verdict = 'CONFIRM'
-          row.reason = `${usable.length} 种候选且插值各不相同，选一条（${capName}）`
-          row.candidates = usable.slice(0, MAX_CANDIDATES).map(candOf)
+          // 多候选：插值数相同的那批先试「上下文定位」——旧邻域能唯一对上就自动迁移
+          const pool = sameSlots.length > 1 ? sameSlots : null
+          const pick = pool && prevSrc ? pickByContext(key, pool, src, prevSrc) : null
+          const strong = pick && pick.best.score >= CTX_MIN && pick.best.score - pick.second >= CTX_GAP
+          if (strong) {
+            const rebuilt = rebuildZh(key, zh, pick.best.hit.text)
+            if (rebuilt.ok) {
+              row.verdict = 'RELOCATE'
+              row.newKey = pick.best.hit.text
+              row.newZh = rebuilt.zh
+              row.reason = `多候选上下文定位（${capName}，得分 ${pick.best.score.toFixed(2)}，领先次高 ${(pick.best.score - pick.second).toFixed(2)}）`
+            } else {
+              row.verdict = 'CONFIRM'
+              row.reason = `上下文定位到 ${JSON.stringify(pick.best.hit.text.slice(0, 60))}，但译文无法自动同步：${rebuilt.why}`
+              row.candidates = usable.slice(0, MAX_CANDIDATES).map(candOf)
+            }
+          } else {
+            row.verdict = 'CONFIRM'
+            const ctx = pick
+              ? `；上下文得分 ${pick.best.score.toFixed(2)} vs 次高 ${pick.second.toFixed(2)}（不够确定）`
+              : ''
+            row.reason = `${usable.length} 种候选且插值各不相同，选一条（${capName}）${ctx}`
+            row.candidates = usable.slice(0, MAX_CANDIDATES).map(candOf)
+          }
         }
         continue
       }
@@ -684,4 +868,8 @@ module.exports = {
   templateCandidates,
   literalCandidates,
   skeletonWithMap,
+  singleInterp,
+  maskSource,
+  triDice,
+  pickByContext,
 }
