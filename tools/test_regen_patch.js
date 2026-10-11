@@ -8,8 +8,10 @@
 //   3. 真实场景：上游在 hunk 中间插行 → 旧补丁的上下文在新版里根本不存在（套不上），
 //      regen 只用映射就把它重新生成成**能干净套用**的补丁，且 --write 落盘后幂等；
 //   4. 失败要响：块配不上对 → rc 1 且不写盘；映射行在新版找不到 → 只警告（可能是上游删了那句）；
-//   5. 纯新增块要点名：regen 只搬「删除块 + 等长新增块」的映射，纯新增块带不上——必须在
-//      输出里出声（0.0.154.1 的 HANHUA_SHELL_COLORS 插入段被静默丢过一次，靠 postbuild 哨兵才逮住）。
+//   5. 纯新增块要 fail-closed：regen 只搬「删除块 + 等长新增块」的映射，纯新增块带不上——
+//      试运行必须点名（不静默），--write 必须拒绝落盘、要显式 --drop-plain-adds 才放行
+//      （0.0.154.1 的 HANHUA_SHELL_COLORS 插入段被静默丢过一次，靠 postbuild 哨兵才逮住——
+//       丢的是纯新增代码，补丁照样干净套用，只有运行时才炸主进程 ReferenceError）。
 'use strict'
 const fs = require('fs')
 const path = require('path')
@@ -173,10 +175,22 @@ chk(applies(oldPatch, snapshot).ok === true, '重生成的补丁在镜像里能�
 chk(run([REGEN, oldPatch, '--snapshot', snapshot, '--write']).code === 0, '再跑一次仍然 rc 0（幂等可重跑）')
 chk(fs.readFileSync(oldPatch, 'utf8') === after, '再跑一次内容不再变化（幂等）')
 
-// --- 2b) 含纯新增块的补丁：仍能重生成，但纯新增块必须在输出里点名 ---------------------
+// --- 2b) 含纯新增块的补丁：试运行点名 + --write fail-closed -------------------------
 const dryIns = run([REGEN, insertPatch, '--snapshot', snapshot])
 chk(dryIns.code === 0, `含纯新增块仍能重生成（rc ${dryIns.code}）`)
 chk(/纯新增块/.test(dryIns.out) && /新增的说明行/.test(dryIns.out), '  纯新增块在输出里点名（不静默）')
+chk(/拒绝落盘|--drop-plain-adds/.test(dryIns.out), '  试运行也预告了 --write 的 fail-closed 行为')
+const insBefore = fs.readFileSync(insertPatch, 'utf8')
+const wIns = run([REGEN, insertPatch, '--snapshot', snapshot, '--write'])
+chk(wIns.code === 1, `--write 含纯新增块 → 拒绝落盘 rc 1（实际 ${wIns.code}）`)
+chk(/--drop-plain-adds/.test(wIns.out), '  指名显式确认开关')
+chk(/HANHUA_SHELL_COLORS|纯新增段手工补回/.test(wIns.out), '  提示落盘后要手工补回')
+chk(fs.readFileSync(insertPatch, 'utf8') === insBefore, '  拒绝时补丁文件原样未动')
+const wIns2 = run([REGEN, insertPatch, '--snapshot', snapshot, '--write', '--drop-plain-adds'])
+chk(wIns2.code === 0 && /已写入/.test(wIns2.out), `  --drop-plain-adds 显式确认后放行（rc ${wIns2.code}）`)
+const insAfter = fs.readFileSync(insertPatch, 'utf8')
+chk(!insAfter.includes('新增的说明行'), '  放行落盘的补丁确实不含纯新增块（维护者要手工补回）')
+chk(/--drop-plain-adds 落盘/.test(wIns2.out), '  落盘输出再次点名丢了纯新增块')
 
 // --- 3) --from 叠加映射 + 未命中只警告 -------------------------------------------------
 const dryFrom = run([REGEN, oldPatch, '--snapshot', snapshot, '--from', fromPatch])

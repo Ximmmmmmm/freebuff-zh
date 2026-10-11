@@ -24,12 +24,17 @@
 //
 // 用法：
 //   node tools/regen_patch.js <patch> [--target <electron/xxx>] [--from <补丁>]... \
-//                             [--snapshot <含 electron/ 的目录>] [--write]
-//   node tools/regen_patch.js --broken [--patches <目录>] [--snapshot <目录>] [--write]
+//                             [--snapshot <含 electron/ 的目录>] [--write] [--drop-plain-adds]
+//   node tools/regen_patch.js --broken [--patches <目录>] [--snapshot <目录>] [--write] [--drop-plain-adds]
 //     --broken：只处理补丁目录里**当前套不上**的那些（预检报出来的），逐个重生成
 //     --target：默认从补丁头的 `+++ b/<路径>` 推；一个补丁点名多个文件时要逐个处理
 //   （不带 --write 只试运行：打印会生成几个 hunk 与复验结果，不落盘）
-// 退出码：0 = 生成且复验通过（试运行也算）；1 = 块配不对或复验不通过（未写入）；2 = 用法/输入不对
+//   --drop-plain-adds：显式确认「丢弃纯新增块也照写」。不带它时，含纯新增块的补丁
+//     --write 会拒绝落盘（fail-closed）——0.0.154.1 的 HANHUA_SHELL_COLORS 插入段
+//     就是被 --write 静默丢掉、事后靠 postbuild 哨兵才逮住的；丢的是纯新增代码，
+//     补丁照样干净套用，只有运行时才炸（主进程 ReferenceError）。
+// 退出码：0 = 生成且复验通过（试运行也算）；1 = 块配不对、复验不通过、
+//         或含纯新增块而未加 --drop-plain-adds（均未写入）；2 = 用法/输入不对
 'use strict'
 
 const fs = require('fs')
@@ -42,8 +47,8 @@ const { checkApply } = require('./patch_preflight.js')
 function usage(msg) {
   if (msg) console.error('ERROR: ' + msg)
   console.error('usage: node tools/regen_patch.js <patch> [--target <electron/xxx>] [--from <补丁>]... \\')
-  console.error('                                  [--snapshot <含 electron/ 的目录>] [--write]')
-  console.error('       node tools/regen_patch.js --broken [--patches <目录>] [--snapshot <目录>] [--write]')
+  console.error('                                  [--snapshot <含 electron/ 的目录>] [--write] [--drop-plain-adds]')
+  console.error('       node tools/regen_patch.js --broken [--patches <目录>] [--snapshot <目录>] [--write] [--drop-plain-adds]')
   process.exit(2)
 }
 
@@ -160,7 +165,7 @@ function buildDiff(aText, bText, target, dir) {
 
 // 处理一个补丁。镜像必须已经搭好（--broken 会复用同一个）。
 function regenOne(mirror, patchFile, opts) {
-  const { snapshot, fromFiles, write, targetOverride } = opts
+  const { snapshot, fromFiles, write, targetOverride, allowDrop } = opts
   const text = fs.readFileSync(patchFile, 'utf8')
   const targets = targetsOf(text)
   if (targetOverride) targets.splice(0, targets.length, targetOverride)
@@ -210,7 +215,8 @@ function regenOne(mirror, patchFile, opts) {
     const total = plain.reduce((n, b) => n + b.length, 0)
     console.log(`  ! 补丁含 ${plain.length} 处纯新增块（共 ${total} 行，无对应删除行）——重生成只搬译文映射，不会带上它们：`)
     for (const b of plain) console.log(`      ${JSON.stringify(b[0])}…（${b.length} 行）`)
-    console.log('      生成后务必核对 postbuild 的译文哨兵；少了就得把它们补回补丁（0.0.154.1 的 HANHUA_SHELL_COLORS 即此）')
+    console.log('      --write 不带 --drop-plain-adds 会拒绝落盘（fail-closed）；确认丢弃落盘后，务必把以上纯新增段手工补回补丁')
+    console.log('      并核对 postbuild 的译文哨兵（0.0.154.1 的 HANHUA_SHELL_COLORS 即是被静默丢过的一次）')
   }
   if (self.unpaired.length) {
     console.error(`  ✗ 有 ${self.unpaired.length} 个删除块配不上对（行数不等）——需要人工看：`)
@@ -237,8 +243,19 @@ function regenOne(mirror, patchFile, opts) {
     }
     console.log(`  hunk：${hunks} 个 · git apply --check 通过 ✓`)
     if (write) {
+      // fail-closed：纯新增块重生成带不上，--write 直接落盘就是「静默丢」——0.0.154.1 的
+      // HANHUA_SHELL_COLORS 就是这么丢的（补丁照样干净套用，只有运行时才炸 ReferenceError）。
+      // 拦下来逼操作者显式选：要么先补译文映射把纯新增段变成「删除+新增」对，要么带开关确认后再手工回插。
+      if (plain.length && !allowDrop) {
+        console.error(`  ✗ 补丁含 ${plain.length} 处纯新增块（上面已点名），--write 落盘会把它们弄丢——拒绝写入。`)
+        console.error('      确认丢弃就加 --drop-plain-adds，落盘后务必把纯新增段手工补回补丁再构建')
+        return { failed: true, changed: false }
+      }
       fs.writeFileSync(patchFile, newText)
       console.log(`  ✓ 已写入（${newText.split('\n').length - 1} 行）`)
+      if (plain.length) {
+        console.log(`  ! 已按 --drop-plain-adds 落盘：${plain.length} 处纯新增块没带上，务必手工补回并核对 postbuild 哨兵`)
+      }
     } else {
       console.log('  （试运行，未写入；确认后加 --write）')
     }
@@ -251,6 +268,7 @@ function regenOne(mirror, patchFile, opts) {
 function main() {
   const argv = process.argv.slice(2)
   const write = argv.includes('--write')
+  const allowDrop = argv.includes('--drop-plain-adds')
   const broken = argv.includes('--broken')
   const take = (flag) => {
     const i = argv.indexOf(flag)
@@ -292,7 +310,7 @@ function main() {
       let changed = 0
       let missing = 0
       for (const f of failedFiles) {
-        const r = regenOne(mirror, f, { snapshot, fromFiles, write })
+        const r = regenOne(mirror, f, { snapshot, fromFiles, write, allowDrop })
         if (r.failed) failed++
         if (r.changed) changed++
         if (r.missing) missing += r.missing
@@ -319,6 +337,7 @@ function main() {
       fromFiles: fromFiles.map((f) => path.resolve(f)),
       write,
       targetOverride: take('--target'),
+      allowDrop,
     })
     process.exit(r.failed ? 1 : 0)
   } finally {
