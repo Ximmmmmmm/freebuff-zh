@@ -5,7 +5,9 @@
 #   1b/7 旧词条重新定位：remap 只迁「固定段逐字节还在」的；被改写 / 命中多处的用 tools/resituate.js
 #        在新版原版里找回现形态——能确定的（RELOCATE）自动写回，其余列 CONFIRM / GONE 交人工
 #   2/7 补丁体检：主进程补丁的锚点与分诊（tools/patch_preflight.js：行号漂移 vs 上游改写）
-#   3/7 可复现构建：bash build.sh（内含语法校验 + 构建产物自检）
+#   3/7 可复现构建：bash tools/build_locked.sh（内含语法校验 + 构建产物自检；与 build.sh
+#       流程完全一致，落地一步对「文件被外部进程持锁」友好——WorkBuddy 会长期持有 workspace
+#       里所有 app.asar 的句柄，build.sh 结尾的 rm -rf output + mv 在本机必挂，见 §1.5）
 #   4/7 UI 残留扫描：leftover / prose / uipos / fieldscan / blindscan 扫描构建出的主 bundle
 #   5/7 主进程英文扫描：tools/mainscan.js 对差 electron/*.cjs——词典只替换双引号字面量，
 #       单引号 / 模板里的文案（菜单、原生对话框、openIn 报错、MCP 同意窗口）全靠 patches/，
@@ -180,8 +182,8 @@ esac
 echo
 echo "== 3/7 构建（含防呆自检）=="
 lap "2主进程补丁预检"
-if ! bash "${HERE}/build.sh" "${PRISTINE_ASAR}" "${PRISTINE_UI}" 2>&1 | tee -a "${REPORT}"; then
-  echo "ERROR: build.sh 失败（详情见上方日志），中止。" >&2
+if ! bash "${HERE}/tools/build_locked.sh" "${PRISTINE_ASAR}" "${PRISTINE_UI}" 2>&1 | tee -a "${REPORT}"; then
+  echo "ERROR: build_locked.sh 失败（详情见上方日志），中止。" >&2
   exit 1
 fi
 
@@ -192,7 +194,7 @@ FINAL_BUNDLE="${HERE}/output/ui/assets/$(basename "${UI_BUNDLE:-__none__}")"
 # --- 4/7 UI 残留扫描 ---------------------------------------------------------------
 echo
 echo "== 4/7 UI 残留扫描 =="
-lap "3构建（bash build.sh）"
+lap "3构建（build_locked.sh）"
 {
   echo
   echo "## 残留扫描（output 主 bundle）"
