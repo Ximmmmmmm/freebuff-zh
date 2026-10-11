@@ -93,3 +93,19 @@ if [ "${FORCE}" = "1" ]; then
   echo "注意（--force）：如果刚才有实例在跑，只重载窗口是不够的——主进程仍跑着换文件之前的"
   echo "  electron/main.cjs（热换造成的混合态）。请彻底退出 Freebuff 再启动。"
 fi
+
+# --- 汉化更新会换掉整个 ui/，本机补丁（速度指示等）随之被冲掉：若控制器在隔壁，直接静默补打 ---
+# 控制器没开也能跑（--reapply 是无 GUI 的一次性命令）；失败不影响汉化本身——下次打开控制器
+# 它还会自动补。找不到控制器就跳过（汉化包是通用产物，不假设机器上装了控制器）。
+CTRL_EXE="$(cd "${HERE}/.." 2>/dev/null && pwd)/freebuff-controller/FreebuffController.exe"
+if [ -f "${CTRL_EXE}" ]; then
+  rc=0
+  "${CTRL_EXE}" --reapply || rc=$?
+  if [ "${rc}" = "0" ]; then
+    echo "本机补丁已检查/补打（控制器静默模式）。"
+  else
+    echo "  ! 本机补丁重打未完全成功（退出码 ${rc}）——下次打开控制器会自动补。"
+  fi
+else
+  echo "（未找到控制器，跳过本机补丁重打；如需补打可运行 FreebuffController。）"
+fi
