@@ -276,6 +276,18 @@ const NB = String.fromCharCode(96)
   chk(d1 && d1.from === 'reset' && d1.to === 'local', 'tinyRewrite：单词替换识别（reset → local）')
   chk(Rlib.tinyRewrite('a b c d', 'a x y z d') === null, 'tinyRewrite：多词替换不认（fail-closed）')
 }
+// rebuildZh 的 token 序列对齐：嵌套模板里「模板内容文本」被翻译过（骨架失配）时，
+// 靠代码标识符逐位同名退回对齐（0.0.171：`, next on ${tm(...)}` → `，下次 ${tm(...)}`）
+{
+  const oldK = 'TagX ${x?' + NB + ' ${f.a} mid${g.b?' + NB + ', next ${h.c}' + NB + ':""}.' + NB + ':""} tail'
+  const newK = 'TagX ${x?' + NB + ' ${p.a} mid${g.b?' + NB + ', next ${q.c}' + NB + ':""}.' + NB + ':""} tail'
+  const zh = '深 ${x?' + NB + ' ${f.a} mid${g.b?' + NB + '，下次 ${h.c}' + NB + ':""}.' + NB + ':""} 完'
+  const rb = Rlib.rebuildZh(oldK, zh, newK)
+  chk(
+    rb.ok && rb.zh === '深 ${x?' + NB + ' ${p.a} mid${g.b?' + NB + '，下次 ${q.c}' + NB + ':""}.' + NB + ':""} 完',
+    'rebuildZh：模板内容文本被翻译过的嵌套插值 → token 序列对齐改名（骨架路径够不着）',
+  )
+}
 
 // 微改写端到端：RETRANSLATE + 清单落盘（词典本工具不动，译文交 retranslate.js）
 {

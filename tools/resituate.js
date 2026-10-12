@@ -400,6 +400,21 @@ function rebuildZh(oldKey, zh, newKey) {
       const renamed = renameVia(codeIdents(p.v), p.v, names)
       if (renamed !== null) return { t: 'expr', v: renamed, idx: n.idx, partial: p.partial }
     }
+    // 再退一层：嵌套模板里连「两个反引号段之间的文本」都被翻译过时（骨架因文本差失配，
+    // 0.0.171 实锤：`, next on ${tm(...)}` → `，下次 ${tm(...)}`），改用**代码 token 序列对齐**——
+    // 只要求译文标识符序列与某条旧插值逐位同名（即译文用的还是旧名），即可按位改名；
+    // 多条对齐得上视为歧义，交人工（fail-closed）。
+    const zt = codeIdents(p.v).map((t) => t.name)
+    const aligned = []
+    for (const [o, n] of mapping) {
+      const ot = codeIdents(o).map((t) => t.name)
+      if (ot.length === zt.length && ot.every((nm, k) => nm === zt[k])) aligned.push(n)
+    }
+    if (aligned.length === 1) {
+      const names = codeIdents(innerOf(aligned[0].v)).map((t) => t.name)
+      const renamed = renameVia(codeIdents(p.v), p.v, names)
+      if (renamed !== null) return { t: 'expr', v: renamed, idx: aligned[0].idx, partial: p.partial, tokensAligned: true }
+    }
     return { t: 'expr', v: p.v, idx: null, partial: p.partial }
   })
   const out = parts.map((p) => (p.t === 'expr' ? '${' + p.v + (p.partial ? '' : '}') : p.v)).join('')
@@ -407,8 +422,15 @@ function rebuildZh(oldKey, zh, newKey) {
   const slots = parts.filter((p) => p.t === 'expr')
   const oldSlots = zp.filter((p) => p.t === 'expr')
   if (slots.length !== oldSlots.length) return { ok: false, why: `译文插值槽数变化（${oldSlots.length} → ${slots.length}）` }
-  // 逐条按「它是新键里第几个插值」回比骨架：对齐不上的插值写进去就是引用未定义的变量。
-  const bad = slots.find((p) => p.idx === null || skeletonOf(p.v) !== skeletonOf(newE[p.idx]))
+  // 逐条按「它是新键里第几个插值」回比：对齐不上的插值写进去就是引用未定义的变量。
+  // 常规路径回比骨架；token 对齐路径（嵌套模板文本被翻译过）回比**标识符序列**——
+  // 那种插值的骨架本就该不同（译文文本不一样），标识符逐位同名才是可写回的判据。
+  const identsOf = (s) => codeIdents(s).map((t) => t.name).join('\u0000')
+  const bad = slots.find((p) => {
+    if (p.idx === null) return true
+    if (p.tokensAligned) return identsOf(p.v) !== identsOf(newE[p.idx])
+    return skeletonOf(p.v) !== skeletonOf(newE[p.idx])
+  })
   if (bad) return { ok: false, why: `译文的插值 ${JSON.stringify('${' + bad.v + '}')} 无法与新键对齐（骨架不匹配）` }
   const tailOf = (s) => (s.match(/\$\{[^}]*$/) || [])[0]
   if (kp.some((p) => p.partial) && tailOf(out) !== tailOf(newKey)) {
