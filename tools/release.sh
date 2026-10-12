@@ -103,8 +103,14 @@ ASSET="hanhua-pack-${VER}.zip"
 # （0.0.124 发布时实测：curl 卡满 62 秒后 `Failed to connect to github.com port 443`，
 # 而同一条命令换成 gh 一秒内拿到）。区分「取不到」与「远端没发过」很重要——前者要出声。
 gh_asset() { # gh_asset <tag|latest> <资产名> → stdout 内容
-  local tag="$1" name="$2" id
-  id="$(gh api "repos/${REPO}/releases/${tag}" --jq ".assets[] | select(.name==\"${name}\") | .id" 2>/dev/null | head -1 || true)"
+  local tag="$1" name="$2" id rel
+  # latest 走 /releases/latest；**tag 必须走 /releases/tags/<tag>**。
+  # 曾经不区分：传 tag 时打的是 /releases/pack-v0.0.171，GitHub 按数字 release id
+  # 解析 → 404 → 资产 id 取不到 → 调用方拿到空。唯一调用方原来只传 latest 所以没暴露；
+  # 发布后自检的 sha512 对账是第一个传 tag 的——不修的话每次发布后自检都会误报
+  # 「manifest 为空、对账失败」而根因其实在取数（2026-10-12 加自检时实测抓到）。
+  if [ "${tag}" = "latest" ]; then rel="releases/latest"; else rel="releases/tags/${tag}"; fi
+  id="$(gh api "repos/${REPO}/${rel}" --jq ".assets[] | select(.name==\"${name}\") | .id" 2>/dev/null | head -1 || true)"
   [ -n "${id}" ] || return 1
   gh api -H 'Accept: application/octet-stream' "repos/${REPO}/releases/assets/${id}" 2>/dev/null || return 1
 }
@@ -433,3 +439,67 @@ echo "已发布 Release ${REL_TAG}。控制器下次检查即可拉到新包。"
 if ! node "${HERE}/tools/pristine.js" publish --quiet; then
   echo "  ! 本版英文原版快照未能附上 Release（不影响本次发布）：node tools/pristine.js publish" >&2
 fi
+
+# --- 发布后自检：整条链唯一不可逆动作的收尾验证 -------------------------------------------
+# 为什么：`gh release create` 返回成功只代表「GitHub 收下了」，不代表「客户拉得到、拉得对」。
+# 0.0.169 出过 tag 落错 → release 被转 draft → latest 回退的事故（事后修 tag 又触发一轮）；
+# 而 manifest 的 sha512 是客户端唯一的完整性判据——上传若损坏，所有客户端都会静默拒绝
+# 这个包，表现为「永远不更新」且没有任何一端报错。这道自检就是把「发布成功」从
+# 「命令返回了」升级为「验证过了」。三道检查：
+#   ① 非 draft / 非 prerelease（draft 不进 latest，客户端看不见）；
+#   ② releases/latest 指向本 tag（仅当本版是最高版本时强制；--force 重发旧版时只提醒）；
+#   ③ 线上 manifest.sha512 ↔ 本地 zip 逐字节对账。
+# 任一硬失败即 exit 1：adapt.sh 会把本轮记 failed 并推 alert——此时包已在线，按提示人工处理
+# （修不好就 bash tools/release.sh --force 重发）。资产读取走 gh_asset（curl 直连
+# github.com 会留空文件，让 sha512 静默变成空、自检形同虚设——见上方 gh_asset 注释）。
+echo
+echo "== 发布后自检 =="
+SELF_RC=0
+
+# ① 非 draft / 非 prerelease
+REL_STATE="$(gh release view "${REL_TAG}" -R "${REPO}" --json isDraft,isPrerelease \
+  --jq '[.isDraft, .isPrerelease] | join(",")' 2>/dev/null || true)"
+if [ "${REL_STATE}" = "false,false" ]; then
+  echo "  ✓ ${REL_TAG} 非 draft、非 prerelease"
+else
+  echo "ERROR: ${REL_TAG} 状态异常（isDraft,isPrerelease=${REL_STATE:-读不到}）——draft 不进 latest，客户端永远看不到这个包" >&2
+  SELF_RC=1
+fi
+
+# ② releases/latest 指向（本版是最高版本时才强制；force 重发旧版属预期，只提醒）
+LATEST_TAG="$(gh api "repos/${REPO}/releases/latest" --jq '.tag_name' 2>/dev/null || true)"
+if [ -z "${LATEST_TAG}" ]; then
+  echo "  ! 读不到 releases/latest（网络？），本项未执行" >&2
+elif [ "${LATEST_TAG}" = "${REL_TAG}" ]; then
+  echo "  ✓ releases/latest → ${LATEST_TAG}"
+else
+  TOP="$(printf '%s\n%s\n' "${REL_TAG#pack-v}" "${LATEST_TAG#pack-v}" | sort -V | tail -1)"
+  if [ "${TOP}" = "${REL_TAG#pack-v}" ]; then
+    echo "ERROR: releases/latest 指向 ${LATEST_TAG} 而非本版 ${REL_TAG}——客户端会静默跳过更新" >&2
+    SELF_RC=1
+  else
+    echo "  ! releases/latest 指向更高的 ${LATEST_TAG}（force 重发旧版，属预期）" >&2
+  fi
+fi
+
+# ③ 线上 manifest.sha512 ↔ 本地 zip 对账
+if command -v openssl >/dev/null 2>&1; then
+  MAN_ONLINE="$(gh_asset "${REL_TAG}" pack-manifest.json 2>/dev/null || true)"
+  MAN_SHA="$(printf '%s' "${MAN_ONLINE}" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{try{console.log(JSON.parse(s).sha512||"")}catch{console.log("")}})' 2>/dev/null || true)"
+  ZIP_SHA="$(openssl dgst -sha512 -binary "${ZIP}" 2>/dev/null | base64 -w0 2>/dev/null || openssl dgst -sha512 -binary "${ZIP}" 2>/dev/null | base64 | tr -d '\n')"
+  if [ -n "${MAN_SHA}" ] && [ "${MAN_SHA}" = "${ZIP_SHA}" ]; then
+    echo "  ✓ 线上 manifest.sha512 ↔ 本包逐字节一致"
+  else
+    echo "ERROR: sha512 对账失败（manifest=${MAN_SHA:-空} / zip=${ZIP_SHA:0:24}…）——客户端会拒绝这个包，表现为「永远不更新」" >&2
+    SELF_RC=1
+  fi
+else
+  echo "  ! 无 openssl，sha512 对账未执行（补装后可用 --force 重跑本段自检）" >&2
+fi
+
+if [ "${SELF_RC}" -ne 0 ]; then
+  echo "ERROR: 发布后自检未过——${REL_TAG} 已在线但状态可疑，按上面提示处理；" >&2
+  echo "  确认要保留线上现状就 --force 重发；adapt.sh 会把本轮记 failed（不会误报 released）。" >&2
+  exit 1
+fi
+echo "发布后自检全过：${REL_TAG} 在线、可见、完整。"
