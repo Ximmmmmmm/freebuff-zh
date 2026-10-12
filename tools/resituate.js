@@ -530,9 +530,11 @@ function singleInterp(inner) {
 // 三种标准捕获都跨不过反引号；固定段扫描又依赖整文件反引号配对（会被更早的构造打乱）。
 // 这路直接对源码局部正则匹配，再用两个复核件狙掉错配：① 整段形态（固定段序列与 key 一致）；
 // ② 每个插值用 skipInterp 合成重扫、边界必须逐字严丝合缝（吞并 / 截断一律拒绝）。
-const DEEP_T0 = '`[^`]{0,1500}`'
-const DEEP_T1 = '`(?:[^`]|' + DEEP_T0 + '){0,1500}`'
-const DEEP_CAP = '(?:[^`]|' + DEEP_T1 + '){0,1500}'
+// 惰性量化 + 窗口化（见 deepTemplateHits）：贪婪版实测在 28MB 产物上退化成 8 分钟回溯，
+// 且会「越界吃闭引号」——惰性版从零扩张，配合窗口把搜索空间和边界歧义一起钉死。
+const DEEP_T0 = '`[^`]{0,1500}?`'
+const DEEP_T1 = '`(?:[^`]|' + DEEP_T0 + '){0,1500}?`'
+const DEEP_CAP = '(?:[^`]|' + DEEP_T1 + '){0,1500}?'
 
 // 深捕获的单插值边界复核：把内容包回 `${…}` 让 skipInterp 从头重扫，必须恰好收在末位 `}`。
 function deepExprOk(inner) {
@@ -546,25 +548,43 @@ function deepExprOk(inner) {
 }
 
 // 独立入口（便于自测）：其余通道零命中时由 templateCandidates 调用。
+// 窗口化：不在全文上跑正则（贪婪回溯实测 8 分钟），而是取键的「最长固定段」当锚，
+// 只在锚的命中处开一个「键长×2 + 两侧余量」的小窗局部匹配；窗口起点切在模板中间时
+// 配出的形态过不了 sig 复核，天然被拒。锚不足 6 字符直接放弃（fail-closed，交人工）。
 function deepTemplateHits(key, src) {
+  const lits = parseTemplate(key).filter((p) => p.t === 'lit').map((p) => p.v)
+  const anchor = lits.sort((a, b) => b.length - a.length)[0] || ''
+  if (anchor.trim().length < 6) return []
   const deepRe = templateRegex(key, DEEP_CAP)
-  if (!deepRe || !deepRe.test(src)) return []
+  if (!deepRe) return []
   const sigKey = tplSig(key)
   const partialTail = parseTemplate(key).some((p) => p.partial)
-  const got = []
-  let m
-  deepRe.lastIndex = 0
-  while ((m = deepRe.exec(src)) !== null && got.length < MAX_CANDIDATES * 3) {
-    const caps = m.slice(1)
-    const head = partialTail ? caps.slice(0, -1) : caps
-    const text = m[0].slice(1, -1)
-    const parts = parseTemplate(text)
-    const okExpr =
-      !parts.some((p) => p.partial) && tplSig(text) === sigKey && head.every((c) => deepExprOk(innerOf(c)))
-    got.push({ text, caps, okExpr, start: m.index + 1 })
-    if (m.index === deepRe.lastIndex) deepRe.lastIndex++
+  const hits = []
+  const seen = new Set()
+  let from = -1
+  let windows = 0
+  while ((from = src.indexOf(anchor, from + 1)) !== -1 && windows < 6) {
+    windows++
+    const winStart = Math.max(0, from - key.length - 200)
+    const win = src.slice(winStart, from + key.length + 1600)
+    const re = new RegExp(deepRe.source, 'g')
+    let m
+    while ((m = re.exec(win)) !== null && hits.length < MAX_CANDIDATES * 3) {
+      const start = winStart + m.index + 1
+      if (!seen.has(start)) {
+        seen.add(start)
+        const caps = m.slice(1)
+        const head = partialTail ? caps.slice(0, -1) : caps
+        const text = m[0].slice(1, -1)
+        const parts = parseTemplate(text)
+        const okExpr =
+          !parts.some((p) => p.partial) && tplSig(text) === sigKey && head.every((c) => deepExprOk(innerOf(c)))
+        hits.push({ text, caps, okExpr, start })
+      }
+      if (m.index === re.lastIndex) re.lastIndex++
+    }
   }
-  return got
+  return hits
 }
 
 function templateCandidates(key, src) {

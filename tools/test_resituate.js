@@ -240,18 +240,20 @@ const NB = String.fromCharCode(96)
 
 // 深捕获单元：直接对迷你源码验证（不依赖扫描器的整文件配对）
 {
-  const kOld = 'Outer ${cond?' + NB + '${a.b} inner' + NB + ':"x"} tail'
-  const kNew = 'Outer ${cond?' + NB + '${c.d} inner' + NB + ':"x"} tail'
+  const kOld = 'OuterTag ${cond?' + NB + '${a.b} inner' + NB + ':"x"} tail'
+  const kNew = 'OuterTag ${cond?' + NB + '${c.d} inner' + NB + ':"x"} tail'
   const hits = Rlib.deepTemplateHits(kOld, 'var q=' + NB + kNew + NB + ';\n')
   chk(hits.length === 1 && hits[0].text === kNew && hits[0].okExpr, '深嵌套兜底：内嵌模板的键能被直接定位（形态 + 边界复核通过）')
-  const miss = Rlib.deepTemplateHits(kOld, 'var q=' + NB + 'Outer ${cond?' + NB + '${c.d} inner' + NB + ':"x"} CHANGED' + NB + ';\n')
+  const miss = Rlib.deepTemplateHits(kOld, 'var q=' + NB + 'OuterTag ${cond?' + NB + '${c.d} inner' + NB + ':"x"} CHANGED' + NB + ';\n')
   chk(miss.length === 0 || !miss[0].okExpr, '深嵌套兜底：固定段序列不符 → 不产合法命中（fail-closed）')
   chk(!Rlib.deepExprOk('i.toLowerCase()}, ${s.toLowerCase()'), '深嵌套兜底：跨界吞并（`}, ${`）被边界复核拒绝')
+  const shortAnchor = Rlib.deepTemplateHits('A ${x?' + NB + '${a.b} t' + NB + ':""} B', 'var q=' + NB + 'A ${y?' + NB + '${c.d} t' + NB + ':""} B' + NB + ';\n')
+  chk(shortAnchor.length === 0, '深嵌套兜底：固定段不足 6 字符 → 不开窗（fail-closed）')
 }
 // 深嵌套键端到端：--write 迁移到新键并同步译文
 {
-  const deepOld = 'Deep ${cond?' + NB + '${a.b} t' + NB + ':""} end'
-  const deepNew = 'Deep ${cond?' + NB + '${c.d} t' + NB + ':""} end'
+  const deepOld = 'DeepTag ${cond?' + NB + '${a.b} t' + NB + ':""} end'
+  const deepNew = 'DeepTag ${cond?' + NB + '${c.d} t' + NB + ':""} end'
   const DEEPB = pack('deep', 'var q=' + NB + deepNew + NB + ';\n')
   const deepDict = writeDict('dict-deep.json', {
     exact: {},
