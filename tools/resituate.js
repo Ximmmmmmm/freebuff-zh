@@ -28,6 +28,15 @@
 // 吞成一个（0.0.170 真实事故：吞并态恰好括号平衡、蒙过长度校验被当唯一候选写回）。
 // 双阈值（CTX_MIN / CTX_GAP）不够就不动手，保持 CONFIRM 交人工（fail-closed）。
 //
+// 深嵌套兜底（0.0.171 适配落地）：键的插值里含反引号模板（`${a?`…`:""}`）时，三种捕获态都跨不过
+// 反引号；「固定段扫描」又依赖整文件的反引号配对——上游产物里更早的构造（0.0.171 实测：一个内含
+// 换行的模板）会把之后的配对整体打乱，扫描静默丢字面量。兜底改用「允许内嵌模板」的宽松捕获直接
+// 匹配源码，再用 skipInterp 合成重扫逐字复核边界、并复核整段形态（固定段序列与 key 完全一致）
+// ——只在其余通道全空时启用，对既有行为零影响；更深的嵌套 / 更怪的形态交人工（fail-closed）。
+// 微改写自动重译（同版落地）：字面量候选里「只改了一两个词」的（`reset timezone` → `local timezone`）
+// 不再只报 CONFIRM——键可机械重定位，但旧译文语义已变：写 work/retranslate-*.json 交
+// tools/retranslate.js（LLM 重译 + dictapply 落盘）；未配置 LLM / 重译失败时按人工处理。
+//
 // 与邻居的分工：`remap.js` 管「固定段没变、只是插值变量改名」的自动迁移；`missed_diagnose.js`
 // 负责**分类**「够不着」的条目（命中 / 只在主进程 / 只在上一版 / 两边都没有）并拦构建；本工具
 // 负责把「只在上一版 UI 出现」那一类**定位到现形态**。给 `--electron <目录>` 时还会替
@@ -54,13 +63,16 @@ const {
   BALANCED_CAP,
   LAZY_CAP,
 } = require('./literal_skeleton.js')
-const { resolveBundle, collectLiteralsFromSource, normText } = require('./regress.js')
+const { resolveBundle, normText, stripInterp, isOpeningQuote, templateSegments } = require('./regress.js')
 
 const REPO = path.join(__dirname, '..')
 const ZONES = ['exact', 'template', 'code', 'pattern']
 const MAX_CANDIDATES = 4
 // 候选统一形态：文本 + 相似度 + 命中处数（同一文本复制成多份时 >1）
 const candOf = (h) => ({ text: h.text, score: h.score ?? 1, sites: h.sites })
+const fmtStamp = (d = new Date()) =>
+  `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}` +
+  `-${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}${String(d.getSeconds()).padStart(2, '0')}`
 
 function usage(msg) {
   if (msg) console.error('ERROR: ' + msg)
@@ -91,6 +103,9 @@ function dice(a, b) {
 const CTX_W = 160
 const CTX_MIN = 0.55
 const CTX_GAP = 0.08
+// 微改写自动重译的门槛：相似度与领先幅度（有上一版原版时再叠上下文双保险）。
+const FUZZY_AUTO_MIN = 0.9
+const FUZZY_AUTO_GAP = 0.05
 
 // 标识符抹平（长度不变）：引号内逐字保留，引号外的标识符串按原长压成 `_`。
 // 必须对**整个源**跑一遍再切片：±160 的窗口可能从某个字符串中间开始，独立抹平一个
@@ -510,6 +525,48 @@ function singleInterp(inner) {
   return d === 0
 }
 
+// —— 深嵌套兜底（0.0.171 实战）：插值里嵌模板的键 --------------------------------------
+// 允许「表达式里含反引号模板」的宽松捕获（最深两层：表达式 → 模板 → 内嵌模板）。
+// 三种标准捕获都跨不过反引号；固定段扫描又依赖整文件反引号配对（会被更早的构造打乱）。
+// 这路直接对源码局部正则匹配，再用两个复核件狙掉错配：① 整段形态（固定段序列与 key 一致）；
+// ② 每个插值用 skipInterp 合成重扫、边界必须逐字严丝合缝（吞并 / 截断一律拒绝）。
+const DEEP_T0 = '`[^`]{0,1500}`'
+const DEEP_T1 = '`(?:[^`]|' + DEEP_T0 + '){0,1500}`'
+const DEEP_CAP = '(?:[^`]|' + DEEP_T1 + '){0,1500}'
+
+// 深捕获的单插值边界复核：把内容包回 `${…}` 让 skipInterp 从头重扫，必须恰好收在末位 `}`。
+function deepExprOk(inner) {
+  if (!inner || inner.length > 1500) return false
+  const synth = '${' + inner + '}'
+  try {
+    return skipInterp(synth, 2) === synth.length
+  } catch {
+    return false
+  }
+}
+
+// 独立入口（便于自测）：其余通道零命中时由 templateCandidates 调用。
+function deepTemplateHits(key, src) {
+  const deepRe = templateRegex(key, DEEP_CAP)
+  if (!deepRe || !deepRe.test(src)) return []
+  const sigKey = tplSig(key)
+  const partialTail = parseTemplate(key).some((p) => p.partial)
+  const got = []
+  let m
+  deepRe.lastIndex = 0
+  while ((m = deepRe.exec(src)) !== null && got.length < MAX_CANDIDATES * 3) {
+    const caps = m.slice(1)
+    const head = partialTail ? caps.slice(0, -1) : caps
+    const text = m[0].slice(1, -1)
+    const parts = parseTemplate(text)
+    const okExpr =
+      !parts.some((p) => p.partial) && tplSig(text) === sigKey && head.every((c) => deepExprOk(innerOf(c)))
+    got.push({ text, caps, okExpr, start: m.index + 1 })
+    if (m.index === deepRe.lastIndex) deepRe.lastIndex++
+  }
+  return got
+}
+
 function templateCandidates(key, src) {
   const partialTail = parseTemplate(key).some((p) => p.partial)
   const collect = (re) => {
@@ -556,6 +613,14 @@ function templateCandidates(key, src) {
     hits = templateHitsByScan(key, src)
     if (hits.length) capName = 'scan'
   }
+  // 深嵌套兜底：key 含反引号（插值内嵌模板）且其余通道全空时启用（0.0.171 实战）
+  if (!hits.length && key.includes('`')) {
+    const got = deepTemplateHits(key, src)
+    if (got.length) {
+      hits = got
+      capName = 'deep'
+    }
+  }
   // 同一现形态被复制成多份时只留一条候选（`Remove ${e.name}` 出现两次不是两个答案），
   // 但「有几处命中」这个事实不能丢：调用方靠候选条数判断「唯一才敢自动写回」；
   // 每处命中的位置都留下——上下文定位要在所有命中处里挑最像旧邻域的那个。
@@ -569,6 +634,45 @@ function templateCandidates(key, src) {
   return { cap: uniq.length ? capName : null, hits: uniq }
 }
 
+// --- 重定位的宽松字面量池（与 regress 的「发现新文案」过滤器分开） ----------------------
+// collectLiteralsFromSource 的 isCopyLiteral 会把含 `;` `{` 等字符的句子当代码滤掉——那对
+// 「发现上游新文案」是保守的正确，对**找回一条已知旧词条**却太严：0.0.171 的
+// 「…arrive earlier; timezone changes…」整句就因一个分号进不了候选池、被误判 GONE。
+// 这里独立扫一遍引号串与模板段，只做底线过滤（长度 2–400、含字母、不含中文）。
+function collectRelocationPool(src) {
+  const out = new Map()
+  const add = (raw, at) => {
+    const t = stripInterp(String(raw)).replace(/\s+/g, ' ').trim()
+    if (t.length < 2 || t.length > 400 || !/[A-Za-z]/.test(t) || /[\u4e00-\u9fff]/.test(t)) return
+    if (!out.has(t)) out.set(t, at)
+  }
+  for (let i = 0; i < src.length; i++) {
+    const q = src[i]
+    if ((q !== '"' && q !== "'") || src[i - 1] === '\\') continue
+    if (!isOpeningQuote(src, i)) continue
+    let j = i + 1
+    let buf = ''
+    let closed = false
+    while (j < src.length && buf.length <= 400) {
+      const c = src[j]
+      if (c === '\\') {
+        buf += c + (src[j + 1] || '')
+        j += 2
+        continue
+      }
+      if (c === q || c === '\n') {
+        closed = true
+        break
+      }
+      buf += c
+      j++
+    }
+    if (closed) add(buf, i + 1)
+  }
+  for (const [seg, at] of templateSegments(src)) add(seg, at)
+  return out
+}
+
 // --- 字面量类键的候选：完整字面量集合里按相似度找改写后的新句子 ----------------------
 // 阈值按词数分档：` · Sponsored by `（3 词）这种短键拿 Dice 比会把 `by word` 也报出来
 // （共享一个 `by` 就有 0.5），所以短键要求更高的相似度。
@@ -576,10 +680,10 @@ function literalCandidates(key, literals) {
   const words = wordBag(key).length
   const threshold = words <= 3 ? 0.6 : 0.5
   const out = []
-  for (const text of literals.keys()) {
+  for (const [text, at] of literals) {
     if (text === key) continue
     const s = dice(key, text)
-    if (s >= threshold) out.push({ text, score: s })
+    if (s >= threshold) out.push({ text, score: s, at })
   }
   out.sort((a, b) => b.score - a.score)
   const uniq = []
@@ -591,6 +695,23 @@ function literalCandidates(key, literals) {
     if (uniq.length >= MAX_CANDIDATES) break
   }
   return uniq
+}
+
+// 词级最小改写检测：公共前后缀之外，两侧各 ≤2 个词的替换才算「微改写」（reset→local 这种）。
+// 改动更大、或纯标点变化，都不走自动重译——译文更新不能建立在猜上（fail-closed）。
+function tinyRewrite(a, b) {
+  const tok = (s) => String(s).match(/[A-Za-z0-9]+(?:[’'][A-Za-z]+)?/g) || []
+  const wa = tok(a)
+  const wb = tok(b)
+  let p = 0
+  while (p < wa.length && p < wb.length && wa[p] === wb[p]) p++
+  let s = 0
+  while (s < wa.length - p && s < wb.length - p && wa[wa.length - 1 - s] === wb[wb.length - 1 - s]) s++
+  const ma = wa.slice(p, wa.length - s)
+  const mb = wb.slice(p, wb.length - s)
+  if (!ma.length && !mb.length) return null
+  if (ma.length > 2 || mb.length > 2) return null
+  return { from: ma.join(' ') || '（无）', to: mb.join(' ') || '（无）' }
 }
 
 // --- 主流程 -----------------------------------------------------------------------
@@ -619,7 +740,7 @@ function main() {
   const prevSrc = prev ? fs.readFileSync(prev, 'utf8') : null
   const electronSrc = opt.electron ? collectElectron(path.resolve(opt.electron)) : null
   const dict = JSON.parse(fs.readFileSync(dictPath, 'utf8'))
-  const literals = collectLiteralsFromSource(src)
+  const literals = collectRelocationPool(src)
 
   const rows = []
   let total = 0
@@ -675,7 +796,7 @@ function main() {
         const keySlots = parseTemplate(key).filter((p) => p.t === 'expr').length
         const usable = hits.filter((h) => h.okExpr)
         const sameSlots = usable.filter((h) => h.caps.length === keySlots)
-        const capName = cap === 'scan' ? '固定段扫描' : `${cap} 捕获`
+        const capName = cap === 'scan' ? '固定段扫描' : cap === 'deep' ? '深嵌套捕获' : `${cap} 捕获`
         if (usable.length === 1) {
           const rebuilt = rebuildZh(key, zh, usable[0].text)
           if (rebuilt.ok) {
@@ -733,14 +854,36 @@ function main() {
       if (!cands.length) {
         row.verdict = 'GONE'
         row.reason = '本版无相似度 ≥0.5 的字面量候选（上游下线或整句重写）'
-      } else if (cands.length === 1 && cands[0].score >= 0.85) {
-        row.verdict = 'CONFIRM'
-        row.reason = `唯一近邻候选（相似度 ${cands[0].score.toFixed(2)}）：散文改写不自动写回，确认后照抄新键`
-        row.candidates = cands
       } else {
-        row.verdict = 'CONFIRM'
-        row.reason = `${cands.length} 个近邻候选，按相似度排序`
-        row.candidates = cands
+        const best = cands[0]
+        const second = cands[1] ? cands[1].score : 0
+        const diff = tinyRewrite(key, best.text)
+        // 上下文双保险（有上一版原版时）：候选邻域必须与旧键在上一版里的邻域对得上。
+        let ctxOk = true
+        let ctxNote = ''
+        if (diff && prevSrc) {
+          const pick = pickByContext(key, [{ ...best, starts: [best.at], sites: 1 }], src, prevSrc)
+          if (pick) {
+            ctxOk = pick.best.score >= CTX_MIN
+            ctxNote = `，上下文 ${pick.best.score.toFixed(2)}`
+          }
+        }
+        if (diff && best.score >= FUZZY_AUTO_MIN && (cands.length === 1 || best.score - second >= FUZZY_AUTO_GAP) && ctxOk) {
+          row.verdict = 'RETRANSLATE'
+          row.newKey = best.text
+          row.change = diff
+          row.reason = `微改写（${diff.from} → ${diff.to}，相似度 ${best.score.toFixed(2)}${ctxNote}）：键自动重定位、译文交 LLM 重译`
+          row.candidates = cands
+        } else if (cands.length === 1 && best.score >= 0.85) {
+          row.verdict = 'CONFIRM'
+          const near = diff ? `；疑似微改写（${diff.from} → ${diff.to}）但未达自动门槛，人工定夺` : ''
+          row.reason = `唯一近邻候选（相似度 ${best.score.toFixed(2)}）：散文改写不自动写回，确认后照抄新键${near}`
+          row.candidates = cands
+        } else {
+          row.verdict = 'CONFIRM'
+          row.reason = `${cands.length} 个近邻候选，按相似度排序`
+          row.candidates = cands
+        }
       }
     }
   }
@@ -755,7 +898,8 @@ function main() {
       if (notPrev) console.log(`  其中 ${notPrev} 条连上一版原版里也没有（可能是更早版本遗留的死词条）`)
     }
     console.log(`  可自动迁移 ${byVerdict('RELOCATE').length} · 需人工确认 ${byVerdict('CONFIRM').length}` +
-      ` · 疑似下线 ${byVerdict('GONE').length}${electronSrc ? ` · 只在主进程 ${byVerdict('MAIN').length}` : ''}`)
+      ` · 疑似下线 ${byVerdict('GONE').length}${byVerdict('RETRANSLATE').length ? ` · 微改写重译 ${byVerdict('RETRANSLATE').length}` : ''}` +
+      `${electronSrc ? ` · 只在主进程 ${byVerdict('MAIN').length}` : ''}`)
   }
 
   const show = (v, title, hint) => {
@@ -776,6 +920,7 @@ function main() {
   }
 
   show('RELOCATE', '可自动迁移 RELOCATE', '--write 会写回这些（新键、新译文都过一遍自证）')
+  show('RETRANSLATE', '微改写自动重译 RETRANSLATE', '键已定位、译文待重译：--write 会写入 work/retranslate-*.json，交 tools/retranslate.js（需 LLM 配置）')
   show('CONFIRM', '需人工确认 CONFIRM', '按候选核对后手工改 dict.json（分类只看形态，去留由人定）')
   show('GONE', '疑似已下线 GONE', '--prune-gone 可一次删除（**先确认**不是改写成了别的句子）')
   if (electronSrc) show('MAIN', '词典够不着主进程 MAIN', '写进 patches/electron-*.patch，并从 dict.json 删掉')
@@ -784,7 +929,15 @@ function main() {
     fs.writeFileSync(
       path.resolve(opt.json),
       JSON.stringify(
-        rows.map((r) => ({ zone: r.zone, key: r.key, verdict: r.verdict, reason: r.reason, newKey: r.newKey || null, candidates: r.candidates })),
+        rows.map((r) => ({
+          zone: r.zone,
+          key: r.key,
+          verdict: r.verdict,
+          reason: r.reason,
+          newKey: r.newKey || null,
+          change: r.change || null,
+          candidates: r.candidates,
+        })),
         null,
         2,
       ) + '\n',
@@ -816,24 +969,52 @@ function main() {
     }
     fs.writeFileSync(dictPath, JSON.stringify(dict, null, 2) + '\n')
     console.log(`\n写了 ${dictPath}：迁移 ${wrote} 条${opt.pruneGone ? `，删除 ${pruned} 条` : ''}`)
+    // 微改写：键在此定位、译文不在本工具内改——写一份清单交 tools/retranslate.js（LLM 重译）。
+    const rt = rows.filter((r) => r.verdict === 'RETRANSLATE')
+    if (opt.write && rt.length) {
+      const stamp = (String(opt.json || '').match(/(\d{8}-\d{6})/) || [, fmtStamp()])[1]
+      const dir = opt.json ? path.dirname(path.resolve(opt.json)) : path.join(REPO, 'work')
+      const out = path.join(dir, `retranslate-${stamp}.json`)
+      fs.writeFileSync(
+        out,
+        JSON.stringify(
+          rt.map((r) => ({ section: r.zone, oldKey: r.key, newKey: r.newKey, oldZh: r.zh, change: r.change || null })),
+          null,
+          2,
+        ) + '\n',
+      )
+      console.log(`微改写重译清单已写入 ${out}（${rt.length} 条；下一步：node tools/retranslate.js "${out}" --write）`)
+    }
   } else if (!opt.quiet) {
     console.log('\n（dry-run：加 --write 写回 RELOCATE，--prune-gone 一并删 GONE）')
   }
 
-  const remain = rows.filter((r) => r.verdict === 'CONFIRM' || r.verdict === 'GONE' || (r.verdict === 'MAIN' && !opt.pruneGone))
+  const remain = rows.filter(
+    (r) =>
+      r.verdict === 'RETRANSLATE' ||
+      r.verdict === 'CONFIRM' ||
+      r.verdict === 'GONE' ||
+      (r.verdict === 'MAIN' && !opt.pruneGone),
+  )
   if (opt.write || opt.pruneGone) {
     // 写回后：RELOCATE 已迁、GONE 按 --prune-gone 删或不删。**没删的 GONE 仍是死词条**，
-    // 与 MAIN 一样要人工表态——否则「--write 一下」就会把一堆没核对的 GONE 悄悄放行成 rc 0，
-    // 与文件头「1 = 有 CONFIRM / GONE」的契约自相矛盾。
+    // 与 MAIN 一样要人工表态；RETRANSLATE 的译文由 tools/retranslate.js 接手（本工具已把清单写盘）
+    // ——在重译落盘前同样算「未完成」，rc 1 交给下游。
     const left = rows.filter(
-      (r) => r.verdict === 'CONFIRM' || ((r.verdict === 'GONE' || r.verdict === 'MAIN') && !opt.pruneGone),
+      (r) =>
+        r.verdict === 'RETRANSLATE' ||
+        r.verdict === 'CONFIRM' ||
+        ((r.verdict === 'GONE' || r.verdict === 'MAIN') && !opt.pruneGone),
     )
     if (!left.length) {
       console.log('\n✓ 没有需要人工的条目了')
       process.exit(0)
     }
     const kinds = [...new Set(left.map((r) => r.verdict))].join(' / ')
-    console.error(`\nERROR: 还有 ${left.length} 条需要人工处理（${kinds}）`)
+    const hint = left.some((r) => r.verdict === 'RETRANSLATE')
+      ? '（微改写条目：清单已写入 work/retranslate-*.json，跑 node tools/retranslate.js <清单> --write）'
+      : ''
+    console.error(`\nERROR: 还有 ${left.length} 条需要人工处理（${kinds}）${hint}`)
     process.exit(1)
   }
   if (!remain.length) {
@@ -872,4 +1053,8 @@ module.exports = {
   maskSource,
   triDice,
   pickByContext,
+  deepExprOk,
+  deepTemplateHits,
+  collectRelocationPool,
+  tinyRewrite,
 }

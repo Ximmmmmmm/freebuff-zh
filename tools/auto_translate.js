@@ -372,8 +372,8 @@ function buildMessages(chunk) {
   ]
 }
 
-// 发一批给单个模型；传输/协议失败抛错（由调用方切换下一个模型）
-async function sendChunk(model, chunk, cfg) {
+// 通用单轮对话调用（tools/retranslate.js 复用；与 sendChunk 同一超时/协议约定）。
+async function chatComplete(model, messages, cfg) {
   if (typeof fetch !== 'function') throw new Error('当前 Node 没有全局 fetch（需要 Node 18+）')
   const ac = new AbortController()
   const timer = setTimeout(() => ac.abort(), model.timeoutMs)
@@ -382,7 +382,7 @@ async function sendChunk(model, chunk, cfg) {
     resp = await fetch(`${model.baseUrl}/chat/completions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${model.apiKey}` },
-      body: JSON.stringify({ model: model.model, messages: buildMessages(chunk), temperature: cfg.temperature }),
+      body: JSON.stringify({ model: model.model, messages, temperature: cfg.temperature }),
       signal: ac.signal,
     })
   } finally {
@@ -392,6 +392,12 @@ async function sendChunk(model, chunk, cfg) {
   const data = await resp.json().catch(() => null)
   const content = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content
   if (typeof content !== 'string') throw new Error('响应缺少 choices[0].message.content')
+  return content
+}
+
+// 发一批给单个模型；传输/协议失败抛错（由调用方切换下一个模型）
+async function sendChunk(model, chunk, cfg) {
+  const content = await chatComplete(model, buildMessages(chunk), cfg)
   let text = content.trim()
   const fence = text.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/)
   if (fence) text = fence[1].trim()
@@ -594,6 +600,7 @@ module.exports = {
   UI_PHRASES,
   loadTranslatorConfig,
   validateLlmTranslation,
+  chatComplete,
   fillChangelist,
   processChangelist,
 }

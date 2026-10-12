@@ -125,6 +125,7 @@ RESITUATE_RELOCATE=0
 RESITUATE_CONFIRM=0
 RESITUATE_GONE=0
 RESITUATE_MAIN=0
+RESITUATE_RETRANSLATE=0
 {
   echo
   echo "## 旧词条重新定位（resituate：remap 之后仍够不着本版 bundle 的条目）"
@@ -148,8 +149,8 @@ if [ -n "${UI_BUNDLE}" ] && [ -f "${UI_BUNDLE}" ]; then
   set -e
   printf '%s\n' "${RESITUATE_OUT}" | tee -a "${REPORT}"
   if [ -f "${RESITUATE_JSON}" ]; then
-    RESITUATE_STATS="$(node -e 'const r = require(process.argv[1]); const c = (v) => r.filter((x) => x.verdict === v).length; console.log([c("RELOCATE"), c("CONFIRM"), c("GONE"), c("MAIN")].join(" "))' "${RESITUATE_JSON}" 2>/dev/null || echo "0 0 0 0")"
-    read -r RESITUATE_RELOCATE RESITUATE_CONFIRM RESITUATE_GONE RESITUATE_MAIN <<< "${RESITUATE_STATS}"
+    RESITUATE_STATS="$(node -e 'const r = require(process.argv[1]); const c = (v) => r.filter((x) => x.verdict === v).length; console.log([c("RELOCATE"), c("CONFIRM"), c("GONE"), c("MAIN"), c("RETRANSLATE")].join(" "))' "${RESITUATE_JSON}" 2>/dev/null || echo "0 0 0 0 0")"
+    read -r RESITUATE_RELOCATE RESITUATE_CONFIRM RESITUATE_GONE RESITUATE_MAIN RESITUATE_RETRANSLATE <<< "${RESITUATE_STATS}"
   fi
 else
   echo "  (无 ui 目录，跳过)" | tee -a "${REPORT}"
@@ -406,6 +407,9 @@ case "${RESITUATE_RC}" in
   1)  echo "  · 旧词条重新定位：自动迁移 ${RESITUATE_RELOCATE} 条，仍有 ${RESITUATE_CONFIRM} 条待确认 / ${RESITUATE_GONE} 条疑似下线 ⚠（清单见报告）"
       if [ "${RESITUATE_MAIN:-0}" -gt 0 ]; then
         echo "      其中 ${RESITUATE_MAIN} 条只在主进程——写进 patches/electron-*.patch，不要当死词条删"
+      fi
+      if [ "${RESITUATE_RETRANSLATE:-0}" -gt 0 ]; then
+        echo "      ${RESITUATE_RETRANSLATE} 条微改写已写 work/retranslate-*.json（adapt.sh 自动重译；单跑：node tools/retranslate.js <清单> --write）"
       fi ;;
   *)  echo "  · 旧词条重新定位：跳过（无 ui 目录或输入不足）" ;;
 esac
@@ -477,6 +481,8 @@ cat <<TIP
   dict.json；GONE 是「上游疑似下线」，**先确认不是改写成了别的句子**，确实没了再手工删（本步骤不会替你删）；
   MAIN 是「只在主进程出现」，该写进 patches/electron-*.patch 并从 dict.json 删掉。单独重跑：
     node tools/resituate.js --ui "<本版英文原版 bundle>" [--prev-ui <上一版原版>] [--electron <electron 目录>]
+  RETRANSLATE 是「只改了一两个词」的微改写：键已定位、译文走 work/retranslate-*.json 交
+    tools/retranslate.js（LLM 重译 + dictapply 落盘；adapt.sh 会自动跑），无 LLM 配置时按人工处理。
 
 报告里「界面位置英文差集」带 ⚠ 时（单词级文案，upstreamdiff 与 regress 都看不见）：
   那些位置的词数少于 2 个，所以三条通道全漏。能翻的补进 dict.json；品牌名 / 模型名 /

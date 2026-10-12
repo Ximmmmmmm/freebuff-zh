@@ -510,6 +510,8 @@ module.exports = {
   collectFragmentsFromSource,
   collectLiteralsFromSource,
   isCopyLiteral,
+  isOpeningQuote,
+  templateSegments,
   resolveBundle,
   isProse,
   foldAsides,

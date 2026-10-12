@@ -70,6 +70,8 @@ jobs:
         run: node tools/test_missed_diagnose.js
       - name: 旧词条重新定位自测（模板 / 代码片段 / 字面量三路定位 + 写回自证 + 退出码）
         run: node tools/test_resituate.js
+      - name: 微改写重译自测（模型链故障切换 / 同译文拒绝 / 未配置与撞键 / dry-run / dictapply 落盘）
+        run: node tools/test_retranslate.js
       - name: 回归闸门自测（登记表逐条豁免 / 未登记仍拦 / --allow-english / 退出码）
         run: node tools/test_regress.js
       - name: 单词级界面文案差集自测（解析口径 / 两侧差集 / 登记表 / 退出码）

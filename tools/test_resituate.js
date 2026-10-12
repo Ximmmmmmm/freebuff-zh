@@ -234,6 +234,86 @@ chk(/## 词典够不着主进程 MAIN（1）/.test(rm.out), '报告单列 MAIN �
 chk(/patches\/electron-\*\.patch/.test(rm.out), 'MAIN 明细点名写进主进程补丁，而不是当死词条删')
 chk(!/## 疑似已下线 GONE/.test(rm.out), '主进程专属条目不会被误判成 GONE')
 
+// --- 深嵌套兜底 + 宽松候选池 + 微改写自动重译（0.0.171） -------------------------------
+const Rlib = require(path.join(REPO, 'tools', 'resituate.js'))
+const NB = String.fromCharCode(96)
+
+// 深捕获单元：直接对迷你源码验证（不依赖扫描器的整文件配对）
+{
+  const kOld = 'Outer ${cond?' + NB + '${a.b} inner' + NB + ':"x"} tail'
+  const kNew = 'Outer ${cond?' + NB + '${c.d} inner' + NB + ':"x"} tail'
+  const hits = Rlib.deepTemplateHits(kOld, 'var q=' + NB + kNew + NB + ';\n')
+  chk(hits.length === 1 && hits[0].text === kNew && hits[0].okExpr, '深嵌套兜底：内嵌模板的键能被直接定位（形态 + 边界复核通过）')
+  const miss = Rlib.deepTemplateHits(kOld, 'var q=' + NB + 'Outer ${cond?' + NB + '${c.d} inner' + NB + ':"x"} CHANGED' + NB + ';\n')
+  chk(miss.length === 0 || !miss[0].okExpr, '深嵌套兜底：固定段序列不符 → 不产合法命中（fail-closed）')
+  chk(!Rlib.deepExprOk('i.toLowerCase()}, ${s.toLowerCase()'), '深嵌套兜底：跨界吞并（`}, ${`）被边界复核拒绝')
+}
+// 深嵌套键端到端：--write 迁移到新键并同步译文
+{
+  const deepOld = 'Deep ${cond?' + NB + '${a.b} t' + NB + ':""} end'
+  const deepNew = 'Deep ${cond?' + NB + '${c.d} t' + NB + ':""} end'
+  const DEEPB = pack('deep', 'var q=' + NB + deepNew + NB + ';\n')
+  const deepDict = writeDict('dict-deep.json', {
+    exact: {},
+    template: { [deepOld]: '深 ${cond?' + NB + '${a.b} t' + NB + ':""} 完' },
+    code: {},
+    pattern: {},
+  })
+  const rdd = run(['--ui', DEEPB, '--dict', deepDict, '--write', '--quiet'])
+  const nd = readDict(deepDict).template
+  chk(rdd.code === 0 && nd[deepNew] === '深 ${cond?' + NB + '${c.d} t' + NB + ':""} 完', '深嵌套键端到端：--write 迁移到新键并同步译文')
+}
+// 宽松候选池：含分号的句子上榜（旧字面量过滤器会因 `;` 拒收——0.0.171 GONE 的根因之一）
+{
+  const pool = Rlib.collectRelocationPool('var a="Please close the gate; thank you.";\n')
+  chk(pool.has('Please close the gate; thank you.'), '宽松候选池：含分号的句子上榜（不被 CODEISH 滤掉）')
+}
+// tinyRewrite 判定
+{
+  const d1 = Rlib.tinyRewrite('in your reset timezone', 'in your local timezone')
+  chk(d1 && d1.from === 'reset' && d1.to === 'local', 'tinyRewrite：单词替换识别（reset → local）')
+  chk(Rlib.tinyRewrite('a b c d', 'a x y z d') === null, 'tinyRewrite：多词替换不认（fail-closed）')
+}
+
+// 微改写端到端：RETRANSLATE + 清单落盘（词典本工具不动，译文交 retranslate.js）
+{
+  const tinyOld = 'The backup runs every night at midnight in your chosen timezone; logs show the last run time.'
+  const tinyNew = 'The backup runs every night at midnight in your local timezone; logs show the last run time.'
+  const bigOld = 'Your saved card will be charged once for each successful renewal of the plan.'
+  const bigNew = 'Your stored card will be billed once for every successful renewal of the plan.'
+  const TINY = pack('tiny', 'var a="' + tinyNew + '",b="' + bigNew + '";\n')
+  const TINYP = pack('tiny-prev', 'var a="' + tinyOld + '",b="' + bigOld + '";\n')
+  const tinyDict = writeDict('dict-tiny.json', {
+    exact: {
+      [tinyOld]: '备份每晚午夜在你所选时区运行；日志会显示上次运行时间。',
+      [bigOld]: '你保存的银行卡将在每次成功续订套餐时扣费一次。',
+    },
+    template: {},
+    code: {},
+    pattern: {},
+  })
+  const tinyRows = write('rows-tiny.json', '')
+  const rt = run(['--ui', TINY, '--prev-ui', TINYP, '--dict', tinyDict, '--json', tinyRows, '--write', '--quiet'])
+  const rtRows = JSON.parse(fs.readFileSync(tinyRows, 'utf8'))
+  const rtRow = rtRows.find((x) => x.key === tinyOld)
+  const bigRow = rtRows.find((x) => x.key === bigOld)
+  chk(rtRow && rtRow.verdict === 'RETRANSLATE' && rtRow.newKey === tinyNew, '微改写：只改一个词 → RETRANSLATE（新键已定位）')
+  chk(rtRow && rtRow.change && rtRow.change.from === 'chosen' && rtRow.change.to === 'local', '微改写：改动点（chosen → local）被记录')
+  chk(bigRow && bigRow.verdict === 'CONFIRM', '三词改写 → 保持 CONFIRM（不自动重译，fail-closed）')
+  chk(rt.code === 1 && /微改写重译清单已写入/.test(rt.out), '微改写：rc 1（待下游重译）且清单路径被打印')
+  const tinyAfter = readDict(tinyDict).exact
+  chk(Object.prototype.hasOwnProperty.call(tinyAfter, tinyOld), '微改写：resituate 不改词典（旧键原样，交 retranslate.js）')
+  const rtFiles = fs.readdirSync(WORK).filter((n) => /^retranslate-\d{8}-\d{6}\.json$/.test(n))
+  chk(rtFiles.length === 1, `微改写清单已写入 work/（${rtFiles.join('、') || '未找到'}）`)
+  if (rtFiles.length === 1) {
+    const rtList = JSON.parse(fs.readFileSync(path.join(WORK, rtFiles[0]), 'utf8'))
+    chk(
+      rtList.length === 1 && rtList[0].oldKey === tinyOld && rtList[0].newKey === tinyNew && typeof rtList[0].oldZh === 'string',
+      '微改写清单内容正确（oldKey / newKey / oldZh）',
+    )
+  }
+}
+
 // --- 参数 / 输入契约 ---------------------------------------------------------------
 chk(run(['--dict', matrixDict]).code === 2, '缺 --ui → rc 2')
 chk(run(['--ui', path.join(WORK, 'nope'), '--dict', matrixDict]).code === 2, '--ui 路径不存在 → rc 2')
