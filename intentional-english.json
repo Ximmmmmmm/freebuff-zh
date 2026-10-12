@@ -3374,6 +3374,10 @@
     {
       "text": "unknown profile survey question or option",
       "why": "zod 校验 message（提交的 profile 调查答案里含有未知题目 / 选项时给 API/模型侧的错误），不进界面——与已登记的「模型输入 payload」类片段同处理。0.0.169 适配时登记。"
+    },
+    {
+      "text": "inconsistent density durations",
+      "why": "内部数据校验串（Zod schema .refine 的错误提示——广告密度指标的不变量检查，0.0.171 新增），随遥测数据在内部流转、不进界面；与 react-window 的 console.warn 同类，按惯例保留英文。"
     }
   ],
   "uiStrings": [
