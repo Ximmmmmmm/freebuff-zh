@@ -3116,6 +3116,7 @@
     "Keep ChatGPT": "保留 ChatGPT",
     "Remove ChatGPT": "移除 ChatGPT",
     "Sign in with ChatGPT": "使用 ChatGPT 登录",
+    "Codex model ID": "Codex 模型 ID",
     "Use a Codex model ID your ChatGPT plan offers.": "使用你的 ChatGPT 套餐提供的 Codex 模型 ID。",
     "Open ChatGPT sign-in ↗": "打开 ChatGPT 登录 ↗",
     "No writable repositories. Update GitHub access in Settings → Connections.": "没有可写的代码仓库。请在「设置 → 连接」中更新 GitHub 访问权限。",
