@@ -56,7 +56,6 @@ for (const line of out.split(NL)) {
   const s = line.trim()
   if (!s.startsWith('- "')) continue
   const inner = s.slice(3, s.length - 1)
-  if (!inner.startsWith('[')) continue
   const cb = inner.indexOf(']')
   const section = inner.slice(1, cb)
   const key = (inner.startsWith('[') ? inner.slice(cb + 2) : inner).split(BS + '"').join('"')
