@@ -3510,10 +3510,6 @@
       "why": "广告卡里模拟浏览器地址栏的内容（Freebuff 自家广告的产品预览框），是演示用的地址串，不是文案；与假代码同类。"
     },
     {
-      "text": "Gravity Index",
-      "why": "服务目录名（Freebuff 内置的连接器/服务浏览器标题与卡片名 `Zu=\"Gravity Index\"`，与 Discord / Freebuff 同类，是产品名不译）。"
-    },
-    {
       "text": "Promise",
       "why": "Zod v4 多语言错误表（希伯来语）：库为各语言准备的本地化字符串（界面语言为中文时不会走到这些表），与 Zod 的英文诊断文案同属库内部字符串，保留原文。（类型名标签 `promise:{label:\"Promise\"}`）"
     },

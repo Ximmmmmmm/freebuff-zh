@@ -2599,7 +2599,8 @@
     "Regular price: ${Ln} Freebucks / hour": "原价：${Ln} Freebucks / 小时",
     "View changes to ${g1(e.files.length)}": "查看 ${g1(e.files.length)} 的更改",
     "Open active tab${Y!==void 0?` · frees in ${Math.max(1,Math.ceil((Y-Date.now())/6e4))}m`:\"\"}": "打开当前标签页${Y!==void 0?` · ${Math.max(1,Math.ceil((Y-Date.now())/6e4))} 分钟后释放`:\"\"}",
-    "Could not install ${t}.": "无法安装 ${t}。"
+    "Could not install ${t}.": "无法安装 ${t}。",
+    "Resize chat split ${h?\"horizontally\":\"vertically\"}": "调整聊天分割比例：${h?\"水平\":\"垂直\"}"
   },
   "code": {
     "Arguments must be a JSON array of strings, for example [\"-y\", \"my-server\"].": "参数必须是字符串组成的 JSON 数组，例如 [\"-y\", \"my-server\"]。",
@@ -3061,6 +3062,11 @@
     "New project…": "新项目…",
     "Project chats": "项目聊天",
     "Project secrets": "项目密钥",
-    "Split chat": "拆分会话"
+    "Split chat": "拆分会话",
+    "Choose chat ": "选择聊天 ",
+    "Keep typing to narrow the results": "继续输入以缩小结果范围",
+    "/path/to/project": "项目路径",
+    "Creating…": "创建中…",
+    "Folder": "文件夹"
   }
 }
