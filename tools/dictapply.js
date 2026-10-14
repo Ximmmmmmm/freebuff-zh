@@ -132,6 +132,15 @@ if (EMIT) {
   }
   const seen = new Set()
   const items = []
+  // 不可添加过滤（与下方 locate 的添加碰撞判据同源）：精确键已存在，或该分区已有包含它的键。
+  // upstreamdiff 的字面量级覆盖判据是精确匹配，比这里的添加判据松——这类项（独立字面量但被长键
+  // 包含，如 API providers 被 No API providers yet 含住）每轮都会原样再生，喂给 --write 就是
+  // ADD_COLLISION 整表拒绝（同版本重跑必炸的根因）。在骨架生成处滤掉，上游报告里仍看得到。
+  let emitDict = null
+  try { emitDict = JSON.parse(fs.readFileSync(dictPath, 'utf8')) } catch (e) {
+    process.stderr.write('WARN: 读不到词典，跳过不可添加过滤' + String.fromCharCode(10))
+  }
+  const emitBlocked = []
   for (const e of entries) {
     let s = e.text
     if (!s) continue
@@ -139,9 +148,20 @@ if (EMIT) {
     if (q) s = q[1]
     s = s.replace(/\\n/g, '\n')
     if (!s || seen.has(s)) continue
+    const section = route(e.tag)
+    if (emitDict && emitDict[section]) {
+      const sec = emitDict[section]
+      if (Object.prototype.hasOwnProperty.call(sec, s) || Object.keys(sec).some((k) => k.includes(s))) {
+        emitBlocked.push(s)
+        continue
+      }
+    }
     seen.add(s)
     const note = [e.tag, e.ctx ? '@ ' + e.ctx : ''].filter(Boolean).join('  ') || '待翻'
-    items.push({ section: route(e.tag), key: s, value: fill, note })
+    items.push({ section, key: s, value: fill, note })
+  }
+  if (emitBlocked.length) {
+    process.stderr.write('另有 ' + emitBlocked.length + ' 条未收进骨架（词典已存在或被既有键包含，不可添加——人工处理见上游报告原文）：' + emitBlocked.slice(0, 5).map((x) => short(x)).join('、') + (emitBlocked.length > 5 ? '…' : '') + String.fromCharCode(10))
   }
   const bySection = items.reduce((a, x) => ((a[x.section] = (a[x.section] || 0) + 1), a), {})
   process.stdout.write(JSON.stringify({ generatedBy: 'dictapply.js --emit', add: items }, null, 2) + '\n')
