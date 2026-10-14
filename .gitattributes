@@ -6,6 +6,12 @@
 *.md text eol=lf
 *.json text eol=lf
 
+# Windows 一键安装器：PowerShell 脚本按 LF 存（与其余脚本一致）
+*.ps1 text eol=lf
+
+# .cmd 是批处理，行尾原样保留（不做转换）
+*.cmd -text
+
 # patches are byte-sensitive (CRLF context lines) — never convert
 *.patch -text
 

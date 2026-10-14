@@ -17,9 +17,9 @@ name: lint
 
 on:
   push:
-    paths: ['dict.json', 'manifest.json', 'intentional-english.json', 'patches/**', 'tools/**', '*.sh', '.github/workflows/**']
+    paths: ['dict.json', 'manifest.json', 'intentional-english.json', 'patches/**', 'tools/**', '*.sh', 'windows/**', '.github/workflows/**']
   pull_request:
-    paths: ['dict.json', 'manifest.json', 'intentional-english.json', 'patches/**', 'tools/**', '*.sh', '.github/workflows/**']
+    paths: ['dict.json', 'manifest.json', 'intentional-english.json', 'patches/**', 'tools/**', '*.sh', 'windows/**', '.github/workflows/**']
   workflow_dispatch:
 
 jobs:
@@ -104,6 +104,10 @@ jobs:
             exit 1
           fi
           echo "行尾守卫：脚本 / 补丁 / 词典 / 文档全部为 LF ✓"
+      - name: Windows 一键安装器自测（自造假安装目录 + 假汉化包，不需要真 Freebuff、不联网）
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./windows/test_installer.ps1
       - name: 工具脚本语法冒烟
         shell: bash
         run: |

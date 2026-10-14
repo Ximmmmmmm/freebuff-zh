@@ -52,17 +52,23 @@ bash restore.sh   # 从最近一次备份还原英文
 Freebuff 自动更新冲掉汉化后它会自动换回中文（装机版本变化 / 打开控制器 / 拉起实例前 / 本地
 `build.sh` 跑完 / 拉到适配本机版本的新包，五个时机，无开关无按钮）。
 
+**Windows 一键安装（不想碰命令行 / 不想装 Git Bash）**：`windows/` 里有一份纯 PowerShell 的安装器——
+从 [Releases](https://github.com/Ximmmmmmm/freebuff-zh/releases) 下好 `hanhua-pack-<版本>.zip`，双击
+`windows\一键安装汉化.cmd` 即可（自动探测安装目录、比对版本、备份原版、装完自校验，`-Restore` 一键还原）。
+用法与排查见 [`windows/README.md`](windows/README.md)；它自带的自测（假安装目录 + 假汉化包，不需要真
+Freebuff）也在 CI 的 windows-latest 上跑一遍。
+
 ## 三、构建管线
 
 ```
-原版 app.asar ──解包──▶ tools/apply.js（dict.json 四分区）──▶ patches/（13 个人工补丁）
+原版 app.asar ──解包──▶ tools/apply.js（dict.json 四分区）──▶ patches/（16 个人工补丁）
              ──▶ 语法校验 ──▶ 重打包 ──▶ output/app.asar
 原版 ui/      ──整份镜像──▶ index.html 改写（lang=zh-CN + 版本戳）──▶ 主 bundle 套词典
              ──▶ output/ui/
 ```
 
 - 主进程文案**只能靠 `patches/`**：词典只替换双引号字面量，而菜单 / 对话框 / 报错多是单引号与模板，
-  够不着。13 个补丁的锚点每次迁移都过一遍预检（行号漂移一条命令重锚定，上游改写才人工重维护）。
+  够不着。16 个补丁的锚点每次迁移都过一遍预检（行号漂移一条命令重锚定，上游改写才人工重维护）。
 - `ui/` 是**整份镜像**原版后再覆盖要汉化的两个文件——只拷 `index.html` + `assets/` 会把 `fonts/`
   与 `logos/` 丢掉，界面会缺字体重空图标。
 - 产物先落在临时目录，**自检通过才整份换位进 `output/`**：任何一步失败，`output/` 一个字节不变，
@@ -78,14 +84,14 @@ Freebuff 自动更新冲掉汉化后它会自动换回中文（装机版本变�
 
 | 路径 | 是什么 |
 | --- | --- |
-| `dict.json` | 词典本体，**唯一真正的产出物**：3126 条（`exact` 2307 / `template` 410 / `code` 30 / `pattern` 379） |
-| `intentional-english.json` | 「有意保留英文」登记表，逐条写理由：`fragments` 841 条 + `uiStrings` 87 条 |
+| `dict.json` | 词典本体，**唯一真正的产出物**：3065 条（`exact` 2192 / `template` 410 / `code` 27 / `pattern` 436） |
+| `intentional-english.json` | 「有意保留英文」登记表，逐条写理由：`fragments` 845 条 + `uiStrings` 86 条 |
 | `manifest.json` | `targetVersion`（适配的 Freebuff 版本）与 `packVersion`（本包版本） |
-| `patches/electron-*.patch` | 13 个主进程人工补丁（词典够不着的那一层） |
-| `tools/` | 66 个脚本（63 `.js` + 3 `.sh`，其中 28 个 `test_*`），构建 / 迁移 / 找漏翻 / 自测 |
+| `patches/electron-*.patch` | 16 个主进程人工补丁（词典够不着的那一层） |
+| `tools/` | 66 个脚本（61 `.js` + 5 `.sh`，其中 27 个 `test_*`），构建 / 迁移 / 找漏翻 / 自测 |
 | `build.sh` `apply.sh` `restore.sh` | 构建（输入没变自动复用）、装机、还原 |
 | `docs/更新维护.md` | 出事怎么查：每种「静默失败」的取证方法 |
-| `.github/workflows/ci.yml` | CI：词典门禁 + **28 个自测一个不落**（另有接线守卫盯「新加自测忘了接」）+ 一个 job 专跑发布闸门；两个 job 都在 ubuntu 与 windows 上各跑一遍 |
+| `.github/workflows/ci.yml` | CI：词典门禁 + **27 个自测一个不落**（另有接线守卫盯「新加自测忘了接」）+ 一个 job 专跑发布闸门；两个 job 都在 ubuntu 与 windows 上各跑一遍 |
 | `CHANGELOG.md` | 逐版本：上游改了什么、汉化跟着做了什么、对装机什么影响 |
 
 不入库（`.gitignore`）：`output/`、`work/`、`dist/`、`downloads/`、`node_modules/`、`.translator.json`。
@@ -171,14 +177,14 @@ workflow 里真的跑到的集合比对，漏接线（文件在、没人跑）�
 重复接线 / 步骤带 `if:` / 触发 `paths` 漏了 `tools/**` 只警告；判据只扫 `run:` 块，注释里提到的
 文件名不算接线。
 
-## 八、当前状态（适配 v0.0.169）
+## 八、当前状态（适配 v0.0.173）
 
 | 指标 | 实测 |
 | --- | --- |
-| 词典 / 替换 | 3126 条、3918 处替换全命中 |
-| 纯字面量词条覆盖 | 2253/2253（100.0%） |
-| 界面属性位置残留英文 | 77 处，扣除登记表后本版**无新增未登记项** |
-| 主进程 | 53 个文件的英文扫描 0 条疑似漏翻、0 条短标签，108 条属约定保留（品牌 / 协议 / 路径 / 命令 / 日志） |
+| 词典 / 替换 | 3065 条、3896 处替换全命中 |
+| 纯字面量词条覆盖 | 2135/2135（100.0%） |
+| 界面属性位置残留英文 | 127 处，扣除登记表后本版**无新增未登记项** |
+| 主进程 | 54 个文件的英文扫描 0 条疑似漏翻、0 条短标签，108 条属约定保留（品牌 / 协议 / 路径 / 命令 / 日志） |
 | 补丁 | 16 个主进程补丁（全部锚点唯一命中、干净套用；UI 行为补丁已退场，见下） |
 | 发布闸门 | 四道全绿 |
 
@@ -205,6 +211,14 @@ workflow 里真的跑到的集合比对，漏接线（文件在、没人跑）�
 
 **某个文案我想保留英文？** 登进 `intentional-english.json`（`fragments` 或 `uiStrings`）并写清理由，
 别用命令行开关绕过闸门——换机器 / CI 发布时开关忘了敲就白放了。
+
+**装机后从脚本 / Agent / IDE 里启动 Freebuff，秒退而且没有窗口？** 先看环境变量
+`ELECTRON_RUN_AS_NODE`：它只要是 `1`（部分宿主、IDE、Agent 运行时会导出），Electron 应用就退化成
+**纯 Node 跑主进程**——不建窗口、退出码 0、`userData` 一个字节不写，带 `--enable-logging=stderr`
+时还会报 Node 自己的 `bad option: --enable-logging=stderr`（正常 Electron 认得这个开关，报错本身就是
+「被当成 Node 跑了」的证据）。启动前清掉即可（`Remove-Item Env:ELECTRON_RUN_AS_NODE`），从开始菜单
+双击不受影响。**排查时先用原版 `app.asar` + `ui/` 跑一次对照**：两边同样秒退就与本包无关，
+别把它误判成「汉化把应用搞崩了」。
 
 ## 十、许可证与声明
 
