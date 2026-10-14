@@ -2600,7 +2600,10 @@
     "View changes to ${g1(e.files.length)}": "查看 ${g1(e.files.length)} 的更改",
     "Open active tab${Y!==void 0?` · frees in ${Math.max(1,Math.ceil((Y-Date.now())/6e4))}m`:\"\"}": "打开当前标签页${Y!==void 0?` · ${Math.max(1,Math.ceil((Y-Date.now())/6e4))} 分钟后释放`:\"\"}",
     "Could not install ${t}.": "无法安装 ${t}。",
-    "Resize chat split ${h?\"horizontally\":\"vertically\"}": "调整聊天分割比例：${h?\"水平\":\"垂直\"}"
+    "Resize chat split ${h?\"horizontally\":\"vertically\"}": "调整聊天分割比例：${h?\"水平\":\"垂直\"}",
+    "Couldn’t move this chat: ${a instanceof Error?a.message:\"drafts could not be saved\"}": "无法移动此会话：${a instanceof Error?a.message:\"drafts could not be saved\"}",
+    "Remove ${O.name} from this project?": "要从此项目中移除 ${O.name} 吗？",
+    "${e} is reserved for the workspace shell.": "${e} 被保留用于工作区 shell。"
   },
   "code": {
     "Arguments must be a JSON array of strings, for example [\"-y\", \"my-server\"].": "参数必须是字符串组成的 JSON 数组，例如 [\"-y\", \"my-server\"]。",
