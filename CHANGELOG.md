@@ -43,6 +43,19 @@
 - **验证**：重建自检全绿、四道发布闸门仍全绿（差集与占用检查都不受译文替换影响）。
 - **影响面**：同 `targetVersion`，修正重发 → `packVersion` 0.0.173.1，已装 0.0.173 的机器才会自动更新。
 
+### 记一笔：`windows/` —— 纯 PowerShell 的一键安装器
+
+`bash build.sh && bash apply.sh` 这条链对 Windows 用户不算友好（要装 Git Bash、要会敲命令）。所以补了
+一份**只用系统自带 Windows PowerShell** 的安装器，做的是「装一个已发布包」：`windows\install-freebuff-zh.ps1`
+加三个双击入口（`一键安装汉化.cmd` / `还原英文原版.cmd` / `查看汉化状态.cmd`），用法与排查见 `windows\README.md`。
+
+- 只写 `<安装目录>\resources\app.asar` 与 `...\orchestrator\ui\`，装前把原版备份到
+  `resources\hanhua-backup-<时间戳>\`，`-Restore` 一键还原；不碰注册表、不碰用户数据、不联网（除显式 `-Download`）。
+- 装前把两个坑堵住：**应用还在跑就拒绝**（热替换会留下「界面中文、主进程英文」的混合态，之后写操作全 `403`）、
+  **包里 `targetVersion` 与已装版本不一致就中止**（包里是含全部应用代码的 `app.asar`，装错版本等于把应用代码一起回退）。
+- 自带 `windows\test_installer.ps1`：自造假安装目录 + 假汉化包跑 10 组用例（状态 / 体检 / 版本闸门 / 安装落地 /
+  还原 / 异常输入 / 进程守卫），全程只写自己的临时目录；CI 的 `windows-latest` 上也会跑一遍。
+
 ## [0.0.169] · 2026-10-10（已发布 `pack-v0.0.169`）
 
 上游这一版把「隔离工作区」重构成**本机 / 新 Git 工作树 / 云端**三条运行路径（`Continue locally` /

@@ -52,6 +52,12 @@ bash restore.sh   # 从最近一次备份还原英文
 Freebuff 自动更新冲掉汉化后它会自动换回中文（装机版本变化 / 打开控制器 / 拉起实例前 / 本地
 `build.sh` 跑完 / 拉到适配本机版本的新包，五个时机，无开关无按钮）。
 
+**Windows 一键安装（不想碰命令行 / 不想装 Git Bash）**：`windows/` 里有一份纯 PowerShell 的安装器——
+从 [Releases](https://github.com/Ximmmmmmm/freebuff-zh/releases) 下好 `hanhua-pack-<版本>.zip`，双击
+`windows\一键安装汉化.cmd` 即可（自动探测安装目录、比对版本、备份原版、装完自校验，`-Restore` 一键还原）。
+用法与排查见 [`windows/README.md`](windows/README.md)；它自带的自测（假安装目录 + 假汉化包，不需要真
+Freebuff）也在 CI 的 windows-latest 上跑一遍。
+
 ## 三、构建管线
 
 ```
