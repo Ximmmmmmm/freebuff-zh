@@ -3378,6 +3378,18 @@
     {
       "text": "inconsistent density durations",
       "why": "内部数据校验串（Zod schema .refine 的错误提示——广告密度指标的不变量检查，0.0.171 新增），随遥测数据在内部流转、不进界面；与 react-window 的 console.warn 同类，按惯例保留英文。"
+    },
+    {
+      "text": "App name or slug, e.g. \"gmail\" or \"Google Calendar\".",
+      "why": "Zod 工具 Schema 的 .describe() 文档串（connect 工具 app 参数说明），随工具定义送给模型、不进界面；minified 产物里是单引号字面量，词典 exact 通道只采双引号串、pattern 锚点也不覆盖 .describe() 位置——按「模型输入 payload」同类处理（同 Regions: Style changes… 先例）。0.0.172 登记。"
+    },
+    {
+      "text": "One action per entry, in plain English, e.g. \"find unread emails from this week\".",
+      "why": "Zod 工具 Schema 的 .describe() 文档串（search 工具 queries 参数说明），随工具定义送给模型、不进界面；单引号字面量同样不可达，按模型输入 payload 同类处理。0.0.172 登记。"
+    },
+    {
+      "text": "in me?me.error:",
+      "why": "代码片段：E(\"error\"in me?me.error:\"Could not save your answer.\") 中两个界面串之间的 in 运算符与三元表达式，不是文案；0.0.172 曾误建条目致 JS 语法断裂（postbuild node --check 拦截）已删，按惯例保留英文。"
     }
   ],
   "uiStrings": [

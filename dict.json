@@ -2176,7 +2176,22 @@
     "find unread emails from this week": "查找本周未读邮件",
     "sample end must not precede sample start": "样本结束不能先于样本开始",
     "this Codex sign-in": "此 Codex 登录",
-    " to confirm": "确认"
+    " to confirm": "确认",
+    "Any OpenRouter or OpenAI-compatible key runs the Freebuff agent. Keys saved for Claude Code or Codex are listed here too.": "任何 OpenRouter 或 OpenAI 兼容的密钥都可运行 Freebuff 智能体。为 Claude Code 或 Codex 保存的密钥也列在这里。",
+    "Freebuff Desktop runs the CLI installed on this computer for local chats.": "Freebuff 桌面版会运行安装在本机的 CLI 以进行本地对话。",
+    "Choose these under Claude Code in the model picker.": "在模型选择器的 Claude Code 下选择这些模型。",
+    "Choose these under Codex in the model picker. With a sign-in they also run the Freebuff agent.": "在模型选择器的 Codex 下选择这些模型。登录后，它们同时运行 Freebuff 智能体。",
+    "Key replaced. Choose this provider again in the model picker to continue a task.": "密钥已更换。在模型选择器中重新选择此提供者即可继续任务。",
+    "Saved with your Freebuff account for Cloud chats. Your provider bills you and no Freebucks are used. Keys never enter the Cloud VM, transcripts or traces.": "随你的 Freebuff 账户保存，用于 Cloud 对话。由你的提供者计费，不消耗 Freebucks。密钥绝不进入 Cloud 虚拟机、对话记录或轨迹。",
+    "Sign in with your OpenAI account. Your plan runs Codex, and its models run the Freebuff agent too. Requests use your plan’s limits, not Freebucks. While an API key is saved, Codex uses the key.": "使用你的 OpenAI 账户登录。你的套餐可运行 Codex，其模型同时运行 Freebuff 智能体。请求使用你套餐的限额，而非 Freebucks。保存 API 密钥期间，Codex 将使用该密钥。",
+    "Arguments matching the tool's input schema.": "与工具的输入模式匹配的参数。",
+    "connect authorize repository repos connection": "连接 授权 仓库 版本库 连接",
+    "model context protocol servers tools connectors stdio http": "模型上下文协议 服务器 工具 连接器 stdio http",
+    ", and nothing runs until you approve it.": "，并且在你批准之前不会运行任何内容。",
+    ", for every agent on this computer.": "，对本机上的所有智能体生效。",
+    " to your wallet": " 到你的钱包",
+    " to that day's daily pool": " 到当天的每日额度池",
+    " to the daily pool or wallet that paid for it": " 到为它付费的每日额度池或钱包"
   },
   "template": {
     "Undone. ${l.reverted} ${l.reverted===1?\"file\":\"files\"} restored.": "已撤销。已恢复 ${l.reverted} 个文件。",
@@ -2572,7 +2587,19 @@
     "${mi(l.trustAwarded)} Freebucks added": "${mi(l.trustAwarded)} Freebucks 已到账",
     "Regular price: ${ii} Freebucks / hour": "原价：${ii} Freebucks / 小时",
     "View changes to ${O1(e.files.length)}": "查看 ${O1(e.files.length)} 的更改",
-    "Open active tab${oe!==void 0?` · frees in ${Math.max(1,Math.ceil((oe-Date.now())/6e4))}m`:\"\"}": "打开当前标签页${oe!==void 0?` · ${Math.max(1,Math.ceil((oe-Date.now())/6e4))} 分钟后释放`:\"\"}"
+    "Open active tab${oe!==void 0?` · frees in ${Math.max(1,Math.ceil((oe-Date.now())/6e4))}m`:\"\"}": "打开当前标签页${oe!==void 0?` · ${Math.max(1,Math.ceil((oe-Date.now())/6e4))} 分钟后释放`:\"\"}",
+    "Sending starts a new hour of ${p}${g}.": "发送消息将开始新的一小时：${p}${g}。",
+    "Your hour is up. Sending starts another hour of ${p}${g}.": "你的时长已用完。再发送一条将开始新的一小时：${p}${g}。",
+    "Uses the saved key at ${h.baseUrl??\"https://openrouter.ai/api/v1\"}. Each model’s limits are managed separately.": "使用保存在 ${h.baseUrl??\"https://openrouter.ai/api/v1\"} 的密钥。每个模型的限额单独管理。",
+    "This task needs your own ${C}. Sign up or copy it from ${e.advertiserName}, paste it here, and the task ${e.duringRun?\"continues\":\"starts\"} with it.": "此任务需要你自己的 ${C}。注册一个，或从 ${e.advertiserName} 复制并粘贴到此处，任务随后${e.duringRun?\"将继续\":\"即将开始\"}。",
+    "Add another ${A.name} account": "添加另一个 ${A.name} 账户",
+    "Remove ${at} and its ${Oe} models?": "移除 ${at} 及其 ${Oe} 模型？",
+    "Could not save Notification sounds: ${po(r,\"unknown error\")}": "无法保存通知声音：${po(r,\"unknown error\")}",
+    ": ${t} to that day's daily pool, ${n} to your wallet": "：${t} 到当天的每日额度池，${n} 到你的钱包",
+    "Daily Freebucks refill each day and don't carry over.${a.streakBonus?` Includes today's +${mi(a.streakBonus)} streak bonus: the streak adds to the daily pool, never the wallet.`:\"\"}${d}": "每日 Freebucks 额度每日补充，不结转。${a.streakBonus?` 含今日 +${mi(a.streakBonus)} 连续登录奖励：连续登录奖励计入每日额度池，不计入钱包。`:\"\"}${d}",
+    "Rank ${u+1}": "第 ${u+1} 位",
+    "Move ${d.label} up": "将 ${d.label} 上移",
+    "Move ${d.label} down": "将 ${d.label} 下移"
   },
   "code": {
     "Arguments must be a JSON array of strings, for example [\"-y\", \"my-server\"].": "参数必须是字符串组成的 JSON 数组，例如 [\"-y\", \"my-server\"]。",
@@ -3002,6 +3029,17 @@
     "Site name": "站点名称",
     "TXT verification": "TXT 验证",
     "Use TXT verification": "使用 TXT 验证",
-    "Your subscription": "您的订阅"
+    "Your subscription": "您的订阅",
+    "About the sign-in code": "关于登录代码",
+    "DNS and HTTPS are ready.": "DNS 与 HTTPS 已就绪。",
+    "Enter this code on the sign-in page. Freebuff saves the sign-in when you approve it.": "在登录页面输入此代码。你批准后，Freebuff 会保存登录状态。",
+    "Tasks keep the old key until you choose this provider again in the model picker.": "在你重新通过模型选择器选择此提供者之前，任务继续使用旧密钥。",
+    "Tasks using it stop before their next model request. Choose another model to continue the same conversation.": "使用它的任务会在下一次模型请求前停止。选择另一个模型即可继续同一对话。",
+    "This server was removed.": "此服务器已被移除。",
+    "Use limits your model supports. These are budgets, not detected capabilities.": "请使用你的模型支持的限额。这些是预算上限，并非检测到的实际能力。",
+    "Sign out of Codex? Its models are removed too.": "退出 Codex？其模型也会一并移除。",
+    "Your name and email aren’t attached to answers sent to": "你的姓名和邮箱不会附加到发送给",
+    "Freebuff passes it to this task’s terminal commands as": "Freebuff 会把它作为环境变量传给此任务的终端命令：",
+    "Couldn’t refresh your servers.": "无法刷新你的服务器。"
   }
 }
