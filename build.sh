@@ -86,6 +86,9 @@ echo "Pristine app.asar: ${PRISTINE_ASAR}"
 # 于是「手改了 output/」或「改了 apply.js」都不会被当成可复用。要重建：bash build.sh --rebuild。
 if [ -n "${PRISTINE_UI}" ]; then
   BUILD_KEY="$(node "${HERE}/tools/build_key.js" key --asar "${PRISTINE_ASAR}" --ui "${PRISTINE_UI}")"
+# 缺口模式（ALLOW_MISSED=1）与严格模式的缓存指纹必须分开——否则缺口模式的产物
+# 会被严格模式的复用检查当成「全绿」直接放行（2026-10-16 0.0.179 彩排实锤的假绿）。
+if [ "${ALLOW_MISSED:-0}" = "1" ]; then BUILD_KEY="${BUILD_KEY}-gap"; else BUILD_KEY="${BUILD_KEY}-strict"; fi
   if [ "${REBUILD}" -eq 1 ]; then
     echo "构建复用：--rebuild 指定，本次强制重建"
   elif node "${HERE}/tools/build_key.js" verify --key "${BUILD_KEY}" --asar "${PRISTINE_ASAR}" --ui "${PRISTINE_UI}"; then
