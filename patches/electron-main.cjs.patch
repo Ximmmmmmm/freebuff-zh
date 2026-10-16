@@ -1,6 +1,6 @@
 --- a/electron/main.cjs
 +++ b/electron/main.cjs
-@@ -202,11 +202,72 @@
+@@ -202,20 +202,81 @@
  /** @type {string | null} */
  let appUrl = null
  
@@ -75,12 +75,13 @@
      // the renderer's --surface-2 / --brand-dim: the splash bar and the one the app holds after it
      // are the same bar, and a colour change between them would show as a flicker
      splashTrack: '#282a29',
-@@ -214,8 +275,8 @@
+     splashBar: '#9db58b',
    },
    light: {
-     background: '#e3e7e4',
+-    background: '#e3e7e4',
 -    overlay: '#e3e7e4',
 -    overlaySymbol: '#232b26',
++    background: '#9bb3d0',
 +    overlay: HANHUA_SHELL_COLORS.overlay,
 +    overlaySymbol: HANHUA_SHELL_COLORS.symbolLight,
      splashTrack: '#e9ede8',

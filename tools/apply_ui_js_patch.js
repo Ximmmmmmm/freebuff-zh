@@ -23,6 +23,12 @@ const replacements = [
     'className:"streak-count",children:n.label',
     'className:"streak-count",children:(x=>{const m=/^(\\d+) (?:day|days) streak$/.exec(x);return m?"\\u8fde\\u7eed "+m[1]+" \\u5929":x})(n.label)',
   ],
+  // 窗口关闭按钮 tooltip：pattern 分区被 "Close panel"/"Close chat pane" 含住无法入库，
+  // 这里按渲染点直接改写（锚点全 bundle 唯一）
+  [
+    '"data-tooltip":"Close"',
+    '"data-tooltip":"\u5173\u95ed"',
+  ],
   // _V() 的 "N day(s)" 格式器（设置页 Current/Longest streak 的值）：单位改「天」，
   // 保持与胶囊一致；不能走词典，见文件头第 2 条
   [
