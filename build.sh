@@ -231,6 +231,8 @@ if [ -n "${PRISTINE_UI}" ]; then
   MAIN_BUNDLE="$(sed -n 's/.*src="\.\/\(assets\/[^"]*\.js\)".*/\1/p' "${STAGE}/ui/index.html" | head -1)"
   if [ -n "${MAIN_BUNDLE}" ] && [ -f "${STAGE}/ui/${MAIN_BUNDLE}" ]; then
     APPLY_LOG="$(node "${HERE}/tools/apply.js" "${STAGE}/ui/${MAIN_BUNDLE}" --write)"
+# 服务端文案渲染点改写 + Intl 安全单位替换（详见 tools/apply_ui_js_patch.js 文件头）
+node "${HERE}/tools/apply_ui_js_patch.js" "${STAGE}/ui/${MAIN_BUNDLE}"
     printf '%s\n' "${APPLY_LOG}"
     REPLACED="$(printf '%s' "${APPLY_LOG}" | sed -n 's/^replaced \([0-9][0-9]*\) occurrences.*/\1/p')"
     if [ -z "${REPLACED}" ] || [ "${REPLACED}" -eq 0 ]; then

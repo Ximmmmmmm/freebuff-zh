@@ -107,6 +107,13 @@ const CONSISTENT_LABELS = new Set([
   // 两个值在本版 bundle 里各只出现 1 次（同一处三元），不参与比较、不进 IPC、不落盘。
   '折叠行',
   '展开行',
+  // 0.0.179：Local/Cloud 运行位置标签（jqe/HI 两个 label 表 + settings 三元）与移动徽章的
+  // 同文探测器（s.includes("Cloud")?…：label 文本翻成「正在移至 Freebuff 云端」后靠「云端」
+  // 二字判定方向）——显示与探测必须同一个值，走 exact 全局一致替换并放行。
+  // 已逐条核对：本版 "Cloud" 5 处 / "Local" 2 处全是 label 表、显示三元与该探测器，无协议取值。
+  '云端',
+  '本地',
+  '这台电脑',
 ])
 
 const SEMANTIC_CALLS = [
