@@ -1529,7 +1529,7 @@
     "Maximum number of API calls in one minute.": "每分钟 API 调用次数上限。",
     "Maximum number of API calls that can run at the same time.": "可同时运行的 API 调用数量上限。",
     "Maximum token usage in one minute. Tokens are the pieces of text a model reads and generates.": "每分钟令牌用量上限。令牌是模型读取与生成的文本片段。",
-    "Models and pricing": "模型与定价",
+    "Models and pricing": "模型与价格",
     "Monthly spend cap": "每月支出上限",
     "My evidence is genuine, and I’ll keep it up — faking it or undoing it later means losing the reward and my account.": "我的凭证是真实的，并且会保持有效——事后造假或撤销将失去奖励与我的账户。",
     "Name the key and choose between 1 and 100 models.": "为密钥命名，并选择 1 到 100 个模型。",
