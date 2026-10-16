@@ -3390,6 +3390,10 @@
     {
       "text": "in me?me.error:",
       "why": "代码片段：E(\"error\"in me?me.error:\"Could not save your answer.\") 中两个界面串之间的 in 运算符与三元表达式，不是文案；0.0.172 曾误建条目致 JS 语法断裂（postbuild node --check 拦截）已删，按惯例保留英文。"
+    },
+    {
+      "text": "This folder already belongs to a project. Open that project instead.",
+      "why": "0.0.178 新引入的**协议值**用法：本版 bundle 里该句唯一 1 处出现是云服务 createProject 抛出 Error 的 message 与界面比较（ui/assets/index-Bnne4wSt.js：h.message!==\"…\" → 命中则退回 openProject），不是界面文案、没有任何显示位置。翻了会把比较值改写、这条回退分支永久失效（0.0.178 严格构建的 semantic_guard 正是这样拦下的）。运行期若该错误原样抛出，界面显示的是服务端发来的英文原文，与本包汉化无关。判断依据：全 UI 目录 grep 仅 1 处命中且为比较位置；0.0.173 / 0.0.174 均 0 处命中。"
     }
   ],
   "uiStrings": [
@@ -3736,6 +3740,30 @@
     {
       "text": "ChatGPT",
       "why": "OpenAI 品牌名（出现在标识符形态位置），专名不译。"
+    },
+    {
+      "text": "hours",
+      "why": "计费单位名（0.0.174 起上游把 Freebucks 改名为 hours / Freebuff hours，改名进行中：0.0.178 里 Freebucks 仍有 69 处、Freebuff hours 2 处）。与既有登记项 Freebucks 同类——单位名不译，中文句里保留英文 token（例：「不消耗 Freebuff hours。」）。译成「小时」会在上游定稿后再返工一轮；单独的 hour/hours 作为时间单位（如「2x means 2 hours per one-hour session.」）仍照常翻「小时」，本条只覆盖计费单位用法。"
+    },
+    {
+      "text": "available",
+      "why": "协议枚举值：0.0.178 起 availability 字段取值（unavailable / connect_required / available / suppressed），代码比较用，不是界面标签；界面上的可用状态走别的词条。"
+    },
+    {
+      "text": "automatic",
+      "why": "协议枚举值：creationIntent 字段取值（automatic / explicit）与 compaction trigger 的比较值，非界面标签。"
+    },
+    {
+      "text": "manual",
+      "why": "同 manual/automatic：trigger 比较值与 react-transition 的 focusReset/scroll 取值，非界面标签。"
+    },
+    {
+      "text": "folder",
+      "why": "协议枚举值：项目 sources[].kind 取值（folder / git），Zod schema 用；非界面标签。"
+    },
+    {
+      "text": "hr",
+      "why": "HTML 标签名（hr），出现在标签名白名单/清洗列表里，不是界面文案。"
     }
   ]
 }

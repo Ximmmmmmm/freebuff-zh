@@ -1,7 +1,7 @@
 --- a/electron/orchestrator-failure.cjs
 +++ b/electron/orchestrator-failure.cjs
-@@ -31,18 +31,18 @@
- const PROCESS_MONITORS = { win32: 'Task Manager', darwin: 'Activity Monitor' }
+@@ -58,18 +58,18 @@
+ const FATAL_SIGNALS = new Set(['SIGSEGV', 'SIGBUS', 'SIGILL', 'SIGFPE'])
  
  function describeProfileBusy(platform) {
 -  const monitor = PROCESS_MONITORS[platform] ?? 'your system monitor'
@@ -25,7 +25,7 @@
    }
  }
  
-@@ -71,8 +71,8 @@
+@@ -98,8 +98,8 @@
   */
  function describeBunCrash(failure, crash) {
    const lines = [
@@ -34,9 +34,9 @@
 +    'Freebuff Desktop 自带的运行时 Bun 在 Freebuff 启动前就崩溃了。' +
 +      '这是 Bun 内部的缺陷，而不是 Freebuff 的问题，完整报告见日志。',
      '',
-     crash.panic,
-   ]
-@@ -80,15 +80,15 @@
+     // A report whose panic line was the part that got lost is still identified by its bun.report
+     // link, which is why summarizeBunCrash keeps either one.
+@@ -109,15 +109,15 @@
    if (hasCompatibilityBuild(failure)) {
      lines.push(
        '',
@@ -56,7 +56,16 @@
      detail: lines.join('\n'),
      bunCrash: crash,
      ...(hasCompatibilityBuild(failure) ? { compatibilityBuildUrl: COMPATIBILITY_BUILD_URL } : {}),
-@@ -105,15 +105,15 @@
+@@ -166,7 +166,7 @@
+     )
+   }
+   return {
+-    title: 'Freebuff failed to start',
++    title: 'Freebuff 启动失败',
+     type: 'error',
+     message: "Freebuff's runtime was stopped by the system",
+     detail: lines.join('\n'),
+@@ -191,15 +191,15 @@
  
    const detailParts = []
    if (failure.errorMessage) detailParts.push(failure.errorMessage)
