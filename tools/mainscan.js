@@ -193,6 +193,18 @@ const INTENTIONAL = new Map()
 const keep = (reason, texts) => {
   for (const t of texts) INTENTIONAL.set(t, reason)
 }
+
+// 2026-10-16（0.0.179 发布闸门）：两条有意保留英文的内部串。
+// · updater 自检断言：throw 出来立刻被外层 catch 接住只进 console.error，用户永远看不到；
+//   报错文案在渲染端有自己的中文提示（见 dict.json「无法保存界面大小」那类 IPC 校验错误的同款处置）。
+// · 崩溃 cause 兜底词：与 WINDOWS_EXCEPTIONS 表值（STATUS_* 协议码）同槽展示（cause (code)），
+//   同一文本还进遥测 panic（crashFingerprint 以 panic 原文做指纹，翻译会让这一类崩溃分裂成两个指纹）。
+keep('内部断言（updater 自检 throw，外层 catch 只进 console.error，用户不可见）', [
+  'The updater did not check for updates',
+])
+keep('崩溃 cause 兜底词，与 STATUS_* 表值同族；同一文本进遥测 panic（crashFingerprint 依赖原文）', [
+  'an unhandled exception',
+])
 keep('日志 / 控制台', [
   '[orchestrator] bun runtime: ${choice.runtimeFlavor} (${choice.reason})',
   '[orchestrator] process ${pid} ended (code ${code ?? none}, signal ${signal ?? none})',

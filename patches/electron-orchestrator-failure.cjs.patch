@@ -56,15 +56,36 @@
      detail: lines.join('\n'),
      bunCrash: crash,
      ...(hasCompatibilityBuild(failure) ? { compatibilityBuildUrl: COMPATIBILITY_BUILD_URL } : {}),
-@@ -166,7 +166,7 @@
+@@ -153,22 +153,22 @@
+ function describeOsCrash(failure, killed) {
+   const named = killed.code ? `${killed.cause} (${killed.code})` : killed.cause
+   const lines = [
+-    `The operating system stopped Freebuff's runtime: ${named}. The runtime printed no crash ` +
+-      'report, so its exit status is the only evidence — but a process that ends this way was ' +
+-      'terminated by the system rather than exiting on its own.',
++    `操作系统终止了 Freebuff 的运行时：${named}。运行时没有留下崩溃` +
++      '报告，因此其退出状态是唯一证据——以这种方式结束的进程是' +
++      '被系统终止的，并非自行退出。',
+   ]
+   if (failure.stderrTail) lines.push('', `Recent log output:\n${failure.stderrTail.trim()}`)
+   if (hasCompatibilityBuild(failure)) {
+     lines.push(
+       '',
+-      'The compatibility build ships a differently-compiled copy of that runtime and sometimes ' +
+-        `starts where this one does not: ${COMPATIBILITY_BUILD_URL}`,
++      '兼容构建附带同一运行时的另一编译版本，有时会' +
++        `从本构建启动失败之处继续启动：${COMPATIBILITY_BUILD_URL}`,
      )
    }
    return {
 -    title: 'Freebuff failed to start',
 +    title: 'Freebuff 启动失败',
      type: 'error',
-     message: "Freebuff's runtime was stopped by the system",
+-    message: "Freebuff's runtime was stopped by the system",
++    message: "Freebuff 的运行时已被系统终止",
      detail: lines.join('\n'),
+     // Deliberately carries no hex: crashFingerprint() generalizes every 0x… to 0x#, so putting the
+     // status here would collapse an access violation and a stack overflow into one crash. The
 @@ -191,15 +191,15 @@
  
    const detailParts = []
