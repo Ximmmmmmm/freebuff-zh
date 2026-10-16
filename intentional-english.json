@@ -3764,6 +3764,10 @@
     {
       "text": "hr",
       "why": "HTML 标签名（hr），出现在标签名白名单/清洗列表里，不是界面文案。"
+    },
+    {
+      "text": ".env snippet",
+      "why": "CSS 类名（className 拼接里的固定段，给样式表定位 .env 示例代码块用），不是界面文案——翻掉就没有对应样式了。与 fragments 里的 `msg sponsored-task` 同类。"
     }
   ]
 }
