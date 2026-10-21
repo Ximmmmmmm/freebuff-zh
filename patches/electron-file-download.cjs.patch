@@ -1,0 +1,33 @@
+--- a/electron/file-download.cjs
++++ b/electron/file-download.cjs
+@@ -25,7 +25,7 @@
+   })
+   if (!response.ok) {
+     const error = await response.json().catch(() => null)
+-    throw new Error(error?.error || 'Could not download file')
++    throw new Error(error?.error || '无法下载文件')
+   }
+   let handle, target
+   try {
+@@ -38,18 +38,18 @@
+       try { handle = await open(target, 'wx', 0o600); break }
+       catch (error) { if (error.code !== 'EEXIST') throw error }
+     }
+-    if (!handle) throw new Error('Too many downloads with this filename')
++    if (!handle) throw new Error('同名文件的下载次数过多')
+     let size = 0
+     if (response.body) for await (const chunk of response.body) {
+       for (let at = 0; at < chunk.length;) {
+         const { bytesWritten } = await handle.write(chunk, at, chunk.length - at)
+-        if (!bytesWritten) throw new Error('Could not write the downloaded file')
++        if (!bytesWritten) throw new Error('无法写入已下载的文件')
+         at += bytesWritten
+         size += bytesWritten
+       }
+     }
+     const expected = response.headers.get('content-length')
+-    if (expected !== null && size !== Number(expected)) throw new Error('The download was interrupted. Please try again.')
++    if (expected !== null && size !== Number(expected)) throw new Error('下载被中断了。请重试。')
+     await handle.close()
+     handle = null
+     return { filename: path.basename(target) }

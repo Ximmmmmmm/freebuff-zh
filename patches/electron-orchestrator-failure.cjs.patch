@@ -1,7 +1,31 @@
 --- a/electron/orchestrator-failure.cjs
 +++ b/electron/orchestrator-failure.cjs
-@@ -58,18 +58,18 @@
- const FATAL_SIGNALS = new Set(['SIGSEGV', 'SIGBUS', 'SIGILL', 'SIGFPE'])
+@@ -84,35 +84,35 @@
+ const SPAWN_ERROR_HINTS = new Map([
+   [
+     'ENOENT',
+-    'The runtime Freebuff tried to run is not at that path. An interrupted or partly-extracted ' +
+-      'install is the usual cause, so re-downloading Freebuff is the fix.',
++    'Freebuff 想运行的那个运行时并不在该路径上。安装被中断、或只解压出一部分是常见原因，' +
++      '所以重新下载 Freebuff 就能解决。',
+   ],
+   [
+     'EACCES',
+-    'The runtime is there but could not be executed. On Linux that is usually a filesystem ' +
+-      'mounted "noexec" or an install that lost its executable bit — try running Freebuff from ' +
+-      'a directory under your home folder.',
++    '运行时确实就在那里，但无法被执行。在 Linux 上这通常是文件系统' +
++      '挂载为 "noexec"，或者安装丢了可执行位——试试把 Freebuff 放到' +
++      '你家目录下的某个目录里再运行。',
+   ],
+   [
+     'EPERM',
+-    'The system refused to let Freebuff start its runtime. Security software or an execution ' +
+-      'policy is the usual cause: allow Freebuff, then open it again.',
++    '系统拒绝让 Freebuff 启动它的运行时。安全软件或执行策略' +
++      '是最常见的原因：请放行 Freebuff，然后重新打开它。',
+   ],
+ ])
  
  function describeProfileBusy(platform) {
 -  const monitor = PROCESS_MONITORS[platform] ?? 'your system monitor'
@@ -25,7 +49,7 @@
    }
  }
  
-@@ -98,8 +98,8 @@
+@@ -141,8 +141,8 @@
   */
  function describeBunCrash(failure, crash) {
    const lines = [
@@ -36,7 +60,7 @@
      '',
      // A report whose panic line was the part that got lost is still identified by its bun.report
      // link, which is why summarizeBunCrash keeps either one.
-@@ -109,15 +109,15 @@
+@@ -152,15 +152,15 @@
    if (hasCompatibilityBuild(failure)) {
      lines.push(
        '',
@@ -56,7 +80,7 @@
      detail: lines.join('\n'),
      bunCrash: crash,
      ...(hasCompatibilityBuild(failure) ? { compatibilityBuildUrl: COMPATIBILITY_BUILD_URL } : {}),
-@@ -153,22 +153,22 @@
+@@ -199,22 +199,22 @@
  function describeOsCrash(failure, killed) {
    const named = killed.code ? `${killed.cause} (${killed.code})` : killed.cause
    const lines = [
@@ -67,7 +91,8 @@
 +      '报告，因此其退出状态是唯一证据——以这种方式结束的进程是' +
 +      '被系统终止的，并非自行退出。',
    ]
-   if (failure.stderrTail) lines.push('', `Recent log output:\n${failure.stderrTail.trim()}`)
+-  if (failure.stderrTail) lines.push('', `Recent log output:\n${failure.stderrTail.trim()}`)
++  if (failure.stderrTail) lines.push('', `最近的日志输出：\n${failure.stderrTail.trim()}`)
    if (hasCompatibilityBuild(failure)) {
      lines.push(
        '',
@@ -86,19 +111,118 @@
      detail: lines.join('\n'),
      // Deliberately carries no hex: crashFingerprint() generalizes every 0x… to 0x#, so putting the
      // status here would collapse an access violation and a stack overflow into one crash. The
-@@ -191,15 +191,15 @@
+@@ -236,21 +236,21 @@
+  * counting, and `renderer killed (exit 1)` in renderer-health.cjs is the same shape already.
+  */
+ function describeOsKill(failure) {
+-  const monitor = PROCESS_MONITORS[failure.platform] ?? 'your system monitor'
++  const monitor = PROCESS_MONITORS[failure.platform] ?? '你的系统监视器'
+   const lines = [
+-    "Freebuff's runtime did not crash — something on this computer stopped it. Its exit status is " +
+-      'the one a program leaves when another program terminates it, so there is no fault in the ' +
+-      'runtime to report and nothing in the log to read.',
++    "Freebuff 的运行时并没有崩溃——是这台电脑上的某个东西把它停掉了。它的退出状态是" +
++      '程序被另一个程序终止时留下的那种，因此运行时本身并没有可报告的缺陷，' +
++      '日志里也没有可读的内容。',
+     '',
+-    'Security software is the usual cause: allow Freebuff, or exclude its "bun" runtime, in ' +
+-      `whatever protects this computer, then open Freebuff again. If you ended "bun" in ${monitor} ` +
+-      'yourself, that is all this was.',
++    '安全软件是最常见的原因：请在保护这台电脑的软件里放行 Freebuff，或把它的 "bun" 运行时' +
++      `加入例外，然后重新打开 Freebuff。如果你自己在 ${monitor} 里结束过 "bun"，` +
++      '那这就只是那件事。',
+   ]
+-  if (failure.stderrTail) lines.push('', `Recent log output:\n${failure.stderrTail.trim()}`)
++  if (failure.stderrTail) lines.push('', `最近的日志输出：\n${failure.stderrTail.trim()}`)
+   return {
+-    title: 'Freebuff stopped',
++    title: 'Freebuff 已停止',
+     type: 'warning',
+-    message: "Freebuff's runtime was stopped by something on this computer",
++    message: "Freebuff 的运行时被这台电脑上的某个东西停掉了",
+     detail: lines.join('\n'),
+     // Its own class, deliberately not the exception wording: crashFingerprint() groups rows by
+     // this text, so a kill counted as "terminated by the operating system: an unhandled exception"
+@@ -265,7 +265,7 @@
+   if (typeof ms !== 'number' || !Number.isFinite(ms) || ms < 0) return null
+   if (ms < 1000) return `${Math.round(ms)}ms`
+   const seconds = ms / 1000
+-  return `${seconds < 10 ? seconds.toFixed(1) : Math.round(seconds)} seconds`
++  return `${seconds < 10 ? seconds.toFixed(1) : Math.round(seconds)} 秒`
+ }
  
-   const detailParts = []
-   if (failure.errorMessage) detailParts.push(failure.errorMessage)
--  if (failure.kind === 'timeout') detailParts.push('The orchestrator did not become ready in time.')
-+  if (failure.kind === 'timeout') detailParts.push('编排器未能在规定时间内就绪。')
+ /**
+@@ -277,9 +277,9 @@
+ function describeSpawnTarget(target) {
+   if (!target || !target.runtime) return null
+   const origin =
+-    target.packaged === true ? ' bundled with the app' : target.packaged === false ? ' from your PATH' : ''
+-  const entry = target.entry ? ` running ${target.entry}` : ''
+-  return `Freebuff started "${target.runtime}"${origin}${entry}.`
++    target.packaged === true ? '（随应用附带）' : target.packaged === false ? '（来自你的 PATH）' : ''
++  const entry = target.entry ? `，运行的入口是 ${target.entry}` : ''
++  return `Freebuff 已启动 "${target.runtime}"${origin}${entry}。`
+ }
+ 
+ /** Whether the child wrote nothing to either stream. Unknown (field absent) is never "nothing". */
+@@ -310,22 +310,22 @@
+   if (waited) {
+     lines.push(
+       failure.kind === 'timeout'
+-        ? `It was given ${waited} and did not become ready in time, so it was stopped.`
+-        : `It lasted ${waited}.`,
++        ? `它已等待 ${waited}，但未在限定时间内就绪，因此已被停止。`
++        : `它持续了 ${waited}。`,
+     )
+   }
+   if (producedNoOutput(failure)) {
+     lines.push(
+-      'It printed nothing at all — not one line on either output stream — so there is no error ' +
+-        'message to show and the log ends where this launch began. A process that prints nothing ' +
+-        'usually never reached its own first line.',
++      '它完全没有输出——两条输出流上连一行都没有——所以既没有可展示的错误信息，' +
++        '日志也停在这次刚开始的地方。一个什么都不打印的进程，' +
++        '通常是连它自己的第一行都没能跑到。',
+     )
+   }
+   // Only set by the path that reports an exit whose pipes never closed; see startOrchestrator.
+   if (failure.stdioStillOpen) {
+     lines.push(
+-      'Its output streams were still held open after it ended — by something it started, which ' +
+-        'outlived it — so this is reported from its exit rather than from its last output.',
++      '它结束之后输出流仍被占着——占着它的是它启动的某个东西，而那东西活得比它久——' +
++        '所以这里是按它的退出上报，而不是按它的最后一条输出。',
+     )
+   }
+   return lines
+@@ -354,27 +354,27 @@
+   if (spawnHint) detailParts.push(spawnHint)
+   const attempt = describeAttempt(failure)
+   // The attempt lines say this with the wait in it; without them it is all a timeout has.
+-  if (failure.kind === 'timeout' && !attempt.some((line) => line.includes('ready in time'))) {
+-    detailParts.push('The orchestrator did not become ready in time.')
++  if (failure.kind === 'timeout' && !attempt.some((line) => line.includes('未在限定时间内就绪'))) {
++    detailParts.push('编排器未在限定时间内就绪。')
+   }
    if (failure.code !== undefined || failure.signal) {
 -    detailParts.push(`Process ended (code ${failure.code ?? 'none'}, signal ${failure.signal ?? 'none'}).`)
 +    detailParts.push(`进程已结束（代码 ${failure.code ?? '无'}，信号 ${failure.signal ?? '无'}）。`)
    }
+   if (attempt.length) detailParts.push(...(detailParts.length ? [''] : []), ...attempt)
 -  if (failure.stderrTail) detailParts.push(`\nRecent log output:\n${failure.stderrTail.trim()}`)
 +  if (failure.stderrTail) detailParts.push(`\n最近的日志输出：\n${failure.stderrTail.trim()}`)
+   // A dialog with an empty body is the failure this branch exists to prevent, so it cannot be one
+   // of its outcomes: a diagnostic that carried nothing at all still has to say that out loud.
+   if (!detailParts.length) {
+     detailParts.push(
+-      'Freebuff recorded no detail about this failure at all. The log below has everything the ' +
+-        'launch produced; please attach it to a bug report.',
++      'Freebuff 完全没有记录下这次失败的任何细节。下面的日志包含了这次启动产生的' +
++        '全部内容，请把它附到缺陷报告里。',
+     )
+   }
    return {
+     cause: { spawn: 'spawn_failed', timeout: 'timeout', cleanup: 'cleanup' }[failure.kind] ?? 'exit',
 -    title: 'Freebuff failed to start',
 +    title: 'Freebuff 启动失败',
      type: 'error',

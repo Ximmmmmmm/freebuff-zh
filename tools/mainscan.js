@@ -205,6 +205,17 @@ keep('内部断言（updater 自检 throw，外层 catch 只进 console.error，
 keep('崩溃 cause 兜底词，与 STATUS_* 表值同族；同一文本进遥测 panic（crashFingerprint 依赖原文）', [
   'an unhandled exception',
 ])
+// 2026-10-21（0.0.183 适配）：三条有意保留英文的内部串。
+// · 'Application Support' 是 macOS 的磁盘目录名，翻掉就找不到 install-receipt.txt；
+// · 另两条是 file-download 的参数校验 / 启动时序断言，与已登记的 'Invalid cookie export.'
+//   同款处置——调用方按 kind 分支，用户真正读到的是已翻译的那几条下载错误。
+keep('浏览器配置的磁盘路径 / 文件名（用来在磁盘上定位，翻掉会让导入找不到文件）', [
+  'Application Support',
+])
+keep('文件下载子系统（0.0.18x 新增文件）的内部断言（参数校验 / 启动时序，用户可见文案已进补丁）', [
+  'Invalid file download',
+  'The app is still starting',
+])
 keep('日志 / 控制台', [
   '[orchestrator] bun runtime: ${choice.runtimeFlavor} (${choice.reason})',
   '[orchestrator] process ${pid} ended (code ${code ?? none}, signal ${signal ?? none})',

@@ -1,0 +1,11 @@
+--- a/electron/updater.cjs
++++ b/electron/updater.cjs
+@@ -347,7 +347,7 @@
+     // Armed before the handoff, not after: a throw below reports the failure
+     // itself, and setCard then disarms this.
+     installTimer = setTimeout(
+-      () => installFailed(new Error('the installer did not start')),
++      () => installFailed(new Error('安装程序没有启动')),
+       INSTALL_TIMEOUT_MS,
+     )
+     installTimer.unref?.()

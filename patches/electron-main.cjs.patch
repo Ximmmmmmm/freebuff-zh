@@ -1,6 +1,6 @@
 --- a/electron/main.cjs
 +++ b/electron/main.cjs
-@@ -202,20 +202,81 @@
+@@ -215,20 +215,81 @@
  /** @type {string | null} */
  let appUrl = null
  
@@ -87,7 +87,7 @@
      splashTrack: '#e9ede8',
      splashBar: '#5e774e',
    },
-@@ -579,14 +640,14 @@
+@@ -610,14 +671,14 @@
    const buttons = []
    const actions = []
    if (compatibilityBuildUrl) {
@@ -105,7 +105,7 @@
    actions.push(() => {})
  
    const options = {
-@@ -611,10 +672,10 @@
+@@ -642,10 +703,10 @@
    return new Promise((resolve, reject) => {
      const { bun, args, cwd, uiDir, wasmDir, packaged } = resolveOrchestrator()
      const capture = createStderrCapture(bun, args)
@@ -120,7 +120,7 @@
      apiLaunchToken = launchId
      let exited = false
      let ready = false
-@@ -656,7 +717,7 @@
+@@ -704,7 +765,7 @@
      }
  
      if (!shellLifetime) {
@@ -129,9 +129,9 @@
        return
      }
      // No secret goes in `env`. Another process of the same user reads a child's STARTING environment
-@@ -732,10 +793,10 @@
-       rejectStartup(
-         failure('spawn', {
+@@ -785,10 +846,10 @@
+           // reads as a slow machine, and it is a missing file.
+           errorCode: err.code,
            errorMessage:
 -            `Failed to start the orchestrator with "${bun}": ${err.message}. ` +
 +            `无法用 "${bun}" 启动编排器：${err.message}。` +
@@ -143,16 +143,16 @@
          }),
        )
      })
-@@ -843,7 +904,7 @@
-         closed
-           ? failure('timeout')
-           : failure('cleanup', {
--              errorMessage: 'The failed orchestrator could not be stopped. Restart Windows and try again.',
-+              errorMessage: '无法停止已失败的编排器。请重启 Windows 后重试。',
+@@ -916,7 +977,7 @@
+               // Not "restart Windows": SIGKILL leaving a process whose pipes are still held is a
+               // POSIX outcome too (see CLOSE_AFTER_EXIT_GRACE_MS), and this exact branch has been
+               // telling Linux users to reboot an OS they are not running.
+-              errorMessage: 'The failed orchestrator could not be stopped. Restart your computer and try again.',
++              errorMessage: '无法停止已失败的编排器。请重启电脑后重试。',
              }),
        )
      }
-@@ -1015,7 +1076,7 @@
+@@ -1088,7 +1149,7 @@
            titleBarOverlay: {
              color: colors.overlay,
              symbolColor: colors.overlaySymbol,
@@ -161,7 +161,7 @@
            },
          }
        : {}),
-@@ -1144,26 +1205,26 @@
+@@ -1217,26 +1278,26 @@
      const call = async (body) => {
        const response = await postMutation(fetch, new URL('api/agentic-lab/test', appUrl), apiLaunchToken, body)
        const data = await response.json()
@@ -192,8 +192,8 @@
 +    await dialog.showMessageBox({ type: 'error', title: '桌面实验室测试', message: error.message || String(error) })
    } finally { openingLabTest = false }
  }
- app.on('open-url', (event, value) => { event.preventDefault(); void openLabTestLink(value) })
-@@ -1207,9 +1268,9 @@
+ const { createSignInLinkHandler } = require('./sign-in-link.cjs')
+@@ -1288,9 +1349,9 @@
        // A failed/loading renderer cannot host a custom dialog. Keep this path usable,
        // with a native warning since its thread's activity is unknown.
        if (askSync(win, {
@@ -206,7 +206,7 @@
        }) !== 1) return false
        closeThreadOnServer(threadId)
        return true
-@@ -1256,15 +1317,15 @@
+@@ -1337,15 +1398,15 @@
    try {
      const response = askSync(parent, {
        type: 'question',
@@ -228,7 +228,7 @@
        // a stray Return keeps the agents alive
        defaultId: 0,
        cancelId: 0,
-@@ -1345,8 +1406,8 @@
+@@ -1426,8 +1487,8 @@
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return []
    const res = await dialog.showOpenDialog(win, {
@@ -239,7 +239,7 @@
      properties: attachmentDialogProperties(kind),
    })
    if (res.canceled) return []
-@@ -1375,13 +1436,13 @@
+@@ -1456,13 +1517,13 @@
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return []
    const res = await dialog.showOpenDialog(win, {
@@ -257,7 +257,7 @@
          extensions: [...VIEWABLE_IMAGE_EXTENSIONS, ...OTHER_IMAGE_EXTENSIONS],
        },
      ],
-@@ -1399,8 +1460,8 @@
+@@ -1480,8 +1541,8 @@
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return null
    const res = await dialog.showOpenDialog(win, {
@@ -268,7 +268,16 @@
      properties: ['openDirectory', 'createDirectory'],
    })
    return res.canceled || res.filePaths.length === 0 ? null : res.filePaths[0]
-@@ -1410,10 +1471,10 @@
+@@ -1496,7 +1557,7 @@
+     })
+     return { ok: true, ...result }
+   } catch (error) {
+-    return { ok: false, error: error?.message || 'Could not download file' }
++    return { ok: false, error: error?.message || '无法下载文件' }
+   }
+ })
+ 
+@@ -1504,10 +1565,10 @@
    const win = BrowserWindow.fromWebContents(event.sender)
    if (!win) return false
    if (typeof filename !== 'string' || typeof content !== 'string') {
@@ -281,7 +290,7 @@
      defaultPath: path.basename(filename),
      filters: [{ name: 'Markdown', extensions: ['md'] }],
      properties: ['createDirectory', 'showOverwriteConfirmation'],
-@@ -1488,17 +1549,17 @@
+@@ -1582,17 +1643,17 @@
    if (!isTrustedAppSender(event, isAppUrl)) return { ok: false, error: 'Untrusted sender' }
    try {
      if (!request || typeof request !== 'object' || Array.isArray(request)) {
@@ -304,7 +313,7 @@
  
      if (target.id === 'copy-path') {
        clipboard.writeText(resolved.requested)
-@@ -1511,7 +1572,7 @@
+@@ -1605,7 +1666,7 @@
        }
      } else {
        const args = launchArgs(target, resolved, line)
@@ -313,7 +322,7 @@
        await new Promise((resolve, reject) => {
          const child = spawn(target.executable, args, {
            cwd: launchCwd(target, resolved),
-@@ -1528,7 +1589,7 @@
+@@ -1622,7 +1683,7 @@
      }
      return { ok: true, path: resolved.requested, openedPath: resolved.opened, fallback: resolved.fallback }
    } catch (error) {
@@ -322,7 +331,7 @@
    }
  })
  
-@@ -1676,7 +1737,7 @@
+@@ -1770,7 +1831,7 @@
    for (const win of BrowserWindow.getAllWindows()) {
      win.setBackgroundColor(colors.background)
      if (process.platform === 'win32') {
@@ -331,7 +340,7 @@
      }
    }
  }
-@@ -1758,10 +1819,10 @@
+@@ -1852,10 +1913,10 @@
        resolve(action)
      }
      const menu = Menu.buildFromTemplate([
@@ -346,7 +355,7 @@
      ])
      menu.popup({
        window: BrowserWindow.fromWebContents(event.sender) ?? undefined,
-@@ -1940,7 +2001,7 @@
+@@ -2040,7 +2101,7 @@
      if (err?.orchestratorFailure) {
        await showOrchestratorFailure(err.orchestratorFailure, win)
      } else {
@@ -355,7 +364,7 @@
      }
      quitApp()
      return
-@@ -2083,9 +2144,9 @@
+@@ -2185,9 +2246,9 @@
        canRelaunch: !!relaunchExecPath,
      })
      const buttons = canRetryWithoutSandbox
@@ -368,7 +377,7 @@
      // A launch failure this early can land before `ready`, where the dialog
      // module throws — and an exception here would replace the message we came to
      // show with a silent crash, which is the exact failure being fixed.
-@@ -2093,7 +2154,7 @@
+@@ -2195,7 +2256,7 @@
      // buttons, so the pre-ready path explains and quits rather than offering the
      // retry. Nothing is running yet, so there is nothing to tear down.
      if (!app.isReady()) {
@@ -377,7 +386,7 @@
        app.exit(1)
        return
      }
-@@ -2101,7 +2162,7 @@
+@@ -2203,7 +2264,7 @@
      try {
        response = dialog.showMessageBoxSync({
          type: 'error',
