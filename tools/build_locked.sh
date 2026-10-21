@@ -109,7 +109,8 @@ cp -r "${PRISTINE_UI}/." "${STAGE}/ui/"
 node "${HERE}/tools/apply_ui_patch.js" "${STAGE}/ui/index.html"
 PACK_VERSION="$(node -e 'const m = require(process.argv[1]); console.log(m.packVersion || m.targetVersion)' "${HERE}/manifest.json")"
 PACK_VERSION="${PACK_VERSION}" node -e 'const fs = require("fs"); const f = process.argv[1]; let s = fs.readFileSync(f, "utf8"); const v = process.env.PACK_VERSION; if (s.includes("hanhua-pack")) { s = s.replace(/(<meta name="hanhua-pack" content=")[^"]*(")/, "$1" + v + "$2"); } else { s = s.replace(/<head>/i, "<head>\n<meta name=\"hanhua-pack\" content=\"" + v + "\">"); } fs.writeFileSync(f, s);' "${STAGE}/ui/index.html"
-MAIN_BUNDLE="$(sed -n 's/.*src="\.\/\(assets\/[^"]*\.js\)".*/\1/p' "${STAGE}/ui/index.html" | head -1)"
+# 前缀口径同 pristine.js：./assets 与 /assets（0.0.180+）都要认
+MAIN_BUNDLE="$(sed -nE 's/.*src="\.?\/?(assets\/[^"]*\.js)".*/\1/p' "${STAGE}/ui/index.html" | head -1)"
 [ -n "${MAIN_BUNDLE}" ] && [ -f "${STAGE}/ui/${MAIN_BUNDLE}" ] || { echo "ERROR: 未找到主 bundle" >&2; exit 1; }
 APPLY_LOG="$(node "${HERE}/tools/apply.js" "${STAGE}/ui/${MAIN_BUNDLE}" --write)"
 # 服务端文案渲染点改写 + Intl 安全单位替换（详见 tools/apply_ui_js_patch.js 文件头）

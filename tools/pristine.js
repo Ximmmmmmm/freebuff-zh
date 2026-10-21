@@ -184,10 +184,13 @@ function cmpVersion(a, b) {
 }
 
 // 从 ui 目录的 index.html 找主 bundle（与 build.sh / upstreamdiff 同一套口径）
+// 前缀必须容忍三种形态：`./assets/`（≤0.0.179）、`/assets/`（0.0.180 起 Vite 改成根绝对
+// 路径）、`assets/`。写死 `./` 时 0.0.180/182/183 连续三版在这里判成「找不到主 bundle」——
+// bundle 文件其实存在，报错信息还指向错误的方向（"assets/*.js 不存在"）。
 function bundleRelFromIndex(uiDir) {
   const idx = path.join(uiDir, 'index.html')
   if (!fs.existsSync(idx)) return null
-  const m = /src="\.\/(assets\/[^"]+\.js)"/.exec(fs.readFileSync(idx, 'utf8'))
+  const m = /src="\.?\/?(assets\/[^"]+\.js)"/.exec(fs.readFileSync(idx, 'utf8'))
   if (!m) return null
   return fs.existsSync(path.join(uiDir, m[1])) ? m[1] : null
 }

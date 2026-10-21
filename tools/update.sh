@@ -73,7 +73,8 @@ echo "本次更新报告:  ${REPORT}"
 
 UI_BUNDLE=""
 if [ -n "${PRISTINE_UI}" ] && [ -f "${PRISTINE_UI}/index.html" ]; then
-  UI_BUNDLE="$(sed -n 's/.*src="\.\/\(assets\/[^"]*\.js\)".*/\1/p' "${PRISTINE_UI}/index.html" | head -1)"
+  # 前缀口径同 pristine.js：./assets 与 /assets（0.0.180+）都要认
+  UI_BUNDLE="$(sed -nE 's/.*src="\.?\/?(assets\/[^"]*\.js)".*/\1/p' "${PRISTINE_UI}/index.html" | head -1)"
   [ -n "${UI_BUNDLE}" ] && UI_BUNDLE="${PRISTINE_UI}/${UI_BUNDLE}"
 fi
 

@@ -56,9 +56,10 @@ if (!fs.existsSync(idxPath)) {
     warn('ui/index.html 标题不是「Freebuff 桌面版」')
   }
 
-  const m = html.match(/src="\.\/(assets\/[^"]+\.js)"/)
+  // 前缀口径同 pristine.js：./assets、/assets（0.0.180+）、assets 三种都要认
+  const m = html.match(/src="\.?\/?(assets\/[^"]+\.js)"/)
   if (!m) {
-    bad('ui/index.html 里没找到主 bundle 的 <script src="./assets/...">')
+    bad('ui/index.html 里没找到主 bundle 的 <script src="…assets/….js">（./ 与 / 两种前缀都试过）')
   } else {
     const bp = path.join(outDir, 'ui', m[1])
     if (!fs.existsSync(bp)) {

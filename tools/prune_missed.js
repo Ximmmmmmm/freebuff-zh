@@ -29,11 +29,10 @@ const dictPath = path.join(REPO, 'dict.json')
 
 // 定位主 bundle（与 build_locked.sh 同法：index.html 的 src）
 const html = fs.readFileSync(path.join(uiDir, 'index.html'), 'utf8')
-const marker = 'src="./'
-const hi = html.indexOf(marker)
-if (hi < 0) { console.error('prune_missed: index.html 里找不到主 bundle src'); process.exit(1) }
-const rest = html.slice(hi + marker.length)
-const bundleRel = rest.slice(0, rest.indexOf('"'))
+// 前缀口径同 pristine.js：0.0.180+ 起 index.html 用 /assets/（根绝对），写死 ./ 会整步 exit 1
+const bm = /src="\.?\/?(assets\/[^"]+\.js)"/.exec(html)
+if (!bm) { console.error('prune_missed: index.html 里找不到主 bundle src（./ 与 / 两种前缀都试过）'); process.exit(1) }
+const bundleRel = bm[1]
 const bundle = path.join(uiDir, bundleRel)
 if (!fs.existsSync(bundle)) { console.error('prune_missed: bundle 不存在：' + bundle); process.exit(1) }
 
