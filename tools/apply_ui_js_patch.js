@@ -29,18 +29,43 @@ const replacements = [
     '"data-tooltip":"Close"',
     '"data-tooltip":"\u5173\u95ed"',
   ],
-  // _V() 的 "N day(s)" 格式器（设置页 Current/Longest streak 的值）：单位改「天」，
-  // 保持与胶囊一致；不能走词典，见文件头第 2 条
+  // 「N day(s)」单位格式器（设置页 Current/Longest streak 的值）：单位改「天」，保持与胶囊一致；
+  // 不能走词典，见文件头第 2 条。锚点**不写死函数名和 NumberFormat 的变量名**：这两个名字每版都会
+  // 被重新压缩改掉（0.0.179 是 _V/Cue，0.0.183 是 RW/hhe），而函数体一个字节没动。写死名字等于每版
+  // 都要人工重锚一次，失败时还会以「上游改写了锚点」的名义把误报当成真改写。名字交给捕获组原样带回，
+  // 这里只锁结构。第三个元素是幂等探针：先看它，命中即视为已应用，绝不二次替换。
   [
-    'function _V(e){return`${Cue.format(e)} ${e===1?"day":"days"}`}',
-    'function _V(e){return`${Cue.format(e)} \\u5929`}',
+    /function ([\w$]+)\(e\)\{return`\$\{([\w$]+)\.format\(e\)\} \$\{e===1\?"day":"days"\}`\}/g,
+    'function $1(e){return`${$2.format(e)} \\u5929`}',
+    /\$\{[\w$]+\.format\(e\)\} \\u5929/g,
   ],
 ]
 
 let s = fs.readFileSync(f, 'utf8')
 let applied = 0
 const missed = []
-for (const [from, to] of replacements) {
+for (const [from, to, probe] of replacements) {
+  if (from instanceof RegExp) {
+    if (probe && probe.test(s)) {
+      probe.lastIndex = 0
+      applied++ // 已应用过（幂等）
+      continue
+    }
+    const hits = s.match(from)
+    if (!hits) {
+      missed.push('结构锚点未命中（函数体形态变了？）：' + String(from).slice(0, 70))
+      continue
+    }
+    if (hits.length !== 1) {
+      // 命中多处却按单一位置设计＝锚点不够具体，静默全替换会把别处的同类结构一起改掉
+      from.lastIndex = 0
+      missed.push(`锚点命中 ${hits.length} 次（设计要求唯一）：` + String(from).slice(0, 70))
+      continue
+    }
+    s = s.replace(from, to)
+    applied++
+    continue
+  }
   if (s.includes(from)) {
     s = s.split(from).join(to)
     applied++
