@@ -201,6 +201,15 @@ const MAIN_SENTINELS = {
     // Bun 崩溃对话框整段（0.0.113 适配时补翻）
     '这是 Bun 内部的缺陷，而不是 Freebuff 的问题，完整报告见日志。',
     'Freebuff 的运行时崩溃了',
+    // 0.0.180~183 新增的四段启动失败说明，各自是补丁里独立的一组改动：
+    // 系统终止对话框（describeOsKill）、spawn errno 提示（SPAWN_ERROR_HINTS）、
+    // 「启动了什么 / 等了多久 / 有没有输出」（describeSpawnTarget + describeAttempt）、
+    // 空诊断兜底。缺任何一段都意味着那一整块补丁没套上，而对话框是用户唯一看得见的地方。
+    'Freebuff 已停止',
+    '所以重新下载 Freebuff 就能解决。',
+    'Freebuff 已启动 "',
+    '它完全没有输出',
+    '请把它附到缺陷报告里。',
   ],
   'electron/mcp-consent-bridge.cjs': [
     '此连接器没有可运行的命令——已拒绝',
@@ -222,6 +231,9 @@ const MAIN_SENTINELS = {
 const OPTIONAL_SENTINELS = {
   // 0.0.107 新增：渲染进程健康状况采样 + 「窗口已停止」恢复弹窗
   'electron/renderer-health.cjs': ['重新加载窗口'],
+  // 0.0.18x 新增：线程内下载子系统的报错（经 {ok:false,error} 进界面）。老版产物里没有这个文件，
+  // 只警告；一旦存在就必须带译文，否则等于整份补丁漏套。
+  'electron/file-download.cjs': ['无法下载文件', '下载被中断了。请重试。'],
 }
 if (mainSrc) {
   for (const rel of Object.keys(MAIN_SENTINELS)) {

@@ -171,7 +171,7 @@
        failure.kind === 'timeout'
 -        ? `It was given ${waited} and did not become ready in time, so it was stopped.`
 -        : `It lasted ${waited}.`,
-+        ? `它已等待 ${waited}，但未在限定时间内就绪，因此已被停止。`
++        ? `它已等待 ${waited}，未能在规定时间内就绪，因此已被停止。`
 +        : `它持续了 ${waited}。`,
      )
    }
@@ -201,8 +201,8 @@
    // The attempt lines say this with the wait in it; without them it is all a timeout has.
 -  if (failure.kind === 'timeout' && !attempt.some((line) => line.includes('ready in time'))) {
 -    detailParts.push('The orchestrator did not become ready in time.')
-+  if (failure.kind === 'timeout' && !attempt.some((line) => line.includes('未在限定时间内就绪'))) {
-+    detailParts.push('编排器未在限定时间内就绪。')
++  if (failure.kind === 'timeout' && !attempt.some((line) => line.includes('未能在规定时间内就绪'))) {
++    detailParts.push('编排器未能在规定时间内就绪。')
    }
    if (failure.code !== undefined || failure.signal) {
 -    detailParts.push(`Process ended (code ${failure.code ?? 'none'}, signal ${failure.signal ?? 'none'}).`)
