@@ -71,10 +71,11 @@ function readElectronDir(dir) {
 
 function main() {
   const argv = process.argv.slice(2)
-  const opt = { quiet: false, limit: 12 }
+  const opt = { quiet: false, limit: 12, json: false }
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]
     if (a === '--quiet') opt.quiet = true
+    else if (a === '--json') opt.json = true
     else if (a === '--limit') opt.limit = Number(argv[++i])
     else if (['--dict', '--ui', '--electron', '--prev-ui'].includes(a)) opt[a.slice(2)] = argv[++i]
     else usage(`未知参数：${a}`)
@@ -107,6 +108,17 @@ function main() {
   }
 
   const total = buckets.ok.length + buckets.mainOnly.length + buckets.prevOnly.length + buckets.nowhere.length
+  if (opt.json) {
+    // 机器可读：给 adapt.sh 的自动退休（tools/retire_missed.js）用，退出码与人类版一致。
+    console.log(
+      JSON.stringify(
+        { total: total, ok: buckets.ok.length, mainOnly: buckets.mainOnly, prevOnly: buckets.prevOnly, nowhere: buckets.nowhere },
+        null,
+        2,
+      ),
+    )
+    process.exit(buckets.mainOnly.length || buckets.prevOnly.length || buckets.nowhere.length ? 1 : 0)
+  }
   if (!opt.quiet) {
     console.log(`词条命中体检：${path.relative(process.cwd(), dictPath)}`)
     console.log(`  本版 UI bundle：${path.basename(uiBundle)}${prevUi ? `　上一版：${path.basename(prevBundle)}` : '　（没有上一版基线）'}`)
