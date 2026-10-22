@@ -61,9 +61,10 @@ node tools/dictapply.js --emit --guidance > work/changelist-<新版>.json   # �
 
 1. **禁止新建一次性脚本**（`work/adaptNNN.js` 那种）。词条的删/迁/加一律走 `dictapply.js` 清单。
 2. **`orchestrator.js` 不在汉化范围内**。构建只处理 `app.asar` 的 `electron/*.cjs` 和 `orchestrator/ui/`。往 `dict.json` 里塞只出现在 `orchestrator.js` 的文案会永远不命中——那句要么进 `patches/`，要么接受它是英文。
-3. **不许自动删「死词条」**。`resituate` 的 `GONE` 只是"疑似下线"，删不删人判断；`update.sh` 不会替你删，你也不要在脚本里替我删。
+3. **死词条由自动适配「隔离」，不许静默删**。`resituate` 的 `GONE` 只是"疑似下线"；`adapt.sh` 在严格构建 MISSED 时会把够不着的条目**整体归档**到 `work/retired/dict-<ver>.json`（原文 + 译文都在）再重建，并在通知里报条数。禁止的是"悄悄消失"，不是"因为上游删了句就停掉整版"。人工复核从归档恢复；归档只保留最近几版，`work/` 不入库。
 4. **`code` 分区的 `value` 必须与 `key` 逐字节相同**，那是代码字面量。
 5. **要保留英文就登记，不要绕过闸门**：写进 `intentional-english.json` 并说明理由。`resituate --prune-gone`、`regress --allow-english` 这类开关只在明确知道自己在做什么时用，默认不许拿来让检查变绿。
+   **唯一例外是「缺口发布」**：`adapt.sh` 自愈后仍缺文案时，用 `ALLOW_MISSED=1` 发版并把缺口清单写进 `/root/hanhua-auto/gaps/` + 微信通知。理由：停发会让包版本对不上新应用、整包英文；带缺口发只是那几句英文。这条例外只对自动适配生效，人工跑 `update.sh` / `build.sh` 仍是严格口径。
 6. **不要动 `work/pristine/`、`dist/` 最新两个包、`hanhua-backup-*`**——它们分别是上游对差、回归闸门、构建 pristine 的基线。
 7. **`dict.json` 必须保持 `JSON.stringify(obj, null, 2) + '\n'` 的规整格式**：`lint_dict.js` 是逐行解析的，格式跑偏会被误报成"条目出现在分区之外"。
 8. 迁移改的是**产物**，装机生效要 `apply.sh`；没跑 `apply.sh` 之前别说"已经汉化好了"。

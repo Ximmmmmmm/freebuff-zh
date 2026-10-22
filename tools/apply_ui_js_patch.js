@@ -150,5 +150,11 @@ console.log(`apply_ui_js_patch: ${applied} replacements`)
 if (missed.length) {
   console.error('MISSED（上游改写了锚点，补丁没打上）:')
   for (const m of missed) console.error('  - ' + m)
-  process.exit(1)
+  // 缺口发布模式（ALLOW_MISSED=1）：锚点没命中只意味着这几处保持英文，产物本身没坏。
+  // 严格模式仍然硬退——那是「要么全中、要么人工重锚」的默认口径。
+  if (process.env.ALLOW_MISSED === '1') {
+    console.error(`WARN: ALLOW_MISSED=1 缺口发布模式——这 ${missed.length} 处渲染点保持英文，下次人工重锚`)
+  } else {
+    process.exit(1)
+  }
 }
