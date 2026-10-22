@@ -4,14 +4,23 @@
 [![lint](https://github.com/Ximmmmmmm/freebuff-zh/actions/workflows/ci.yml/badge.svg)](https://github.com/Ximmmmmmm/freebuff-zh/actions/workflows/ci.yml)
 ![GitHub last commit](https://img.shields.io/github/last-commit/Ximmmmmmm/freebuff-zh)
 ![GitHub Repo stars](https://img.shields.io/github/stars/Ximmmmmmm/freebuff-zh?style=social)
-[![Target](https://img.shields.io/badge/目标-Freebuff%20Desktop%20v0.0.169-blue)](https://freebuff.com)
+[![Target](https://img.shields.io/badge/目标-已停止维护-lightgrey)](https://freebuff.com)
 
-把已安装的 **Freebuff Desktop**（`@codebuff/freebuff-desktop`，当前适配 **v0.0.169**）界面整体换成简体中文：
-词典驱动、可复现构建、四道发布闸门把关。
+把已安装的 **Freebuff Desktop**（`@codebuff/freebuff-desktop`）界面整体换成简体中文：
+词典驱动、可复现构建、四道发布闸门把关。停更前适配到 **v0.0.186**（以 Releases 页为准）。
 
 > **English**: A Simplified-Chinese localization pack for Freebuff Desktop. It patches the installed
 > app's packaged artifacts (`app.asar` + `orchestrator/ui/`) — no source build, no network hooks, no
 > touching your account or credentials. Dictionary-driven, byte-reproducible, gated.
+
+> **维护状态：已停止更新（2026-10-22）**
+>
+> 不再跟进 Freebuff Desktop 的新版本，也不再发布新的汉化包。现有 Release、词典、补丁与构建脚本
+> 保持可用；Issue / PR 不再保证回复。代码以 MIT 许可发布，欢迎 fork 继续适配——无需事先征得同意，
+> 保留原版权与许可声明即可。接手要点见文末「维护状态与接手」。
+>
+> **Maintenance status: discontinued (2026-10-22).** No further packs or compatibility fixes.
+> Existing releases and source remain available; forks are welcome under the MIT license.
 
 ---
 
@@ -206,9 +215,20 @@ workflow 里真的跑到的集合比对，漏接线（文件在、没人跑）�
 **某个文案我想保留英文？** 登进 `intentional-english.json`（`fragments` 或 `uiStrings`）并写清理由，
 别用命令行开关绕过闸门——换机器 / CI 发布时开关忘了敲就白放了。
 
-## 十、许可证与声明
+## 十、维护状态与接手
 
-- **作者**：Ximmmmmmm（个人维护项目）。
+- **停止维护**：2026-10-22 起不再更新。已发布的汉化包仍可安装 / 还原；最后一个适配版本以 [Releases](https://github.com/Ximmmmmmm/freebuff-zh/releases) 页和包内 `manifest.json` 为准。
+- **还能用吗**：已发布的包只对应它声明的 `targetVersion`。Freebuff 更新后界面改版不会再有适配；多开控制器的「自动恢复汉化」仍会读本仓库的 Release，但以后不会再有新包。
+- **怎么接手**：
+  1. fork 本仓库，改 `manifest.json` 的 `targetVersion` / `packVersion`，按 README 的 `build.sh` → `apply.sh` 流程构建、装机。
+  2. `dict.json` 按现有四分区加词条；`patches/` 的锚点在上游 UI 改版后要重新对，预检不过不要发。
+  3. 四道发布闸门与 `packVersion` 四段号约定建议保留——控制器靠它判断要不要自动更新；改了格式，控制器就读不到新包。
+  4. 想接手主仓库 / Release 名义的，可以开 issue 说明；不保证及时回复，但不会阻拦。
+- **许可与边界**：脚本、词典、补丁与文档以 MIT 发布，fork、改名、继续发布都可以，保留原版权与许可声明即可。汉化产物派生自 Freebuff 的专有软件，继续分发的人需自行确认合法性与 Freebuff 服务条款。
+
+## 十一、许可证与声明
+
+- **作者**：Ximmmmmmm（个人维护项目，2026-10-22 起停止更新）。
 - 本仓库的**脚本、词典、补丁与文档**以 **MIT License** 发布，见 [LICENSE](LICENSE)。
 - **免责声明**：Freebuff Desktop（`@codebuff/freebuff-desktop`）是 Freebuff, Inc. 的专有商业软件，
   其安装包内不含任何开源许可（仅 Electron / Chromium 组件各有其开源许可）。本仓库的**汉化产物**
