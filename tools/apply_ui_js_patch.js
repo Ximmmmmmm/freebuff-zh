@@ -29,6 +29,37 @@ const replacements = [
     '"data-tooltip":"Close"',
     '"data-tooltip":"\u5173\u95ed"',
   ],
+  // 0.0.183：这两句词典够不着，只能按字面量定点改写（同一个原因：文件头第 2 条的分区语义）——
+  //   · 「每天 X，而非免费版的每天 Y」那句整条是**模板字面量**，里面还嵌了一层 ${c?`${c}: `:""}，
+  //     template 分区解析到嵌套反引号就断了，dict 里留着这条只会永远 MISSED（已撤词条）；
+  //     而且词典会先把那层里的 `: ` 换成 `：`，所以锚点**不能整行照抄原文**——按结构匹配英文主干，
+  //     把被压缩改名的 ${o(r)} / ${n.displayName} / ${o(i)} 交给捕获组原样带回。
+  //   · 「本设备上的工作会停止…」这句本版从双引号改成了模板字面量，exact 分区只认双引号字面量。
+  // 两句的译文沿用词典里已有的措辞，不另起。
+  [
+    /\$\{([\w$]+)\((\w)\)\} a day on \$\{([\w$.]+)\} instead of \$\{([\w$]+)\((\w)\)\} for free\. /,
+    '在 ${$3} 上是每天 ${$1($2)}，免费版是每天 ${$4($5)}。',
+    /在 \$\{[\w$.]+\} 上是每天 \$\{/,
+  ],
+  [
+    'Work on this device will stop until you reopen Freebuff. Your chat history and saved file changes will be kept.',
+    '在你重新打开 Freebuff 之前，本设备上的工作会停止。你的聊天记录和已保存的文件更改将会保留。',
+  ],
+  // 0.0.183：两个短标签在词典里进不去——pattern 区与 exact 区都有「以它们开头的更长词条」
+  // （"Open without saved tabs" / "Open " / "Hours balances" / "Hours aren’t available…" /
+  //  "Wallet hours balance unavailable"），dictapply 直接判 ADD_COLLISION 拒绝。
+  // 四处锚点各自在全 bundle 唯一，按渲染点改写。
+  // "Open" 三处都是**站点状态**（与 Closed / Draft 同一族），所以译成「开放」而不是「打开」。
+  ['title:"Hours"', 'title:"时长"'],
+  ['children:"Open"', 'children:"开放"'],
+  ['?"Draft":"Open"', '?"Draft":"开放"'],
+  ['open:"Open"', 'open:"开放"'],
+  ['children:"Wallet"', 'children:"钱包"'],
+  // 0.0.183 环境切换的加载态：`${…?"Preview":"Production"}` 这种「插值里带三元+双引号」的模板，
+  // template 分区的解析器吃不下（写进词典就是一句 MISSED，构建直接被挂住），只能按字面量定点改。
+  // 锚点取的是**词典跑完之后**的形态——本文件在 apply.js 之后执行，两个环境名已被词典换成
+  // 「预览 / 生产」，照抄英文原文当锚点必然 MISSED（实测踩过一次）。
+  ['Loading ${o==="preview"?"预览":"生产"}…', '正在加载 ${o==="preview"?"预览":"生产"}…'],
   // 「N day(s)」单位格式器（设置页 Current/Longest streak 的值）：单位改「天」，保持与胶囊一致；
   // 不能走词典，见文件头第 2 条。锚点**不写死函数名和 NumberFormat 的变量名**：这两个名字每版都会
   // 被重新压缩改掉（0.0.179 是 _V/Cue，0.0.183 是 RW/hhe），而函数体一个字节没动。写死名字等于每版
@@ -47,18 +78,19 @@ const missed = []
 for (const [from, to, probe] of replacements) {
   if (from instanceof RegExp) {
     if (probe && probe.test(s)) {
-      probe.lastIndex = 0
       applied++ // 已应用过（幂等）
       continue
     }
-    const hits = s.match(from)
-    if (!hits) {
+    // 数命中必须用带 g 的副本：String.match(不带 g 的正则) 返回的是「整段 + 每个捕获组」的数组，
+    // 五个捕获组的锚点命中一次也会给出 length 6——会被当成「命中 6 次」判成锚点不唯一。
+    const counter = from.global ? from : new RegExp(from.source, from.flags + 'g')
+    const hits = [...s.matchAll(counter)]
+    if (!hits.length) {
       missed.push('结构锚点未命中（函数体形态变了？）：' + String(from).slice(0, 70))
       continue
     }
     if (hits.length !== 1) {
       // 命中多处却按单一位置设计＝锚点不够具体，静默全替换会把别处的同类结构一起改掉
-      from.lastIndex = 0
       missed.push(`锚点命中 ${hits.length} 次（设计要求唯一）：` + String(from).slice(0, 70))
       continue
     }
