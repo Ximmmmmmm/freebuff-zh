@@ -7,7 +7,7 @@
 [![Target](https://img.shields.io/badge/目标-已停止维护-lightgrey)](https://freebuff.com)
 
 把已安装的 **Freebuff Desktop**（`@codebuff/freebuff-desktop`）界面整体换成简体中文：
-词典驱动、可复现构建、四道发布闸门把关。停更前适配到 **v0.0.186**（以 Releases 页为准）。
+词典驱动、可复现构建、四道发布闸门把关。停更前的最新发布包见 [Releases](https://github.com/Ximmmmmmm/freebuff-zh/releases)。
 
 > **English**: A Simplified-Chinese localization pack for Freebuff Desktop. It patches the installed
 > app's packaged artifacts (`app.asar` + `orchestrator/ui/`) — no source build, no network hooks, no
@@ -180,7 +180,7 @@ workflow 里真的跑到的集合比对，漏接线（文件在、没人跑）�
 重复接线 / 步骤带 `if:` / 触发 `paths` 漏了 `tools/**` 只警告；判据只扫 `run:` 块，注释里提到的
 文件名不算接线。
 
-## 八、当前状态（适配 v0.0.169）
+## 八、最后一版的状态（统计口径：v0.0.169）
 
 | 指标 | 实测 |
 | --- | --- |
