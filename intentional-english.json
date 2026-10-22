@@ -3394,6 +3394,34 @@
     {
       "text": "This folder already belongs to a project. Open that project instead.",
       "why": "0.0.178 新引入的**协议值**用法：本版 bundle 里该句唯一 1 处出现是云服务 createProject 抛出 Error 的 message 与界面比较（ui/assets/index-Bnne4wSt.js：h.message!==\"…\" → 命中则退回 openProject），不是界面文案、没有任何显示位置。翻了会把比较值改写、这条回退分支永久失效（0.0.178 严格构建的 semantic_guard 正是这样拦下的）。运行期若该错误原样抛出，界面显示的是服务端发来的英文原文，与本包汉化无关。判断依据：全 UI 目录 grep 仅 1 处命中且为比较位置；0.0.173 / 0.0.174 均 0 处命中。"
+    },
+    {
+      "text": "Earn up to",
+      "why": "JSX 拼接：问卷标题 `[\"Earn up to \",Ut(1e4),\" for your repo\"]`（金额插值夹在中间）。中文语序必须整句改写（「为你的仓库最高可赚取 X」），单替片段只会拼成「最高可赚取 ¥100 为你的仓库」。同一数组在 bundle 里出现 3 次、锚点不唯一，apply_ui_js_patch 按设计拒绝多处替换，故登记待整句改写。"
+    },
+    {
+      "text": "for your repo",
+      "why": "同上一条的尾节点（同一句 `[\"Earn up to \",Ut(1e4),\" for your repo\"]`），随整句改写一起处理。"
+    },
+    {
+      "text": "balance wallet purchase credits payment card freebucks",
+      "why": "帮助中心搜索关键词（`{label:\"购买小时\",keywords:\"...\"}` 的 keywords 字段），不渲染成界面文案；保留英文是为了命中英文帮助文档与既有搜索索引。"
+    },
+    {
+      "text": "daily limit quota wallet balance hours freebucks",
+      "why": "帮助中心搜索关键词（`{label:\"额度\",keywords:\"...\"}`），不渲染；同上。"
+    },
+    {
+      "text": "earn rewards hours freebucks",
+      "why": "帮助中心搜索关键词（`{label:\"优惠\",keywords:\"...\"}`），不渲染；同上。"
+    },
+    {
+      "text": "in ye?ye.error:",
+      "why": "扫描器误报：源码是 `E(\"error\" in ye ? ye.error : \"无法保存你的回答。\")`，字符串本身已汉化，被当成文本片段的是三元表达式 `in ye?ye.error:` 这一段代码。"
+    },
+    {
+      "text": "The agent is",
+      "why": "嵌套模板字面量：`${e.count===1?\"The agent is\":`${e.count} agents are`} still working. …`，整句跨两层嵌套与两个三元；template 分区解析到嵌套反引号就断（与 0.0.183 记录同类问题）。该句除这一处外上一版即为英文，待整句改写。"
     }
   ],
   "uiStrings": [

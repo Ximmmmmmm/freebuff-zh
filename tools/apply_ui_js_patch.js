@@ -70,6 +70,44 @@ const replacements = [
     'function $1(e){return`${$2.format(e)} \\u5929`}',
     /\$\{[\w$]+\.format\(e\)\} \\u5929/g,
   ],
+  // 购买时段的续用提示（0.0.186 上游把时间尾巴改成条件式 ${N6(V.model,I)?"":` until ${…}`}）：
+  // 三个引号字面量已由词典翻掉，剩下的模板文本既不是独立字面量、又带嵌套反引号，
+  // template 分区吃不下，只能按结构定点改写。压缩后的函数名/变量名每版都换（0.0.186 是
+  // N6、V、I），一律交给捕获组原样带回；参数位用 [\w.$] 而不是 \w——上游传的是 V.model。
+  // 锚点取的是词典跑完之后的形态（本文件在 apply.js 之后执行）。
+  // 正则里的引号写成 \x22：`?""`:` 这三对引号加冒号连着反引号，肉眼漏一个冒号就静默不命中
+  // （0.0.186 适配时连踩两次），转义写出来能一眼数清。
+  [
+    /\}\$\{([\w$]+)\(([\w.$]+),([\w$]+)\)\?\x22\x22:` until \$\{new Date\((\w+)\.expiresAt\)\.toLocaleTimeString\(\[\],\{hour:\x22numeric\x22,minute:\x222-digit\x22\}\)\}`\}\. No additional charge\./g,
+    '}${$1($2,$3)?"":` 直到 ${new Date($4.expiresAt).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})}`}。不额外收费。',
+    /\?\x22\x22:` 直到 \$\{new Date/g,
+  ],
+  // 0.0.186：JSX 拼接句（children 数组把一句拆成几个文本节点，词典只能替单个字面量，语序拼不出中文），
+  // 按渲染点整句改写。锚点取「词典跑完之后的形态」——这几段词典没覆盖，与原文逐字节相同。
+  [
+    '["Couldn’t publish to ",s]',
+    '["\u65e0\u6cd5\u53d1\u5e03\u5230 ",s]',
+  ],
+  [
+    '["No sessions charged in the last ",t??7," days."]',
+    '["\u6700\u8fd1 ",t??7," \u5929\u5185\u6ca1\u6709\u4ea7\u751f\u8ba1\u8d39\u7684\u4f1a\u8bdd\u3002"]',
+  ],
+  [
+    '["Links to ",t," will stop working after this change."]',
+    '["\u6b64\u66f4\u6539\u540e\uff0c\u6307\u5411 ",t," \u7684\u94fe\u63a5\u5c06\u5931\u6548\u3002"]',
+  ],
+  [
+    '"from the first sale"',
+    '"\u6765\u81ea\u9996\u6b21\u9500\u552e"',
+  ],
+  // 退款回执主干：整条是模板字面量，里面嵌了 ${r?`…`:""}，template 分区解析到嵌套反引号就断；
+  // 内层那句词典已经替成中文，所以锚点用「外层英文 + 变量」的结构匹配，变量名交给捕获组带回。
+  [
+    /, credited back to the \$\{([\w$]+)\} daily pool and your wallet/,
+    ', \u5df2\u9000\u56de \${$1} \u6bcf\u65e5\u989d\u5ea6\u6c60\u548c\u4f60\u7684\u94b1\u5305',
+    /\u5df2\u9000\u56de \$\{[\w$]+\} \u6bcf\u65e5\u989d\u5ea6\u6c60/,
+  ],
+
 ]
 
 let s = fs.readFileSync(f, 'utf8')
